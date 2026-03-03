@@ -27,11 +27,11 @@ export function useProgress(roadmap: Roadmap | null): ProgressData {
         for (const section of roadmap.sections) {
             if (section.type === "tasks") {
                 const ts = section as TaskSection;
-                for (const group of ts.data) {
-                    for (const task of group.tasks) {
+                for (const group of ts.data || []) {
+                    for (const task of group.tasks || []) {
                         totalTasks++;
                         if (task.completed) completedTasks++;
-                        for (const sub of task.subtasks) {
+                        for (const sub of task.subtasks || []) {
                             totalTasks++;
                             if (sub.completed) completedTasks++;
                         }
@@ -41,13 +41,13 @@ export function useProgress(roadmap: Roadmap | null): ProgressData {
 
             if (section.type === "milestones") {
                 const ms = section as MilestoneSection;
-                for (const milestone of ms.data) {
+                for (const milestone of ms.data || []) {
                     let mTotal = 0;
                     let mDone = 0;
-                    for (const task of milestone.tasks) {
+                    for (const task of milestone.tasks || []) {
                         mTotal++;
                         if (task.completed) mDone++;
-                        for (const sub of task.subtasks) {
+                        for (const sub of task.subtasks || []) {
                             mTotal++;
                             if (sub.completed) mDone++;
                         }

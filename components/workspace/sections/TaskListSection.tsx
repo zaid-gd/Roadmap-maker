@@ -14,16 +14,16 @@ export default function TaskListSection({ section, onUpdate }: Props) {
             const ts = s as TaskSection;
             return {
                 ...ts,
-                data: ts.data.map((g: TaskGroup) => {
+                data: (ts.data || []).map((g: TaskGroup) => {
                     if (g.id !== groupId) return g;
                     return {
                         ...g,
-                        tasks: g.tasks.map((t: Task) => {
+                        tasks: (g.tasks || []).map((t: Task) => {
                             if (t.id !== taskId) return t;
                             if (subtaskId) {
                                 return {
                                     ...t,
-                                    subtasks: t.subtasks?.map((st) =>
+                                    subtasks: (t.subtasks || []).map((st) =>
                                         st.id === subtaskId ? { ...st, completed: !st.completed } : st
                                     ),
                                 };
@@ -41,11 +41,11 @@ export default function TaskListSection({ section, onUpdate }: Props) {
             const ts = s as TaskSection;
             return {
                 ...ts,
-                data: ts.data.map((g: TaskGroup) => {
+                data: (ts.data || []).map((g: TaskGroup) => {
                     if (g.id !== groupId) return g;
                     return {
                         ...g,
-                        tasks: g.tasks.filter((t: Task) => !t.completed),
+                        tasks: (g.tasks || []).filter((t: Task) => !t.completed),
                     };
                 }),
             };
@@ -62,9 +62,9 @@ export default function TaskListSection({ section, onUpdate }: Props) {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                {section.data.map((group, i) => {
-                    const totalCount = group.tasks.length;
-                    const completedCount = group.tasks.filter(t => t.completed).length;
+                {(section.data || []).map((group, i) => {
+                    const totalCount = (group.tasks || []).length;
+                    const completedCount = (group.tasks || []).filter(t => t.completed).length;
 
                     return (
                         <div
@@ -92,13 +92,13 @@ export default function TaskListSection({ section, onUpdate }: Props) {
                                 </div>
                             </div>
 
-                            {group.tasks.length === 0 ? (
+                            {(group.tasks || []).length === 0 ? (
                                 <div className="py-8 text-center border border-dashed border-white/10 rounded-xl bg-obsidian-surface/60">
                                     <p className="text-text-muted text-sm italic">All tasks completed! 🎉</p>
                                 </div>
                             ) : (
                                 <div className="space-y-3">
-                                    {group.tasks.map((task) => (
+                                    {(group.tasks || []).map((task) => (
                                         <div
                                             key={task.id}
                                             className={`relative bg-obsidian-elevated/40 border border-white/5 rounded-xl p-3 sm:p-4 transition-all duration-500 ease-out hover:bg-obsidian-hover hover:border-white/10 ${task.completed ? "opacity-40 scale-[0.98] grayscale" : "opacity-100 scale-100"}`}
@@ -116,8 +116,8 @@ export default function TaskListSection({ section, onUpdate }: Props) {
                                                 <div className="flex-1 min-w-0 pt-0.5">
                                                     <span
                                                         className={`block text-sm sm:text-base transition-all duration-300 font-medium ${task.completed
-                                                                ? "text-text-muted line-through decoration-white/20"
-                                                                : "text-text-primary group-hover/label:text-indigo-100"
+                                                            ? "text-text-muted line-through decoration-white/20"
+                                                            : "text-text-primary group-hover/label:text-indigo-100"
                                                             }`}
                                                     >
                                                         {task.title}
@@ -128,7 +128,7 @@ export default function TaskListSection({ section, onUpdate }: Props) {
                                             {/* Subtasks */}
                                             {!task.completed && task.subtasks && task.subtasks.length > 0 && (
                                                 <div className="mt-3 ml-8 space-y-2 border-l border-white/10 pl-3">
-                                                    {task.subtasks.map((st) => (
+                                                    {(task.subtasks || []).map((st) => (
                                                         <label
                                                             key={st.id}
                                                             className="flex items-start gap-2 cursor-pointer group/sub"
@@ -144,8 +144,8 @@ export default function TaskListSection({ section, onUpdate }: Props) {
                                                             </div>
                                                             <span
                                                                 className={`text-xs transition-colors duration-200 mt-0.5 ${st.completed
-                                                                        ? "text-text-muted line-through"
-                                                                        : "text-text-secondary group-hover/sub:text-text-primary"
+                                                                    ? "text-text-muted line-through"
+                                                                    : "text-text-secondary group-hover/sub:text-text-primary"
                                                                     }`}
                                                             >
                                                                 {st.title}
