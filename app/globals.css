@@ -1,54 +1,70 @@
 /* ── Fontshare Fonts ── */
-@import url("https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&f[]=general-sans@400,500,600&display=swap");
+@import url("https://api.fontshare.com/v2/css?f[]=zodiak@300,400,700,900&f[]=cabinet-grotesk@400,500,700,800&f[]=satoshi@400,500,700&display=swap");
 
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════
-   ZNS RoadMap Studio — "Obsidian Command Center" Design System
+   ZNS RoadMap Studio — "Editorial Midnight & Liquid Gold"
    ═══════════════════════════════════════════════════════════ */
 
 /* ── Theme / Custom Properties ── */
 @theme {
-    --color-obsidian: #0a0e1a;
-    --color-obsidian-light: #0f1425;
-    --color-obsidian-surface: #141a2e;
-    --color-obsidian-elevated: #1a2140;
-    --color-obsidian-hover: #1f2847;
+    /* Pure Black / Deep Charcoal backgrounds */
+    --color-obsidian: #050505;
+    --color-obsidian-light: #0a0a0a;
+    --color-obsidian-surface: #0f0f0f;
+    --color-obsidian-elevated: #141414;
+    --color-obsidian-hover: #1c1c1c;
 
-    --color-indigo-accent: #6366f1;
-    --color-indigo-glow: #4f46e5;
-    --color-indigo-deep: #3730a3;
-    --color-indigo-soft: #a5b4fc;
-    --color-violet-accent: #7c3aed;
+    /* Theme overrides (Replacing Indigo/Purple with Liquid Gold / Amber) */
+    --color-indigo-100: #fef3c7;
+    --color-indigo-200: #fde68a;
+    --color-indigo-300: #fcd34d;
+    --color-indigo-400: #fbbf24;
+    --color-indigo-500: #f59e0b;
+    /* Overrides Tailwind default */
+    --color-indigo-600: #d97706;
+    --color-indigo-700: #b45309;
 
-    --color-text-primary: #e2e8f0;
-    --color-text-secondary: #94a3b8;
-    --color-text-muted: #64748b;
-    --color-text-inverse: #0a0e1a;
+    --color-purple-400: #eab308;
+    --color-purple-500: #ca8a04;
+    --color-purple-600: #a16207;
 
-    --color-success: #10b981;
-    --color-warning: #f59e0b;
-    --color-error: #ef4444;
-    --color-info: #3b82f6;
+    --color-indigo-accent: #d97706;
+    --color-indigo-glow: #f59e0b;
+    --color-indigo-deep: #b45309;
+    --color-indigo-soft: #fde68a;
+    --color-violet-accent: #fbbf24;
 
-    --color-border: #1e293b;
-    --color-border-subtle: #1a2035;
-    --color-border-active: #4f46e580;
+    /* Refined Editorial Text Colors */
+    --color-text-primary: #F0EAD6;
+    /* Alabaster / Bone */
+    --color-text-secondary: #A3A3A3;
+    --color-text-muted: #666666;
+    --color-text-inverse: #050505;
 
-    --font-display: "Satoshi", system-ui, sans-serif;
-    --font-body: "General Sans", system-ui, sans-serif;
+    /* Sharp, thin architectural borders */
+    --color-border: #222222;
+    --color-border-subtle: #171717;
+    --color-border-active: #d97706;
 
-    --radius-sm: 0.375rem;
-    --radius-md: 0.5rem;
-    --radius-lg: 0.75rem;
-    --radius-xl: 1rem;
-    --radius-2xl: 1.25rem;
+    /* Typography */
+    --font-display: "Zodiak", serif;
+    --font-sans-display: "Cabinet Grotesk", sans-serif;
+    --font-body: "Satoshi", system-ui, sans-serif;
 
-    --animate-fade-in: fade-in 0.5s ease-out both;
-    --animate-slide-up: slide-up 0.5s ease-out both;
-    --animate-slide-in-right: slide-in-right 0.4s ease-out both;
-    --animate-scale-in: scale-in 0.3s ease-out both;
-    --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+    /* Brutalist/Architectural Radii (Sharp edges) */
+    --radius-sm: 0rem;
+    --radius-md: 0.125rem;
+    --radius-lg: 0.125rem;
+    --radius-xl: 0.125rem;
+    --radius-2xl: 0.125rem;
+
+    --animate-fade-in: fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    --animate-slide-up: slide-up 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+    --animate-slide-in-right: slide-in-right 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    --animate-scale-in: scale-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    --animate-pulse-glow: pulse-glow 4s ease-in-out infinite;
     --animate-shimmer: shimmer 2s linear infinite;
 }
 
@@ -218,6 +234,10 @@ h6 {
 /* ── Typography Utilities ── */
 .font-display {
     font-family: var(--font-display);
+}
+
+.font-sans-display {
+    font-family: var(--font-sans-display);
 }
 
 .font-body {

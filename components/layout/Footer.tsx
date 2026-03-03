@@ -1,15 +1,15 @@
 export default function Footer() {
     return (
-        <footer className="border-t border-border py-6 mt-auto">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <p className="text-text-muted text-xs font-body">
-                    Powered by{" "}
-                    <span className="text-text-secondary font-medium">ZNS Nexus</span>
-                    {" · "}
-                    <span className="text-text-secondary font-medium">ZNS Enterprises</span>
+        <footer className="border-t border-white/5 py-8 mt-auto bg-obsidian-surface">
+            <div className="w-full px-6 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-4 font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted">
+                <p>
+                    POWERED BY{" "}
+                    <span className="text-text-primary">ZNS NEXUS</span>
+                    {" // "}
+                    <span className="text-text-secondary">ZNS ENTERPRISES</span>
                 </p>
-                <p className="text-text-muted text-xs">
-                    &copy; {new Date().getFullYear()} ZNS Enterprises. All rights reserved.
+                <p>
+                    {new Date().getFullYear()} © ZNS ENTERPRISES. ALL SYSTEMS SECURE.
                 </p>
             </div>
         </footer>
