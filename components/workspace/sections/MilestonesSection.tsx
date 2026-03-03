@@ -19,7 +19,7 @@ export default function MilestonesSection({ section, onUpdate }: Props) {
             const ms = s as MilestoneSection;
             return {
                 ...ms,
-                data: ms.data.map((m: Milestone) =>
+                data: (ms.data || []).map((m: Milestone) =>
                     m.id === milestoneId ? { ...m, completed: !m.completed } : m
                 ),
             };
@@ -43,7 +43,7 @@ export default function MilestonesSection({ section, onUpdate }: Props) {
                 <div className="absolute left-[23.5px] top-4 bottom-8 w-1 sm:block hidden rounded-full bg-gradient-to-b from-indigo-500 via-border/50 to-transparent" />
 
                 <div className="space-y-6">
-                    {section.data.map((milestone, i) => {
+                    {(section.data || []).map((milestone, i) => {
                         const isExpanded = expandedId === milestone.id;
                         // Logical "in progress": previous is complete, or we are the first item.
                         const previousCompleted = i === 0 || section.data[i - 1]?.completed;
@@ -119,13 +119,13 @@ export default function MilestonesSection({ section, onUpdate }: Props) {
                                                 </p>
 
                                                 {/* Internal Tasks */}
-                                                {milestone.tasks.length > 0 && (
+                                                {(milestone.tasks || []).length > 0 && (
                                                     <div className="space-y-3">
                                                         <h4 className="flex items-center gap-2 text-xs font-bold text-text-secondary uppercase tracking-widest px-1">
                                                             <span className="text-indigo-400 drop-shadow-[0_0_3px_rgba(99,102,241,0.5)]">⚡</span> Actions
                                                         </h4>
                                                         <div className="space-y-2 grid grid-cols-1">
-                                                            {milestone.tasks.map((task) => (
+                                                            {(milestone.tasks || []).map((task) => (
                                                                 <label key={task.id} className={`group relative flex items-start gap-3 p-3 rounded-xl hover:bg-obsidian-hover border border-white/5 cursor-pointer transition-all duration-300 ${task.completed ? "bg-emerald-500/5 border-emerald-500/10" : "bg-obsidian-elevated/40"}`}>
                                                                     <input
                                                                         type="checkbox"
@@ -133,7 +133,7 @@ export default function MilestonesSection({ section, onUpdate }: Props) {
                                                                         onChange={() => {
                                                                             onUpdate((s) => {
                                                                                 const ms = s as MilestoneSection;
-                                                                                return { ...ms, data: ms.data.map((m: Milestone) => m.id === milestone.id ? { ...m, tasks: m.tasks.map((t) => t.id === task.id ? { ...t, completed: !t.completed } : t) } : m) };
+                                                                                return { ...ms, data: (ms.data || []).map((m: Milestone) => m.id === milestone.id ? { ...m, tasks: (m.tasks || []).map((t) => t.id === task.id ? { ...t, completed: !t.completed } : t) } : m) };
                                                                             });
                                                                         }}
                                                                         className="mt-1 w-4 h-4 rounded transition-colors accent-indigo-500 border-white/10 cursor-pointer"
@@ -148,13 +148,13 @@ export default function MilestonesSection({ section, onUpdate }: Props) {
                                                 )}
 
                                                 {/* Internal Videos */}
-                                                {milestone.videos.length > 0 && (
+                                                {(milestone.videos || []).length > 0 && (
                                                     <div className="space-y-4">
                                                         <h4 className="flex items-center gap-2 text-xs font-bold text-text-secondary uppercase tracking-widest px-1">
                                                             <span className="text-rose-400 drop-shadow-[0_0_3px_rgba(251,113,133,0.5)]">🎥</span> Required Viewing
                                                         </h4>
                                                         <div className="grid grid-cols-1 gap-4">
-                                                            {milestone.videos.map((video) => (
+                                                            {(milestone.videos || []).map((video) => (
                                                                 <div key={video.id} className="rounded-xl overflow-hidden border border-white/5 shadow-lg bg-obsidian relative group">
                                                                     <VideoPlayer url={video.url} title={video.title} description={video.description} />
                                                                 </div>
@@ -164,13 +164,13 @@ export default function MilestonesSection({ section, onUpdate }: Props) {
                                                 )}
 
                                                 {/* Internal Resources */}
-                                                {milestone.resources.length > 0 && (
+                                                {(milestone.resources || []).length > 0 && (
                                                     <div className="space-y-3">
                                                         <h4 className="flex items-center gap-2 text-xs font-bold text-text-secondary uppercase tracking-widest px-1">
                                                             <span className="text-amber-400 drop-shadow-[0_0_3px_rgba(251,191,36,0.5)]">📚</span> Materials
                                                         </h4>
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                            {milestone.resources.map((res) => (
+                                                            {(milestone.resources || []).map((res) => (
                                                                 <button
                                                                     key={res.id}
                                                                     type="button"
