@@ -5,6 +5,7 @@ export const APP_TAGLINE = "Paste any guide — get a full interactive workspace
 export const BRAND_OWNER = "ZNS Nexus · ZNS Enterprises";
 
 export const SECTION_ICONS: Record<string, string> = {
+    module: "📦",
     milestones: "🏁",
     tasks: "✅",
     progress: "📊",
@@ -18,6 +19,7 @@ export const SECTION_ICONS: Record<string, string> = {
 };
 
 export const SECTION_LABELS: Record<string, string> = {
+    module: "Module",
     milestones: "Milestones",
     tasks: "Tasks",
     progress: "Progress",

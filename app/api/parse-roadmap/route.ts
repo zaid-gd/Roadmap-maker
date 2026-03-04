@@ -1,29 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SYSTEM_PROMPT = `You are an AI that transforms raw content (roadmaps, guides, curricula, workflows) into structured workspace data. You MUST return ONLY valid JSON — no explanation, no markdown wrapping, no code fences.
+const SYSTEM_PROMPT = `You are an AI that transforms raw content (roadmaps, guides, curricula, workflows, .md files) into a structured COURSE EXPERIENCE. You MUST return ONLY valid JSON — no explanation, no markdown wrapping, no code fences.
 
-Analyze the content deeply and:
-1. Identify every meaningful section, topic, phase, and piece of information
-2. Detect ALL video links (YouTube, Vimeo), resource links, documentation references, external content
-3. Decide which workspace sections to create based purely on what is in the content
-4. Create custom sections for anything unique — be creative and adaptive
-5. Never invent sections not grounded in the content
-6. For videos, extract the full URL, video ID, platform, and any timestamps mentioned
-7. For resources, classify them by type: video, doc, pdf, link, code, tool, course, book
-8. If content mentions dates/deadlines, create a calendar section
-9. If content has terminology, create a glossary section
-10. Always create a milestones section if the content has phases/steps/stages
-11. Always create a tasks section with actionable items
-12. Always create a progress section (it will be computed live, just include it)
+Your PRIMARY goal is to create SELF-CONTAINED COURSE MODULES. Each meaningful topic, phase, or section in the content becomes its own module. Each module contains ALL of its related content — its own tasks, resources, videos, and key notes.
+
+RULES:
+1. EVERY distinct topic/phase/section in the content becomes a "module" type section
+2. Each module MUST contain: description, tasks (action items for that module), resources (links relevant to that module), videos (if any), and key concepts/notes
+3. Do NOT create standalone "Tasks" or "Resources" or "Videos" sections that strip items out of their parent module. Keep everything with its parent.
+4. Only create a standalone "tasks" section if there are genuinely GLOBAL tasks that don't belong to any specific module
+5. Only create a standalone "resources" section if there are genuinely GLOBAL resources not tied to any module
+6. Extract a short "summary" field at the top level that captures the overall goals/objectives of the content (1-3 sentences)
+7. Always include a "progress" section (computed live, just include it)
+8. If content has terminology, create a "glossary" section
+9. If content mentions dates/deadlines, create a "calendar" section
+10. A "notes" section is always included for the user's personal notes
+11. For videos, extract URL, video ID, platform, and any timestamps
+12. For resources, classify by type: video, doc, pdf, link, code, tool, course, book
 
 Return JSON in this exact shape:
 {
   "title": "string - inferred from content if not provided",
   "mode": "general or intern",
+  "summary": "1-3 sentence summary of overall goals and what this course covers",
   "sections": [
     {
       "id": "unique-id",
-      "type": "milestones|tasks|progress|resources|videos|calendar|notes|glossary|submissions|custom",
+      "type": "module|tasks|progress|resources|videos|calendar|notes|glossary|submissions|milestones|custom",
       "title": "Section Title",
       "order": 0,
       "data": <section-specific data>
@@ -32,8 +35,9 @@ Return JSON in this exact shape:
 }
 
 Section data shapes:
+- module: { description: "what this module covers", estimatedTime: "optional time estimate", concepts: "key concepts/notes for this module", tasks: [{id, title, completed: false, notes: "", subtasks: [{id, title, completed: false}], attachments: [{id, title, url, type, description}]}], resources: [{id, title, url, type, description, category}], videos: [{id, title, url, videoId, platform, description, duration, timestamps: [{time, label}]}], completed: false }
 - milestones: Array of { id, title, description, tasks: [{id, title, completed: false, notes: "", subtasks: [], attachments: []}], resources: [{id, title, url, type, description}], videos: [{id, title, url, videoId, platform, description}], completed: false, order }
-- tasks: Array of { id, title, tasks: [{id, title, completed: false, notes: "", subtasks: [{id, title, completed: false}], attachments: [{id, title, url, type, description}]}] }
+- tasks: Array of { id, title, tasks: [{id, title, completed: false, notes: "", subtasks: [{id, title, completed: false}], attachments: []}] }
 - progress: {} (empty object, computed live)
 - resources: Array of { id, title, url, type, description, category }
 - videos: Array of { id, title, url, videoId, platform, description, duration, timestamps: [{time, label}] }
@@ -43,7 +47,7 @@ Section data shapes:
 - submissions: [] (empty array, users will add)
 - custom: { description, layout: "checklist|cards|table|list", items: [{id, title, description, completed, metadata}] }
 
-CRITICAL: Return ONLY the JSON object. No wrapping, no explanation.`;
+CRITICAL: Return ONLY the JSON object. No wrapping, no explanation. Prefer "module" type sections over splitting content into milestones+tasks+resources+videos.`;
 
 export async function POST(req: NextRequest) {
     try {
