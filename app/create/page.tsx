@@ -7,75 +7,49 @@ import Footer from "@/components/layout/Footer";
 import { getStorage } from "@/lib/storage";
 import type { Roadmap } from "@/types";
 
-/* ─── Loading Steps ─── */
+/* ═══════════════════════════════════════════════════════════
+   Constants
+   ═══════════════════════════════════════════════════════════ */
+
 const LOADING_STEPS = [
-    { text: "Reading your content…", icon: "📖", duration: 2200 },
-    { text: "Identifying sections & topics…", icon: "🔍", duration: 2600 },
-    { text: "Detecting videos & resources…", icon: "🎥", duration: 2000 },
-    { text: "Building your workspace…", icon: "🏗️", duration: 2800 },
-    { text: "Applying finishing touches…", icon: "✨", duration: 1800 },
+    { text: "Reading your content…", icon: "📖" },
+    { text: "Identifying course modules…", icon: "🧩" },
+    { text: "Extracting tasks & resources…", icon: "🔗" },
+    { text: "Building your workspace…", icon: "🏗️" },
+    { text: "Almost ready…", icon: "✨" },
 ];
 
-/* ─── Tips Data ─── */
 const TIPS = [
     {
-        icon: "📋",
-        title: "Use clear headings",
-        body: "Structure content with # headings or numbered sections so the AI can identify phases and topics.",
+        icon: "🏷️",
+        text: "Use headings like # Phase 1 or ## Week 1 to help the AI identify distinct sections.",
     },
     {
         icon: "🔗",
-        title: "Include resource links",
-        body: "Paste YouTube URLs, article links, and documentation — they'll be auto-detected as resources.",
-    },
-    {
-        icon: "📝",
-        title: "Add descriptions",
-        body: "Brief descriptions under each section help the AI generate richer workspace cards.",
+        text: "Include links to YouTube videos, docs, or articles — they'll be auto-detected as resources.",
     },
     {
         icon: "🎯",
-        title: "Be specific with goals",
-        body: 'Mention deliverables or objectives like "Build a portfolio project" for better task generation.',
+        text: "Mention deliverables or goals like \"Build a portfolio\" for richer task generation.",
     },
     {
-        icon: "📐",
-        title: "Don't worry about formatting",
-        body: "The AI handles messy text well — bullet points, numbered lists, or plain paragraphs all work.",
+        icon: "📝",
+        text: "Don't worry about perfect formatting — the AI handles bullet points, numbered lists, and paragraphs equally well.",
     },
 ];
 
-/* ─── Preview sections mock ─── */
-function getPreviewSections(content: string) {
-    if (!content.trim()) return [];
-    const lines = content.split("\n").filter((l) => l.trim());
-    const sections: { title: string; lines: number }[] = [];
-    let currentSection = "";
-    let lineCount = 0;
+const STEP_DELAY_MS = 600;
 
-    for (const line of lines) {
-        const heading = line.match(/^#{1,3}\s+(.+)/);
-        const numberedHeading = line.match(/^(?:Phase|Step|Part|Module|Section|Week|Day)\s*\d+[:\s\-–—]+(.+)/i);
-        if (heading || numberedHeading) {
-            if (currentSection) sections.push({ title: currentSection, lines: lineCount });
-            currentSection = (heading?.[1] || numberedHeading?.[1] || "").trim();
-            lineCount = 0;
-        } else {
-            lineCount++;
-            if (!currentSection) {
-                currentSection = line.trim().slice(0, 40) + (line.trim().length > 40 ? "…" : "");
-            }
-        }
-    }
-    if (currentSection) sections.push({ title: currentSection, lines: lineCount });
-    return sections.slice(0, 8);
-}
+/* ═══════════════════════════════════════════════════════════
+   Component
+   ═══════════════════════════════════════════════════════════ */
 
 export default function CreatePage() {
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+    // ── State ──
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [mode, setMode] = useState<"general" | "intern">("general");
@@ -83,21 +57,27 @@ export default function CreatePage() {
     const [error, setError] = useState("");
     const [isDragging, setIsDragging] = useState(false);
     const [tipsOpen, setTipsOpen] = useState(false);
-    const [loadingStep, setLoadingStep] = useState(0);
-    const [loadingProgress, setLoadingProgress] = useState(0);
 
-    /* ─── Word / Char counter ─── */
-    const stats = useMemo(() => {
-        const chars = content.length;
-        const words = content.trim() ? content.trim().split(/\s+/).length : 0;
-        const lines = content ? content.split("\n").length : 0;
-        return { chars, words, lines };
+    // Loading-screen state
+    const [visibleSteps, setVisibleSteps] = useState<number[]>([]);
+    const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+    const [showSlowMsg, setShowSlowMsg] = useState(false);
+    const loadingStartRef = useRef<number>(0);
+
+    // ── Derived ──
+    const wordCount = useMemo(() => (content.trim() ? content.trim().split(/\s+/).length : 0), [content]);
+    const charCount = content.length;
+    const hasContent = content.trim().length > 0;
+
+    /* ── Auto-grow textarea ── */
+    useEffect(() => {
+        const el = textareaRef.current;
+        if (!el) return;
+        el.style.height = "auto";
+        el.style.height = `${Math.max(el.scrollHeight, 200)}px`;
     }, [content]);
 
-    /* ─── Live preview sections ─── */
-    const previewSections = useMemo(() => getPreviewSections(content), [content]);
-
-    /* ─── File handling (shared between input and drag-drop) ─── */
+    /* ── File processing (shared) ── */
     const processFile = useCallback(
         (file: File) => {
             if (!file.name.match(/\.(md|txt|markdown)$/i)) {
@@ -117,7 +97,7 @@ export default function CreatePage() {
             };
             reader.readAsText(file);
         },
-        [title]
+        [title],
     );
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,7 +105,7 @@ export default function CreatePage() {
         if (file) processFile(file);
     };
 
-    /* ─── Drag & drop ─── */
+    /* ── Drag & Drop ── */
     const handleDragOver = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -146,20 +126,22 @@ export default function CreatePage() {
             const file = e.dataTransfer.files[0];
             if (file) processFile(file);
         },
-        [processFile]
+        [processFile],
     );
 
-    /* ─── Generate ─── */
+    /* ── Generate ── */
     const handleGenerate = async () => {
-        if (!content.trim()) {
+        if (!hasContent) {
             setError("Please paste or upload some content first.");
             return;
         }
 
         setError("");
         setIsLoading(true);
-        setLoadingStep(0);
-        setLoadingProgress(0);
+        setVisibleSteps([]);
+        setCompletedSteps([]);
+        setShowSlowMsg(false);
+        loadingStartRef.current = Date.now();
 
         try {
             const res = await fetch("/api/parse-roadmap", {
@@ -174,10 +156,7 @@ export default function CreatePage() {
             }
 
             const data = await res.json();
-
-            if (!data.success || !data.roadmap) {
-                throw new Error(data.error ?? "AI returned an invalid response");
-            }
+            if (!data.success || !data.roadmap) throw new Error(data.error ?? "AI returned an invalid response");
 
             const roadmap: Roadmap = {
                 ...data.roadmap,
@@ -192,600 +171,360 @@ export default function CreatePage() {
         } catch (err) {
             setError(err instanceof Error ? err.message : "An unexpected error occurred");
             setIsLoading(false);
-            setLoadingStep(0);
-            setLoadingProgress(0);
+            setVisibleSteps([]);
+            setCompletedSteps([]);
+            setShowSlowMsg(false);
         }
     };
 
-    /* ─── Loading animation progression ─── */
+    /* ── Loading step animations ── */
     useEffect(() => {
         if (!isLoading) return;
 
-        const totalDuration = LOADING_STEPS.reduce((a, s) => a + s.duration, 0);
-        let elapsed = 0;
-        const intervalMs = 50;
-
-        const interval = setInterval(() => {
-            elapsed += intervalMs;
-            const progress = Math.min((elapsed / totalDuration) * 100, 98);
-            setLoadingProgress(progress);
-
-            // Determine which step we're on
-            let acc = 0;
-            for (let i = 0; i < LOADING_STEPS.length; i++) {
-                acc += LOADING_STEPS[i].duration;
-                if (elapsed < acc) {
-                    setLoadingStep(i);
-                    break;
-                }
-                if (i === LOADING_STEPS.length - 1) setLoadingStep(i);
+        // Reveal steps one-by-one
+        const timers: ReturnType<typeof setTimeout>[] = [];
+        LOADING_STEPS.forEach((_, i) => {
+            timers.push(setTimeout(() => setVisibleSteps((p) => [...p, i]), i * STEP_DELAY_MS));
+            // mark previous as completed when next appears
+            if (i > 0) {
+                timers.push(setTimeout(() => setCompletedSteps((p) => [...p, i - 1]), i * STEP_DELAY_MS));
             }
-        }, intervalMs);
+        });
 
-        return () => clearInterval(interval);
+        // Slow-loading message after 15 sec
+        timers.push(setTimeout(() => setShowSlowMsg(true), 15000));
+
+        return () => timers.forEach(clearTimeout);
     }, [isLoading]);
 
     /* ═══════════════════════════════════════════════════════════
-       LOADING SCREEN
+       LOADING SCREEN  — Full-page Notion-style progress
        ═══════════════════════════════════════════════════════════ */
     if (isLoading) {
         return (
-            <div className="fixed inset-0 z-50 bg-obsidian flex items-center justify-center overflow-hidden">
-                {/* Background radial glow */}
-                <div
-                    className="absolute inset-0"
-                    style={{
-                        background:
-                            "radial-gradient(ellipse 60% 50% at 50% 40%, rgba(245,158,11,0.12) 0%, transparent 70%)",
-                    }}
-                />
-
-                {/* Floating particles */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    {[...Array(12)].map((_, i) => (
-                        <div
-                            key={i}
-                            className="absolute w-1 h-1 rounded-full bg-indigo-500/40"
-                            style={{
-                                left: `${10 + Math.random() * 80}%`,
-                                top: `${10 + Math.random() * 80}%`,
-                                animation: `loading-float ${3 + Math.random() * 4}s ease-in-out infinite`,
-                                animationDelay: `${Math.random() * 3}s`,
-                            }}
-                        />
-                    ))}
-                </div>
-
-                <div className="relative z-10 text-center max-w-lg mx-auto px-6 w-full">
-                    {/* Pulsing icon */}
-                    <div className="mb-10 inline-flex items-center justify-center">
-                        <div className="relative">
-                            <div className="w-20 h-20 rounded-2xl glass flex items-center justify-center animate-pulse-glow">
-                                <span className="text-4xl">{LOADING_STEPS[loadingStep]?.icon ?? "⚡"}</span>
-                            </div>
-                            <div
-                                className="absolute -inset-3 rounded-3xl border border-indigo-500/20"
-                                style={{ animation: "loading-ring-pulse 2s ease-in-out infinite" }}
-                            />
-                        </div>
-                    </div>
-
-                    <h2 className="font-display text-3xl font-bold text-text-primary mb-2 tracking-tight">
-                        Generating Your Workspace
+            <div className="create-loading-bg fixed inset-0 z-50 flex items-center justify-center">
+                <div className="relative z-10 w-full max-w-lg mx-auto px-6 text-center">
+                    {/* Course title */}
+                    {(title || "Untitled Course") && (
+                        <p className="font-display text-lg text-text-secondary mb-1 italic animate-fade-in">
+                            {title || "Untitled Course"}
+                        </p>
+                    )}
+                    <h2 className="font-display text-3xl sm:text-4xl font-bold text-text-primary mb-10 tracking-tight animate-fade-in">
+                        Creating your workspace…
                     </h2>
-                    <p className="text-text-secondary text-sm mb-10 font-body">
-                        The AI is analyzing your content and building something great…
-                    </p>
-
-                    {/* Progress bar */}
-                    <div className="w-full h-1.5 bg-white/5 rounded-full mb-8 overflow-hidden">
-                        <div
-                            className="h-full rounded-full transition-all duration-300 ease-out"
-                            style={{
-                                width: `${loadingProgress}%`,
-                                background: "linear-gradient(90deg, var(--color-indigo-600), var(--color-indigo-400))",
-                                boxShadow: "0 0 20px rgba(245,158,11,0.4)",
-                            }}
-                        />
-                    </div>
 
                     {/* Steps */}
-                    <div className="space-y-2 text-left">
-                        {LOADING_STEPS.map((step, i) => (
-                            <div
-                                key={i}
-                                className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-500 ${i < loadingStep
-                                        ? "opacity-50"
-                                        : i === loadingStep
-                                            ? "glass border-glow"
-                                            : "opacity-15"
-                                    }`}
-                            >
-                                <span className="text-lg shrink-0 w-8 text-center">{step.icon}</span>
-                                <span
-                                    className={`text-sm font-body flex-1 ${i === loadingStep ? "text-text-primary font-medium" : "text-text-secondary"
-                                        }`}
+                    <div className="space-y-0 text-left mb-8">
+                        {LOADING_STEPS.map((step, i) => {
+                            const visible = visibleSteps.includes(i);
+                            const done = completedSteps.includes(i);
+                            const isCurrent = visible && !done && !completedSteps.includes(i);
+                            return (
+                                <div
+                                    key={i}
+                                    className={`flex items-center gap-4 py-3 transition-all duration-500 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
                                 >
-                                    {step.text}
-                                </span>
-                                {i < loadingStep ? (
-                                    <span className="text-emerald-400 text-xs font-bold tracking-wider">✓ DONE</span>
-                                ) : i === loadingStep ? (
-                                    <div className="w-4 h-4 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin" />
-                                ) : null}
-                            </div>
-                        ))}
+                                    {/* Indicator */}
+                                    <div className="w-7 h-7 shrink-0 flex items-center justify-center">
+                                        {done ? (
+                                            <svg className="w-5 h-5 text-emerald-400 animate-scale-in" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        ) : isCurrent ? (
+                                            <div className="w-5 h-5 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin" />
+                                        ) : (
+                                            <div className="w-2 h-2 rounded-full bg-white/10" />
+                                        )}
+                                    </div>
+                                    <span className={`font-body text-[15px] transition-colors duration-300 ${done ? "text-text-muted line-through" : isCurrent ? "text-text-primary font-medium" : "text-text-muted"}`}>
+                                        {step.text}
+                                    </span>
+                                </div>
+                            );
+                        })}
                     </div>
 
-                    {/* Percentage */}
-                    <p className="mt-6 font-sans-display text-xs tracking-[0.2em] text-text-muted tabular-nums">
-                        {Math.round(loadingProgress)}% COMPLETE
-                    </p>
+                    {/* Slow message */}
+                    {showSlowMsg && (
+                        <p className="text-text-muted text-sm font-body animate-fade-in mt-4">
+                            This is a detailed course — taking a little longer than usual…
+                        </p>
+                    )}
                 </div>
             </div>
         );
     }
 
     /* ═══════════════════════════════════════════════════════════
-       MAIN CREATE PAGE
+       MAIN CREATE PAGE  — Notion-inspired single-column flow
        ═══════════════════════════════════════════════════════════ */
     return (
         <div className="min-h-screen flex flex-col bg-obsidian text-text-primary selection:bg-indigo-500/30 selection:text-indigo-200">
             <Header />
 
-            <main className="flex-1 pt-20 pb-16">
-                <div className="w-full max-w-7xl mx-auto px-6 lg:px-12">
-                    {/* ─── Page Header ─── */}
-                    <div className="animate-slide-up mb-12">
-                        <div className="flex items-center gap-3 mb-5">
-                            <span className="h-[1px] w-8 bg-indigo-500" />
-                            <span className="font-sans-display text-xs uppercase tracking-[0.2em] text-indigo-400 font-bold">
-                                New Workspace
-                            </span>
+            <main className="flex-1 pt-20 pb-24 flex justify-center">
+                <div className="w-full max-w-[720px] px-6 lg:px-4">
+
+                    {/* ── Breadcrumb / context ── */}
+                    <div className="animate-fade-in mb-16 pt-8">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="font-body text-sm text-text-muted">ZNS Studio</span>
+                            <span className="text-text-muted/40">/</span>
+                            <span className="font-body text-sm text-text-secondary">New Course</span>
                         </div>
-                        <h1 className="font-display font-light text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[0.95] text-balance mb-3">
-                            Construct{" "}
-                            <span className="italic text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-indigo-500">
-                                Workspace
-                            </span>
-                        </h1>
-                        <p className="font-body text-text-secondary text-base sm:text-lg max-w-xl leading-relaxed">
-                            Paste or upload your roadmap content. The AI architect will transform it into a fully
-                            interactive workspace.
+                    </div>
+
+                    {/* ════════════════════════════════════════
+                       STEP 1 — Title
+                       ════════════════════════════════════════ */}
+                    <div className="mb-14 animate-slide-up">
+                        <input
+                            id="course-title"
+                            type="text"
+                            className="w-full bg-transparent border-none outline-none font-display text-4xl sm:text-5xl font-bold text-text-primary placeholder:text-text-muted/25 leading-tight tracking-tight"
+                            placeholder="Name your course…"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            autoComplete="off"
+                            spellCheck={false}
+                        />
+                        <p className="font-body text-sm text-text-muted/60 mt-3 ml-0.5">
+                            Leave blank and AI will generate a title from your content
                         </p>
                     </div>
 
-                    {/* ─── Two-Column Layout ─── */}
-                    <div className="grid grid-cols-1 lg:grid-cols-[1fr,380px] gap-8 lg:gap-12 animate-slide-up stagger-2">
-                        {/* ═══ LEFT COLUMN — Input Area ═══ */}
-                        <div className="space-y-8">
-                            {/* Title Input */}
-                            <div className="relative group">
-                                <label
-                                    htmlFor="roadmap-title"
-                                    className="block font-sans-display text-xs uppercase tracking-[0.15em] text-text-secondary mb-3"
-                                >
-                                    Workspace Title{" "}
-                                    <span className="text-text-muted/50 ml-1">(Optional)</span>
-                                </label>
-                                <input
-                                    id="roadmap-title"
-                                    name="title"
-                                    type="text"
-                                    className="w-full bg-transparent border-0 border-b border-white/10 px-0 py-3 font-display text-2xl text-text-primary placeholder:text-text-muted/30 focus:border-indigo-500 focus:ring-0 transition-colors rounded-none"
-                                    placeholder="E.g. Advanced System Architecture…"
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                    autoComplete="off"
-                                />
+                    {/* ════════════════════════════════════════
+                       STEP 2 — Content (Drop zone + Textarea)
+                       ════════════════════════════════════════ */}
+                    <div className="mb-14 animate-slide-up stagger-2">
+                        {/* Drop zone */}
+                        <div
+                            className={`relative border-2 border-dashed rounded-lg p-10 text-center transition-all duration-300 cursor-pointer group/drop ${isDragging
+                                    ? "border-indigo-400 bg-indigo-500/8 scale-[1.01]"
+                                    : "border-white/10 hover:border-white/20 bg-obsidian-surface/30 hover:bg-obsidian-surface/50"
+                                }`}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            onClick={() => fileInputRef.current?.click()}
+                            role="button"
+                            tabIndex={0}
+                            aria-label="Drop zone for file upload"
+                        >
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".md,.txt,.markdown"
+                                className="hidden"
+                                onChange={handleFileUpload}
+                                tabIndex={-1}
+                                aria-hidden="true"
+                            />
+
+                            {/* Icon */}
+                            <div className={`mx-auto w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-colors ${isDragging ? "bg-indigo-500/15" : "bg-white/5 group-hover/drop:bg-white/8"}`}>
+                                <svg className={`w-7 h-7 transition-colors ${isDragging ? "text-indigo-400" : "text-text-muted/50 group-hover/drop:text-text-muted"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                                </svg>
                             </div>
 
-                            {/* Drag & Drop + Textarea */}
-                            <div>
-                                <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-3 gap-4">
-                                    <label
-                                        htmlFor="roadmap-content"
-                                        className="block font-sans-display text-xs uppercase tracking-[0.15em] text-text-secondary"
-                                    >
-                                        Raw Content Source
-                                    </label>
-                                    <button
-                                        type="button"
-                                        className="font-sans-display text-[10px] uppercase tracking-widest text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 hover:border-indigo-500/80 px-4 py-1.5 transition-colors bg-indigo-500/5 hover:bg-indigo-500/10"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        aria-label="Upload a file"
-                                    >
-                                        + Upload File
-                                    </button>
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept=".md,.txt,.markdown"
-                                        className="hidden"
-                                        onChange={handleFileUpload}
-                                        tabIndex={-1}
-                                        aria-hidden="true"
-                                    />
-                                </div>
-
-                                {/* Drop Zone Wrapper */}
-                                <div
-                                    className={`relative group transition-all duration-300 ${isDragging ? "create-drop-active" : ""
-                                        }`}
-                                    onDragOver={handleDragOver}
-                                    onDragLeave={handleDragLeave}
-                                    onDrop={handleDrop}
-                                >
-                                    {/* Drop overlay */}
-                                    {isDragging && (
-                                        <div className="absolute inset-0 z-20 rounded-sm border-2 border-dashed border-indigo-400 bg-indigo-500/10 flex items-center justify-center backdrop-blur-sm pointer-events-none">
-                                            <div className="text-center">
-                                                <div className="text-4xl mb-3 animate-bounce">📄</div>
-                                                <p className="font-sans-display text-sm uppercase tracking-widest text-indigo-300 font-bold">
-                                                    Drop your file here
-                                                </p>
-                                                <p className="font-body text-xs text-text-muted mt-1">
-                                                    .md, .txt, .markdown
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <textarea
-                                        ref={textareaRef}
-                                        id="roadmap-content"
-                                        name="content"
-                                        className="w-full bg-obsidian-elevated/40 border border-white/5 p-6 min-h-[360px] resize-y font-mono text-sm leading-relaxed text-text-primary placeholder:text-text-muted/30 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all rounded-none"
-                                        placeholder={`Paste your roadmap, guide, or curriculum here…\n\nOr drag & drop a .md / .txt file into this area.\n\nExample:\n# Phase 1: Foundations\n- Learn basic concepts\n- Watch: https://youtube.com/...\n- Read: https://docs.example.com/...\n\n# Phase 2: Operations\n...`}
-                                        value={content}
-                                        onChange={(e) => setContent(e.target.value)}
-                                        spellCheck={false}
-                                    />
-
-                                    {/* Scanning line */}
-                                    <div className="absolute top-0 left-0 w-[2px] h-0 bg-indigo-500 transition-all duration-500 group-focus-within:h-full" />
-                                </div>
-
-                                {/* Stats bar */}
-                                <div className="flex items-center justify-between mt-3">
-                                    <div className="flex gap-4">
-                                        {content && (
-                                            <>
-                                                <span className="font-sans-display text-[10px] uppercase tracking-widest text-text-muted/60 tabular-nums">
-                                                    {stats.words.toLocaleString()} words
-                                                </span>
-                                                <span className="font-sans-display text-[10px] uppercase tracking-widest text-text-muted/60 tabular-nums">
-                                                    {stats.chars.toLocaleString()} chars
-                                                </span>
-                                                <span className="font-sans-display text-[10px] uppercase tracking-widest text-text-muted/60 tabular-nums">
-                                                    {stats.lines} lines
-                                                </span>
-                                            </>
-                                        )}
-                                    </div>
-                                    {!content && (
-                                        <p className="font-body text-xs text-text-muted/40 italic">
-                                            Drag & drop .md or .txt files here
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* ─── Mode Selector Cards ─── */}
-                            <div className="pt-2">
-                                <label className="block font-sans-display text-xs uppercase tracking-[0.15em] text-text-secondary mb-4">
-                                    Choose Mode
-                                </label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {/* General Mode Card */}
-                                    <button
-                                        type="button"
-                                        className={`relative p-6 border text-left transition-all duration-300 flex flex-col h-full group/card overflow-hidden ${mode === "general"
-                                                ? "border-indigo-500 bg-indigo-500/5 shadow-[0_0_30px_rgba(245,158,11,0.08)]"
-                                                : "border-white/5 bg-obsidian-surface hover:border-white/20 hover:bg-obsidian-elevated/60"
-                                            }`}
-                                        onClick={() => setMode("general")}
-                                    >
-                                        {mode === "general" && (
-                                            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-indigo-600 to-indigo-400" />
-                                        )}
-
-                                        {/* Icon */}
-                                        <div
-                                            className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-colors ${mode === "general"
-                                                    ? "bg-indigo-500/15 text-indigo-400"
-                                                    : "bg-white/5 text-text-muted group-hover/card:text-text-secondary"
-                                                }`}
-                                        >
-                                            <svg
-                                                className="w-6 h-6"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                                strokeWidth={1.5}
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
-                                                />
-                                            </svg>
-                                        </div>
-
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="font-sans-display text-sm tracking-widest uppercase font-bold text-text-primary">
-                                                General
-                                            </span>
-                                            {mode === "general" && (
-                                                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                                            )}
-                                        </div>
-                                        <p className="font-body text-text-muted text-sm leading-relaxed">
-                                            Self-paced study — for anyone learning independently with their own
-                                            schedule.
-                                        </p>
-                                    </button>
-
-                                    {/* Intern Mode Card */}
-                                    <button
-                                        type="button"
-                                        className={`relative p-6 border text-left transition-all duration-300 flex flex-col h-full group/card overflow-hidden ${mode === "intern"
-                                                ? "border-indigo-500 bg-indigo-500/5 shadow-[0_0_30px_rgba(245,158,11,0.08)]"
-                                                : "border-white/5 bg-obsidian-surface hover:border-white/20 hover:bg-obsidian-elevated/60"
-                                            }`}
-                                        onClick={() => setMode("intern")}
-                                    >
-                                        {mode === "intern" && (
-                                            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-indigo-600 to-indigo-400" />
-                                        )}
-
-                                        {/* Icon */}
-                                        <div
-                                            className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-colors ${mode === "intern"
-                                                    ? "bg-indigo-500/15 text-indigo-400"
-                                                    : "bg-white/5 text-text-muted group-hover/card:text-text-secondary"
-                                                }`}
-                                        >
-                                            <svg
-                                                className="w-6 h-6"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                                strokeWidth={1.5}
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"
-                                                />
-                                            </svg>
-                                        </div>
-
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="font-sans-display text-sm tracking-widest uppercase font-bold text-text-primary">
-                                                Intern
-                                            </span>
-                                            {mode === "intern" && (
-                                                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                                            )}
-                                        </div>
-                                        <p className="font-body text-text-muted text-sm leading-relaxed">
-                                            Structured training — includes deliverables and strict curriculum tracking.
-                                        </p>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* ─── Tips Collapsible ─── */}
-                            <div className="border border-white/5 bg-obsidian-surface/50 overflow-hidden">
-                                <button
-                                    type="button"
-                                    className="w-full flex items-center justify-between p-5 text-left group/tips hover:bg-obsidian-elevated/30 transition-colors"
-                                    onClick={() => setTipsOpen(!tipsOpen)}
-                                    aria-expanded={tipsOpen}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-lg">💡</span>
-                                        <span className="font-sans-display text-xs uppercase tracking-[0.15em] text-text-secondary font-bold">
-                                            Tips for Better Results
-                                        </span>
-                                    </div>
-                                    <svg
-                                        className={`w-4 h-4 text-text-muted transition-transform duration-300 ${tipsOpen ? "rotate-180" : ""
-                                            }`}
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                        strokeWidth={2}
-                                    >
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-
-                                <div
-                                    className={`transition-all duration-500 ease-out overflow-hidden ${tipsOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
-                                        }`}
-                                >
-                                    <div className="px-5 pb-5 space-y-3 border-t border-white/5 pt-4">
-                                        {TIPS.map((tip, i) => (
-                                            <div
-                                                key={i}
-                                                className="flex items-start gap-3 p-3 rounded-sm bg-obsidian-elevated/30 hover:bg-obsidian-elevated/60 transition-colors"
-                                            >
-                                                <span className="text-base mt-0.5 shrink-0">{tip.icon}</span>
-                                                <div>
-                                                    <p className="font-sans-display text-xs uppercase tracking-wider text-text-primary font-bold mb-1">
-                                                        {tip.title}
-                                                    </p>
-                                                    <p className="font-body text-xs text-text-muted leading-relaxed">
-                                                        {tip.body}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* ─── Error ─── */}
-                            {error && (
-                                <div className="p-4 bg-red-500/5 border-l-2 border-red-500 font-sans-display text-xs uppercase tracking-widest text-red-400 animate-scale-in">
-                                    ERR: {error}
-                                </div>
-                            )}
-
-                            {/* ─── Generate Button ─── */}
-                            <div className="pt-4">
-                                <button
-                                    type="button"
-                                    id="generate-button"
-                                    className={`group relative w-full overflow-hidden flex items-center justify-center gap-4 px-8 py-6 transition-all duration-500 ${content.trim()
-                                            ? "bg-gradient-to-r from-indigo-600 to-indigo-400 text-obsidian hover:shadow-[0_0_40px_rgba(245,158,11,0.3)] cursor-pointer create-btn-glow"
-                                            : "bg-white/5 text-text-muted/50 cursor-not-allowed"
-                                        }`}
-                                    onClick={handleGenerate}
-                                    disabled={!content.trim()}
-                                >
-                                    {/* Shimmer sweep */}
-                                    {content.trim() && (
-                                        <div
-                                            className="absolute inset-0 opacity-20"
-                                            style={{
-                                                background:
-                                                    "linear-gradient(90deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)",
-                                                backgroundSize: "200% 100%",
-                                                animation: "shimmer 3s ease-in-out infinite",
-                                            }}
-                                        />
-                                    )}
-                                    <span className="font-sans-display text-sm uppercase tracking-[0.2em] font-bold relative z-10">
-                                        Generate Workspace
-                                    </span>
-                                    <span
-                                        className={`text-xl leading-none relative z-10 font-bold transition-all duration-300 ${content.trim() ? "group-hover:translate-x-2" : ""
-                                            }`}
-                                    >
-                                        →
-                                    </span>
-                                </button>
-                            </div>
+                            <p className={`font-body text-sm font-medium mb-1 transition-colors ${isDragging ? "text-indigo-300" : "text-text-secondary"}`}>
+                                {isDragging ? "Drop your file here" : "Drop your .md or .txt file here"}
+                            </p>
+                            <p className="font-body text-xs text-text-muted/50">
+                                or click to browse
+                            </p>
                         </div>
 
-                        {/* ═══ RIGHT COLUMN — Live Preview ═══ */}
-                        <div className="hidden lg:block">
-                            <div className="sticky top-24">
-                                <div className="border border-white/5 bg-obsidian-surface/40 p-6 min-h-[500px]">
-                                    <div className="flex items-center gap-2 mb-6">
-                                        <div className="w-2 h-2 rounded-full bg-indigo-500/60" />
-                                        <span className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted">
-                                            Live Preview
-                                        </span>
-                                    </div>
+                        {/* Divider */}
+                        <div className="flex items-center gap-4 my-6">
+                            <div className="flex-1 h-px bg-white/8" />
+                            <span className="font-body text-xs text-text-muted/40 uppercase tracking-wider shrink-0">
+                                or paste your content below
+                            </span>
+                            <div className="flex-1 h-px bg-white/8" />
+                        </div>
 
-                                    {previewSections.length === 0 ? (
-                                        /* Empty state */
-                                        <div className="flex flex-col items-center justify-center py-16 text-center">
-                                            <div className="w-16 h-16 rounded-lg bg-white/3 flex items-center justify-center mb-4">
-                                                <svg
-                                                    className="w-8 h-8 text-text-muted/30"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                    strokeWidth={1}
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"
-                                                    />
-                                                </svg>
-                                            </div>
-                                            <p className="font-sans-display text-xs uppercase tracking-wider text-text-muted/40 mb-1">
-                                                No content yet
-                                            </p>
-                                            <p className="font-body text-xs text-text-muted/30 max-w-[200px]">
-                                                Start pasting or uploading to see a preview of detected sections
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        /* Detected sections */
-                                        <div className="space-y-2">
-                                            <p className="font-sans-display text-[10px] uppercase tracking-widest text-text-muted/50 mb-4">
-                                                {previewSections.length} Section
-                                                {previewSections.length !== 1 ? "s" : ""} Detected
-                                            </p>
-                                            {previewSections.map((section, i) => (
-                                                <div
-                                                    key={i}
-                                                    className="flex items-start gap-3 p-3 border border-white/3 bg-obsidian-elevated/20 hover:border-indigo-500/20 transition-colors animate-scale-in"
-                                                    style={{ animationDelay: `${i * 60}ms` }}
-                                                >
-                                                    <div className="w-6 h-6 rounded bg-indigo-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                                                        <span className="font-sans-display text-[10px] font-bold text-indigo-400">
-                                                            {i + 1}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-sans-display text-xs tracking-wider text-text-primary truncate font-medium">
-                                                            {section.title}
-                                                        </p>
-                                                        {section.lines > 0 && (
-                                                            <p className="font-body text-[10px] text-text-muted/50 mt-0.5">
-                                                                ~{section.lines} items
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
+                        {/* Textarea */}
+                        <div className="relative">
+                            <textarea
+                                ref={textareaRef}
+                                id="course-content"
+                                className="w-full bg-transparent border-none outline-none resize-none font-body text-[15px] text-text-primary/90 leading-relaxed placeholder:text-text-muted/25 min-h-[200px]"
+                                placeholder="Paste any AI-generated guide, roadmap, curriculum, or research notes here…"
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                                spellCheck={false}
+                            />
+                        </div>
 
-                                            {/* Mode indicator */}
-                                            <div className="mt-6 pt-4 border-t border-white/5">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                                                    <span className="font-sans-display text-[10px] uppercase tracking-widest text-text-muted/50">
-                                                        Mode
-                                                    </span>
-                                                </div>
-                                                <p className="font-sans-display text-xs tracking-wider text-text-secondary capitalize">
-                                                    {mode === "general" ? "📖 General — Self-paced" : "🎓 Intern — Structured"}
-                                                </p>
-                                            </div>
+                        {/* Word / char counter */}
+                        <div className="flex justify-end gap-4 mt-2">
+                            <span className="font-body text-xs text-text-muted/40 tabular-nums">
+                                {wordCount.toLocaleString()} word{wordCount !== 1 ? "s" : ""}
+                            </span>
+                            <span className="font-body text-xs text-text-muted/40 tabular-nums">
+                                {charCount.toLocaleString()} character{charCount !== 1 ? "s" : ""}
+                            </span>
+                        </div>
+                    </div>
 
-                                            {/* Stats summary */}
-                                            <div className="mt-4 pt-4 border-t border-white/5 grid grid-cols-3 gap-2">
-                                                <div className="text-center p-2 bg-obsidian-elevated/20 rounded-sm">
-                                                    <p className="font-sans-display text-lg font-bold text-text-primary tabular-nums">
-                                                        {previewSections.length}
-                                                    </p>
-                                                    <p className="font-sans-display text-[9px] uppercase tracking-widest text-text-muted/40">
-                                                        Sections
-                                                    </p>
-                                                </div>
-                                                <div className="text-center p-2 bg-obsidian-elevated/20 rounded-sm">
-                                                    <p className="font-sans-display text-lg font-bold text-text-primary tabular-nums">
-                                                        {stats.words > 999
-                                                            ? `${(stats.words / 1000).toFixed(1)}k`
-                                                            : stats.words}
-                                                    </p>
-                                                    <p className="font-sans-display text-[9px] uppercase tracking-widest text-text-muted/40">
-                                                        Words
-                                                    </p>
-                                                </div>
-                                                <div className="text-center p-2 bg-obsidian-elevated/20 rounded-sm">
-                                                    <p className="font-sans-display text-lg font-bold text-text-primary tabular-nums">
-                                                        {stats.lines}
-                                                    </p>
-                                                    <p className="font-sans-display text-[9px] uppercase tracking-widest text-text-muted/40">
-                                                        Lines
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
+                    {/* ════════════════════════════════════════
+                       STEP 3 — Mode Selector (two illustrated cards)
+                       ════════════════════════════════════════ */}
+                    <div className="mb-14 animate-slide-up stagger-3">
+                        <p className="font-body text-sm text-text-muted/60 mb-4 ml-0.5">
+                            Choose a mode
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* General Card */}
+                            <button
+                                type="button"
+                                id="mode-general"
+                                onClick={() => setMode("general")}
+                                className={`relative text-left rounded-xl p-6 transition-all duration-300 overflow-hidden group/card ${mode === "general"
+                                        ? "bg-indigo-500/8 border-2 border-indigo-500/60 shadow-[0_0_24px_rgba(245,158,11,0.08)] create-mode-selected"
+                                        : "bg-obsidian-surface/40 border-2 border-white/6 hover:border-white/15 hover:bg-obsidian-surface/60 opacity-60 hover:opacity-80"
+                                    }`}
+                            >
+                                {/* Illustration / Icon */}
+                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-all duration-300 ${mode === "general"
+                                        ? "bg-indigo-500/15 shadow-[0_0_12px_rgba(245,158,11,0.1)]"
+                                        : "bg-white/5 group-hover/card:bg-white/8"
+                                    }`}>
+                                    <svg className={`w-6 h-6 transition-colors duration-300 ${mode === "general" ? "text-indigo-400" : "text-text-muted/60"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                                    </svg>
                                 </div>
+
+                                <h3 className={`font-sans-display text-base font-bold mb-1 transition-colors ${mode === "general" ? "text-text-primary" : "text-text-secondary"}`}>
+                                    General
+                                </h3>
+                                <p className={`font-body text-sm leading-relaxed transition-colors ${mode === "general" ? "text-text-secondary" : "text-text-muted/60"}`}>
+                                    Self-paced learning for anyone studying independently on their own schedule.
+                                </p>
+
+                                {/* Selected indicator dot */}
+                                {mode === "general" && (
+                                    <div className="absolute top-4 right-4 w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse" />
+                                )}
+
+                                {/* Subtle corner illustration */}
+                                <div className={`absolute -bottom-4 -right-4 w-24 h-24 rounded-full transition-opacity duration-300 ${mode === "general" ? "opacity-8" : "opacity-0"}`} style={{ background: "radial-gradient(circle, var(--color-indigo-500) 0%, transparent 70%)" }} />
+                            </button>
+
+                            {/* Intern Card */}
+                            <button
+                                type="button"
+                                id="mode-intern"
+                                onClick={() => setMode("intern")}
+                                className={`relative text-left rounded-xl p-6 transition-all duration-300 overflow-hidden group/card ${mode === "intern"
+                                        ? "bg-indigo-500/8 border-2 border-indigo-500/60 shadow-[0_0_24px_rgba(245,158,11,0.08)] create-mode-selected"
+                                        : "bg-obsidian-surface/40 border-2 border-white/6 hover:border-white/15 hover:bg-obsidian-surface/60 opacity-60 hover:opacity-80"
+                                    }`}
+                            >
+                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-all duration-300 ${mode === "intern"
+                                        ? "bg-indigo-500/15 shadow-[0_0_12px_rgba(245,158,11,0.1)]"
+                                        : "bg-white/5 group-hover/card:bg-white/8"
+                                    }`}>
+                                    <svg className={`w-6 h-6 transition-colors duration-300 ${mode === "intern" ? "text-indigo-400" : "text-text-muted/60"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
+                                    </svg>
+                                </div>
+
+                                <h3 className={`font-sans-display text-base font-bold mb-1 transition-colors ${mode === "intern" ? "text-text-primary" : "text-text-secondary"}`}>
+                                    Intern
+                                </h3>
+                                <p className={`font-body text-sm leading-relaxed transition-colors ${mode === "intern" ? "text-text-secondary" : "text-text-muted/60"}`}>
+                                    Structured training with deliverables and strict curriculum tracking.
+                                </p>
+
+                                {mode === "intern" && (
+                                    <div className="absolute top-4 right-4 w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse" />
+                                )}
+
+                                <div className={`absolute -bottom-4 -right-4 w-24 h-24 rounded-full transition-opacity duration-300 ${mode === "intern" ? "opacity-8" : "opacity-0"}`} style={{ background: "radial-gradient(circle, var(--color-indigo-500) 0%, transparent 70%)" }} />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* ════════════════════════════════════════
+                       STEP 4 — Tips (Notion toggle block)
+                       ════════════════════════════════════════ */}
+                    <div className="mb-14 animate-slide-up stagger-4">
+                        <button
+                            type="button"
+                            id="tips-toggle"
+                            className="flex items-center gap-3 py-2 group/toggle w-full text-left"
+                            onClick={() => setTipsOpen(!tipsOpen)}
+                            aria-expanded={tipsOpen}
+                        >
+                            {/* Toggle triangle */}
+                            <svg
+                                className={`w-3.5 h-3.5 text-text-muted/50 transition-transform duration-200 ${tipsOpen ? "rotate-90" : ""}`}
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path d="M6.5 4L14 10l-7.5 6V4z" />
+                            </svg>
+                            <span className="font-body text-sm text-text-secondary group-hover/toggle:text-text-primary transition-colors">
+                                💡 Tips for better results
+                            </span>
+                        </button>
+
+                        <div className={`overflow-hidden transition-all duration-400 ease-out ${tipsOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
+                            <div className="pl-7 pt-2 space-y-3">
+                                {TIPS.map((tip, i) => (
+                                    <div key={i} className="flex items-start gap-3 py-1.5">
+                                        <span className="text-base shrink-0 mt-0.5">{tip.icon}</span>
+                                        <p className="font-body text-sm text-text-muted leading-relaxed">
+                                            {tip.text}
+                                        </p>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
+
+                    {/* ── Error ── */}
+                    {error && (
+                        <div className="mb-8 p-4 rounded-lg bg-red-500/8 border border-red-500/20 animate-scale-in">
+                            <p className="font-body text-sm text-red-400">{error}</p>
+                        </div>
+                    )}
+
+                    {/* ════════════════════════════════════════
+                       STEP 5 — Generate Button
+                       ════════════════════════════════════════ */}
+                    <div className="animate-slide-up stagger-5">
+                        <button
+                            type="button"
+                            id="generate-button"
+                            disabled={!hasContent}
+                            onClick={handleGenerate}
+                            className={`relative w-full py-5 rounded-xl font-body text-base font-semibold tracking-wide transition-all duration-500 overflow-hidden ${hasContent
+                                    ? "bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-400 text-obsidian hover:brightness-110 cursor-pointer create-btn-glow"
+                                    : "bg-white/5 text-text-muted/30 cursor-not-allowed"
+                                }`}
+                        >
+                            {/* Shimmer overlay when active */}
+                            {hasContent && (
+                                <div
+                                    className="absolute inset-0 pointer-events-none"
+                                    style={{
+                                        background: "linear-gradient(90deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%)",
+                                        backgroundSize: "200% 100%",
+                                        animation: "shimmer 3s ease-in-out infinite",
+                                    }}
+                                />
+                            )}
+                            <span className="relative z-10">✨ Generate My Course</span>
+                        </button>
+                    </div>
+
+                    {/* Bottom spacer */}
+                    <div className="h-8" />
                 </div>
             </main>
 

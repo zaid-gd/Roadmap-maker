@@ -23,6 +23,7 @@ Return JSON in this exact shape:
   "title": "string - inferred from content if not provided",
   "mode": "general or intern",
   "summary": "1-3 sentence summary of overall goals and what this course covers",
+  "objectives": ["global learning objective 1", "global learning objective 2"],
   "sections": [
     {
       "id": "unique-id",
@@ -35,7 +36,7 @@ Return JSON in this exact shape:
 }
 
 Section data shapes:
-- module: { description: "what this module covers", estimatedTime: "optional time estimate", concepts: "key concepts/notes for this module", tasks: [{id, title, completed: false, notes: "", subtasks: [{id, title, completed: false}], attachments: [{id, title, url, type, description}]}], resources: [{id, title, url, type, description, category}], videos: [{id, title, url, videoId, platform, description, duration, timestamps: [{time, label}]}], completed: false }
+- module: { description: "what this module covers", estimatedTime: "optional time estimate", concepts: "key concepts/notes for this module", objectives: ["learning objective 1", "learning objective 2"], notes: "", tasks: [{id, title, completed: false, notes: "", subtasks: [{id, title, completed: false}], attachments: [{id, title, url, type, description}]}], resources: [{id, title, url, type, description, category}], videos: [{id, title, url, videoId, platform, description, duration, timestamps: [{time, label}]}], completed: false }
 - milestones: Array of { id, title, description, tasks: [{id, title, completed: false, notes: "", subtasks: [], attachments: []}], resources: [{id, title, url, type, description}], videos: [{id, title, url, videoId, platform, description}], completed: false, order }
 - tasks: Array of { id, title, tasks: [{id, title, completed: false, notes: "", subtasks: [{id, title, completed: false}], attachments: []}] }
 - progress: {} (empty object, computed live)

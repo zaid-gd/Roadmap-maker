@@ -611,46 +611,55 @@ select {
 
     0%,
     100% {
-        box-shadow: 0 0 20px rgba(245, 158, 11, 0.15), 0 0 40px rgba(245, 158, 11, 0.05);
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.12), 0 0 40px rgba(245, 158, 11, 0.04);
     }
 
     50% {
-        box-shadow: 0 0 30px rgba(245, 158, 11, 0.3), 0 0 60px rgba(245, 158, 11, 0.12);
+        box-shadow: 0 0 30px rgba(245, 158, 11, 0.25), 0 0 60px rgba(245, 158, 11, 0.1);
     }
 }
 
-/* ── Create Page: Drop Zone Active ── */
-.create-drop-active {
-    transform: scale(1.005);
+/* ── Create Page: Mode Card Selected ── */
+.create-mode-selected {
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2), 0 4px 20px rgba(245, 158, 11, 0.06);
 }
 
-/* ── Loading Screen: Floating Particles ── */
-@keyframes loading-float {
+/* ── Create Page: Loading Screen Gradient BG ── */
+.create-loading-bg {
+    background: var(--color-obsidian);
+    background-size: 400% 400%;
+    animation: loading-gradient-shift 8s ease infinite;
+}
 
-    0%,
+@keyframes loading-gradient-shift {
+    0% {
+        background: linear-gradient(135deg, #050505 0%, #0f0f0f 30%, #0a0a0a 60%, #050505 100%);
+        background-size: 400% 400%;
+        background-position: 0% 50%;
+    }
+
+    25% {
+        background: linear-gradient(135deg, #050505 0%, #0a0e14 30%, #0f0f0f 60%, #050505 100%);
+        background-size: 400% 400%;
+        background-position: 50% 0%;
+    }
+
+    50% {
+        background: linear-gradient(135deg, #050505 0%, #0f0c08 30%, #0a0a0a 60%, #050505 100%);
+        background-size: 400% 400%;
+        background-position: 100% 50%;
+    }
+
+    75% {
+        background: linear-gradient(135deg, #050505 0%, #0a0a10 30%, #0f0f0f 60%, #050505 100%);
+        background-size: 400% 400%;
+        background-position: 50% 100%;
+    }
+
     100% {
-        transform: translateY(0) scale(1);
-        opacity: 0.4;
-    }
-
-    50% {
-        transform: translateY(-20px) scale(1.5);
-        opacity: 0.8;
-    }
-}
-
-/* ── Loading Screen: Ring Pulse ── */
-@keyframes loading-ring-pulse {
-
-    0%,
-    100% {
-        transform: scale(1);
-        opacity: 0.3;
-    }
-
-    50% {
-        transform: scale(1.1);
-        opacity: 0.6;
+        background: linear-gradient(135deg, #050505 0%, #0f0f0f 30%, #0a0a0a 60%, #050505 100%);
+        background-size: 400% 400%;
+        background-position: 0% 50%;
     }
 }
 

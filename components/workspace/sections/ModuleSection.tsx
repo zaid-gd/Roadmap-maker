@@ -1,28 +1,82 @@
 "use client";
 
-import { useState } from "react";
-import type { ModuleSection, Section, Task } from "@/types";
+import { useState, useEffect } from "react";
+import type { ModuleSection as ModuleSectionType, Section, Task, Roadmap, Resource } from "@/types";
 import SmartEmbed from "@/components/shared/SmartEmbed";
+import { CheckCircle2, ChevronRight, BookOpen, Video, ListTodo, FileText, X, Navigation, Circle } from "lucide-react";
 
 interface Props {
-    section: ModuleSection;
+    section: ModuleSectionType;
+    roadmap?: Roadmap;
     onUpdate: (updater: (s: Section) => Section) => void;
+    onNavigate?: (id: string) => void;
 }
 
-export default function ModuleRenderer({ section, onUpdate }: Props) {
-    const [expandedResource, setExpandedResource] = useState<string | null>(null);
+type TabType = 'overview' | 'tasks' | 'resources' | 'videos' | 'notes';
+
+export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }: Props) {
     const data = section.data;
     const tasks = data.tasks || [];
     const resources = data.resources || [];
     const videos = data.videos || [];
+    const objectives = data.objectives || [];
+
+    // Calculate tabs to show
+    const availableTabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
+        { id: 'overview', label: 'Overview', icon: <BookOpen size={14} /> }
+    ];
+    if (tasks.length > 0) availableTabs.push({ id: 'tasks', label: 'Tasks', icon: <ListTodo size={14} /> });
+    if (resources.length > 0) availableTabs.push({ id: 'resources', label: 'Resources', icon: <FileText size={14} /> });
+    if (videos.length > 0) availableTabs.push({ id: 'videos', label: 'Videos', icon: <Video size={14} /> });
+    availableTabs.push({ id: 'notes', label: 'Notes', icon: <FileText size={14} /> });
+
+    const [activeTab, setActiveTab] = useState<TabType>('overview');
+    const [activeVideoId, setActiveVideoId] = useState<string | null>(videos.length > 0 ? videos[0].id : null);
+    const [sidePanelResource, setSidePanelResource] = useState<Resource | null>(null);
+
+    // Provide autosave for notes
+    const [notesText, setNotesText] = useState(data.notes || "");
+    const [saveStatus, setSaveStatus] = useState<"saved " | "saving..." | "">("");
+
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            if (notesText !== (data.notes || "")) {
+                setSaveStatus("saving...");
+                onUpdate((s) => {
+                    const ms = s as ModuleSectionType;
+                    return { ...ms, data: { ...ms.data, notes: notesText } };
+                });
+                setTimeout(() => setSaveStatus("saved "), 500);
+            }
+        }, 1000);
+        return () => clearTimeout(timeout);
+    }, [notesText, data.notes, onUpdate]);
+
+    useEffect(() => {
+        // Reset state when section changes
+        setActiveTab('overview');
+        setActiveVideoId(videos.length > 0 ? videos[0].id : null);
+        setSidePanelResource(null);
+        setNotesText(section.data.notes || "");
+    }, [section.id]); // only on section ID change
 
     const completedCount = tasks.filter((t) => t.completed).length;
     const totalCount = tasks.length;
-    const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+    const taskPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : (data.completed ? 100 : 0);
+
+    const toggleModuleComplete = () => {
+        onUpdate((s) => {
+            const ms = s as ModuleSectionType;
+            return {
+                ...ms,
+                data: { ...ms.data, completed: !ms.data.completed },
+            };
+        });
+    };
 
     const toggleTask = (taskId: string) => {
         onUpdate((s) => {
-            const ms = s as ModuleSection;
+            const ms = s as ModuleSectionType;
             return {
                 ...ms,
                 data: {
@@ -37,7 +91,7 @@ export default function ModuleRenderer({ section, onUpdate }: Props) {
 
     const toggleSubtask = (taskId: string, subId: string) => {
         onUpdate((s) => {
-            const ms = s as ModuleSection;
+            const ms = s as ModuleSectionType;
             return {
                 ...ms,
                 data: {
@@ -57,6 +111,12 @@ export default function ModuleRenderer({ section, onUpdate }: Props) {
         });
     };
 
+    // Navigation logic
+    const moduleSections = roadmap?.sections.filter(s => s.type === "module" || s.type === "milestones") || [];
+    const currentIndex = moduleSections.findIndex(s => s.id === section.id);
+    const prevModule = currentIndex > 0 ? moduleSections[currentIndex - 1] : null;
+    const nextModule = currentIndex >= 0 && currentIndex < moduleSections.length - 1 ? moduleSections[currentIndex + 1] : null;
+
     const resourceTypeIcon = (type: string) => {
         switch (type) {
             case "video": return "▶";
@@ -72,193 +132,346 @@ export default function ModuleRenderer({ section, onUpdate }: Props) {
     };
 
     return (
-        <div className="max-w-5xl mx-auto animate-fade-in">
-            {/* Module Header */}
-            <div className="border-b border-white/5 pb-8 mb-10">
-                <div className="flex items-center gap-3 mb-4">
-                    <span className="h-[1px] w-8 bg-indigo-500" />
-                    <span className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-indigo-400 font-bold">
-                        Course Module
-                    </span>
-                    {data.estimatedTime && (
-                        <>
-                            <span className="text-text-muted/30">·</span>
-                            <span className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted">
-                                {data.estimatedTime}
-                            </span>
-                        </>
-                    )}
+        <div className="flex flex-col h-full bg-obsidian rounded-2xl border border-white/5 overflow-hidden animate-fade-in relative">
+            {/* Module Top Header */}
+            <div className="px-8 pt-8 pb-6 border-b border-white/5 bg-obsidian-surface/30">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex flex-col items-center justify-center shrink-0">
+                            <span className="font-sans-display text-[10px] uppercase tracking-widest text-indigo-400 font-bold">Mod</span>
+                            <span className="font-display text-2xl text-indigo-300">{String(currentIndex + 1).padStart(2, "0")}</span>
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-3 mb-1">
+                                {data.estimatedTime && (
+                                    <span className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted">
+                                        ⏱ {data.estimatedTime}
+                                    </span>
+                                )}
+                                <span className="font-sans-display text-[10px] uppercase tracking-widest text-indigo-400 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+                                    {taskPercent}% Complete
+                                </span>
+                            </div>
+                            <h2 className="font-display font-light text-2xl sm:text-3xl text-white tracking-tight">
+                                {section.title}
+                            </h2>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={toggleModuleComplete}
+                        className={`shrink-0 flex items-center gap-2 px-5 py-3 rounded-lg font-sans-display text-[10px] uppercase tracking-widest font-bold transition-all ${data.completed
+                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20"
+                            : "bg-obsidian-elevated text-text-muted border border-white/10 hover:border-indigo-500/50 hover:text-indigo-300"
+                            }`}
+                    >
+                        {data.completed ? <><CheckCircle2 size={16} /> Mark Incomplete</> : <><Circle size={16} /> Mark Complete</>}
+                    </button>
                 </div>
 
-                <h2 className="font-display font-light text-4xl sm:text-5xl tracking-tight leading-[0.95] mb-4">
-                    {section.title}
-                </h2>
+                {/* Tab Bar */}
+                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar mt-8 border-b border-white/5 pb-px">
+                    {availableTabs.map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => { setActiveTab(tab.id); setSidePanelResource(null); }}
+                            className={`flex items-center gap-2 px-5 py-3 font-sans-display text-[10px] uppercase tracking-[0.15em] border-b-2 transition-all whitespace-nowrap ${activeTab === tab.id
+                                ? "border-indigo-500 text-indigo-400 bg-indigo-500/5"
+                                : "border-transparent text-text-muted hover:text-text-primary hover:bg-white/5"
+                                }`}
+                        >
+                            {tab.icon}
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
-                {data.description && (
-                    <p className="font-body text-text-secondary text-lg max-w-2xl leading-relaxed">
-                        {data.description}
-                    </p>
+            {/* Tab Content Area */}
+            <div className="flex-1 overflow-y-auto w-full relative">
+                {/* 1. Overview Tab */}
+                {activeTab === 'overview' && (
+                    <div className="p-8 max-w-4xl animate-fade-in space-y-10">
+                        {data.description && (
+                            <section>
+                                <h3 className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted mb-4 border-b border-white/5 pb-2">Description</h3>
+                                <p className="font-body text-text-secondary text-lg leading-relaxed">
+                                    {data.description}
+                                </p>
+                            </section>
+                        )}
+
+                        {objectives.length > 0 && (
+                            <section>
+                                <h3 className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted mb-4 border-b border-white/5 pb-2">Learning Objectives</h3>
+                                <div className="space-y-3">
+                                    {objectives.map((obj, i) => (
+                                        <div key={i} className="flex items-start gap-4">
+                                            <div className="w-6 h-6 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 flex flex-col items-center justify-center shrink-0 mt-0.5">
+                                                <TargetIcon size={12} />
+                                            </div>
+                                            <p className="font-body text-text-primary leading-relaxed">{obj}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {data.concepts && (
+                            <section>
+                                <h3 className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted mb-4 border-b border-white/5 pb-2">Key Concepts</h3>
+                                <div className="p-6 border border-white/5 bg-obsidian-elevated/40 rounded-xl">
+                                    <p className="font-body text-text-secondary leading-relaxed whitespace-pre-wrap">
+                                        {data.concepts}
+                                    </p>
+                                </div>
+                            </section>
+                        )}
+                    </div>
                 )}
 
-                {/* Progress bar */}
-                {totalCount > 0 && (
-                    <div className="mt-6 flex items-center gap-4">
-                        <div className="flex-1 h-1 bg-white/5 overflow-hidden">
-                            <div
-                                className="h-full bg-indigo-500 transition-all duration-700 ease-out"
-                                style={{ width: `${percent}%` }}
-                            />
+                {/* 2. Tasks Tab */}
+                {activeTab === 'tasks' && (
+                    <div className="p-8 max-w-3xl animate-fade-in">
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted">Action Items</h3>
+                            <span className="font-sans-display text-[10px] uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
+                                {completedCount} / {totalCount} Completed
+                            </span>
                         </div>
-                        <span className="font-sans-display text-[10px] uppercase tracking-widest text-text-muted tabular-nums whitespace-nowrap">
-                            {completedCount}/{totalCount} COMPLETE
-                        </span>
+
+                        {/* Progress Bar */}
+                        <div className="h-1 bg-white/5 rounded-full mb-8 overflow-hidden">
+                            <div className="h-full bg-indigo-500 transition-all duration-700" style={{ width: `${taskPercent}%` }} />
+                        </div>
+
+                        <div className="space-y-3">
+                            {tasks.map((task: Task) => (
+                                <div key={task.id} className="group border border-white/5 bg-obsidian-surface/40 hover:bg-obsidian-surface/80 hover:border-white/10 rounded-xl transition-all overflow-hidden">
+                                    <button
+                                        type="button"
+                                        className="w-full flex items-start gap-4 p-5 text-left"
+                                        onClick={() => toggleTask(task.id)}
+                                    >
+                                        <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all shrink-0 ${task.completed
+                                            ? "bg-emerald-500 border-emerald-500 text-obsidian"
+                                            : "border-white/20 group-hover:border-emerald-500/50"
+                                            }`}>
+                                            {task.completed && <CheckCircle2 size={16} />}
+                                        </div>
+                                        <span className={`font-body text-base leading-snug transition-colors ${task.completed ? "text-text-muted line-through" : "text-text-primary"
+                                            }`}>
+                                            {task.title}
+                                        </span>
+                                    </button>
+
+                                    {/* Subtasks */}
+                                    {(task.subtasks || []).length > 0 && (
+                                        <div className="ml-10 mb-4 mr-5 border-l-2 border-white/5 pl-4 space-y-1">
+                                            {(task.subtasks || []).map((sub) => (
+                                                <button
+                                                    key={sub.id}
+                                                    type="button"
+                                                    className="w-full flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-white/5 transition-all text-left group/sub"
+                                                    onClick={() => toggleSubtask(task.id, sub.id)}
+                                                >
+                                                    <div className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-all shrink-0 ${sub.completed
+                                                        ? "bg-emerald-500/80 border-emerald-500/80 text-obsidian"
+                                                        : "border-white/15 group-hover/sub:border-emerald-500/50"
+                                                        }`}>
+                                                        {sub.completed && <CheckCircle2 size={10} />}
+                                                    </div>
+                                                    <span className={`text-sm font-body leading-snug ${sub.completed ? "text-text-muted line-through" : "text-text-secondary group-hover/sub:text-text-primary"
+                                                        }`}>
+                                                        {sub.title}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 3. Resources Tab */}
+                {activeTab === 'resources' && (
+                    <div className="flex h-full animate-fade-in relative overflow-hidden">
+                        <div className={`p-8 flex-1 overflow-y-auto transition-all duration-300 ${sidePanelResource ? "pr-[400px]" : "pr-8"}`}>
+                            <h3 className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted mb-8 border-b border-white/5 pb-2">Course Materials</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {resources.map((res) => (
+                                    <button
+                                        key={res.id}
+                                        onClick={() => setSidePanelResource(res)}
+                                        className={`flex items-start gap-4 p-5 text-left border rounded-xl transition-all duration-200 hover:-translate-y-1 ${sidePanelResource?.id === res.id
+                                            ? "border-indigo-500 bg-indigo-500/10 shadow-[0_4px_20px_rgba(99,102,241,0.2)]"
+                                            : "border-white/10 bg-obsidian-surface/40 hover:border-white/20 hover:bg-obsidian-surface/80"
+                                            }`}
+                                    >
+                                        <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-xl shrink-0">
+                                            {resourceTypeIcon(res.type)}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-display text-white text-lg truncate mb-1">{res.title}</h4>
+                                            {res.description && <p className="text-text-muted font-body text-xs line-clamp-2">{res.description}</p>}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Resource Side Panel */}
+                        <div className={`absolute top-0 right-0 h-full w-[400px] border-l border-white/10 bg-obsidian-elevated/95 backdrop-blur-xl transition-transform duration-300 transform shadow-[-20px_0_50px_rgba(0,0,0,0.5)] flex flex-col ${sidePanelResource ? "translate-x-0" : "translate-x-full"
+                            }`}>
+                            {sidePanelResource && (
+                                <>
+                                    <div className="p-4 border-b border-white/5 flex items-center justify-between bg-obsidian-surface">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-xl">{resourceTypeIcon(sidePanelResource.type)}</span>
+                                            <h4 className="font-sans-display text-[10px] uppercase tracking-widest text-white truncate max-w-[250px] font-bold">
+                                                {sidePanelResource.title}
+                                            </h4>
+                                        </div>
+                                        <button
+                                            onClick={() => setSidePanelResource(null)}
+                                            className="p-1.5 hover:bg-white/10 rounded text-text-muted hover:text-white"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto p-4 flex flex-col">
+                                        <div className="mb-4">
+                                            <p className="text-text-secondary text-sm font-body mb-4">{sidePanelResource.description}</p>
+                                            <a
+                                                href={sidePanelResource.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-2 font-sans-display text-[10px] uppercase tracking-widest text-indigo-400 hover:text-white transition-colors"
+                                            >
+                                                Open in New Tab <Navigation size={12} />
+                                            </a>
+                                        </div>
+                                        <div className="flex-1 rounded-xl overflow-hidden border border-white/10 bg-black min-h-[300px]">
+                                            <SmartEmbed url={sidePanelResource.url} title={sidePanelResource.title} />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* 4. Videos Tab */}
+                {activeTab === 'videos' && (
+                    <div className="flex flex-col lg:flex-row h-full animate-fade-in">
+                        {/* Video Player */}
+                        <div className="flex-1 p-6 lg:p-8 overflow-y-auto">
+                            {activeVideoId && (
+                                <div className="max-w-4xl mx-auto space-y-6">
+                                    <div className="aspect-video w-full rounded-2xl overflow-hidden border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-black">
+                                        <SmartEmbed
+                                            url={videos.find(v => v.id === activeVideoId)?.url || ""}
+                                            title={videos.find(v => v.id === activeVideoId)?.title || "Video"}
+                                        />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-display text-2xl text-white mb-2">{videos.find(v => v.id === activeVideoId)?.title}</h3>
+                                        <p className="font-body text-text-secondary leading-relaxed bg-obsidian-surface/50 p-6 rounded-xl border border-white/5">
+                                            {videos.find(v => v.id === activeVideoId)?.description}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        {/* Playlist Sidebar */}
+                        <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-white/5 bg-obsidian-surface/20 flex flex-col shrink-0 overflow-y-auto">
+                            <div className="p-4 border-b border-white/5 font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted sticky top-0 bg-obsidian-surface/90 backdrop-blur-md z-10">
+                                Playlist
+                            </div>
+                            <div className="flex flex-col p-2 gap-1">
+                                {videos.map(v => (
+                                    <button
+                                        key={v.id}
+                                        onClick={() => setActiveVideoId(v.id)}
+                                        className={`flex flex-col items-start gap-1 p-3 rounded-lg text-left transition-all ${activeVideoId === v.id
+                                            ? "bg-indigo-500/10 border border-indigo-500/20 shadow-inner"
+                                            : "hover:bg-white/5 border border-transparent"
+                                            }`}
+                                    >
+                                        <span className={`font-body text-sm line-clamp-2 ${activeVideoId === v.id ? "text-indigo-300" : "text-white"}`}>
+                                            {v.title}
+                                        </span>
+                                        {v.duration && (
+                                            <span className="font-sans-display text-[9px] uppercase tracking-widest text-text-muted tabular-nums mt-1">
+                                                ⏱ {v.duration}
+                                            </span>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 5. Notes Tab */}
+                {activeTab === 'notes' && (
+                    <div className="p-8 max-w-4xl h-full flex flex-col animate-fade-in">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted">Module Notes</h3>
+                            <span className="font-sans-display text-[10px] uppercase tracking-widest text-indigo-400 font-bold min-w-[80px] text-right">
+                                {saveStatus}
+                            </span>
+                        </div>
+                        <textarea
+                            value={notesText}
+                            onChange={(e) => setNotesText(e.target.value)}
+                            placeholder="Type your notes for this module here... Autosaves as you type."
+                            className="flex-1 w-full bg-obsidian-surface/30 border border-white/10 rounded-xl p-6 font-body text-text-primary text-base leading-relaxed placeholder:text-text-muted/30 focus:outline-none focus:border-indigo-500/50 resize-none transition-colors"
+                        />
                     </div>
                 )}
             </div>
 
-            {/* Key Concepts */}
-            {data.concepts && (
-                <div className="mb-10 p-6 border border-indigo-500/10 bg-indigo-500/5">
-                    <div className="flex items-center gap-2 mb-3">
-                        <span className="text-indigo-400 text-sm">💡</span>
-                        <span className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-indigo-400 font-bold">
-                            Key Concepts
-                        </span>
-                    </div>
-                    <p className="font-body text-text-secondary text-sm leading-relaxed whitespace-pre-wrap">
-                        {data.concepts}
-                    </p>
+            {/* Bottom Nav */}
+            <div className="p-4 border-t border-white/5 flex items-center justify-between bg-obsidian-surface/50 shrink-0">
+                <button
+                    onClick={() => prevModule && onNavigate?.(prevModule.id)}
+                    disabled={!prevModule}
+                    className={`px-5 py-2.5 flex items-center gap-3 font-sans-display text-[10px] uppercase tracking-[0.15em] font-bold rounded-lg transition-all ${prevModule
+                        ? "hover:bg-white/10 text-white"
+                        : "opacity-30 cursor-not-allowed text-text-muted"
+                        }`}
+                >
+                    ← Previous
+                </button>
+                <div className="flex gap-1">
+                    {moduleSections.map((_, i) => (
+                        <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === currentIndex ? "bg-indigo-500" : "bg-white/20"}`} />
+                    ))}
                 </div>
-            )}
-
-            {/* Action Items / Tasks */}
-            {tasks.length > 0 && (
-                <div className="mb-10">
-                    <h3 className="font-sans-display text-xs uppercase tracking-[0.15em] text-text-secondary mb-4 flex items-center gap-2">
-                        <span className="w-4 h-[1px] bg-emerald-500" />
-                        Action Items
-                    </h3>
-                    <div className="space-y-2">
-                        {tasks.map((task: Task) => (
-                            <div key={task.id} className="group">
-                                <button
-                                    type="button"
-                                    className="w-full flex items-start gap-3 p-4 border border-white/5 hover:border-white/10 bg-obsidian-surface/40 hover:bg-obsidian-surface/60 transition-all text-left"
-                                    onClick={() => toggleTask(task.id)}
-                                >
-                                    <div className={`w-5 h-5 shrink-0 mt-0.5 border-2 flex items-center justify-center transition-all ${task.completed
-                                            ? "bg-emerald-500 border-emerald-500 text-obsidian"
-                                            : "border-white/20 group-hover:border-emerald-500/50"
-                                        }`}>
-                                        {task.completed && <span className="text-xs font-bold">✓</span>}
-                                    </div>
-                                    <span className={`font-body text-sm leading-relaxed transition-colors ${task.completed
-                                            ? "text-text-muted line-through"
-                                            : "text-text-primary"
-                                        }`}>
-                                        {task.title}
-                                    </span>
-                                </button>
-
-                                {/* Subtasks */}
-                                {(task.subtasks || []).length > 0 && (
-                                    <div className="ml-8 border-l border-white/5 pl-4 space-y-1 mt-1">
-                                        {(task.subtasks || []).map((sub) => (
-                                            <button
-                                                key={sub.id}
-                                                type="button"
-                                                className="w-full flex items-center gap-2.5 py-2 px-3 hover:bg-obsidian-surface/40 transition-all text-left"
-                                                onClick={() => toggleSubtask(task.id, sub.id)}
-                                            >
-                                                <div className={`w-3.5 h-3.5 shrink-0 border flex items-center justify-center transition-all ${sub.completed
-                                                        ? "bg-emerald-500/80 border-emerald-500/80 text-obsidian"
-                                                        : "border-white/15"
-                                                    }`}>
-                                                    {sub.completed && <span className="text-[8px] font-bold">✓</span>}
-                                                </div>
-                                                <span className={`text-xs leading-relaxed ${sub.completed ? "text-text-muted line-through" : "text-text-secondary"
-                                                    }`}>
-                                                    {sub.title}
-                                                </span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Videos */}
-            {videos.length > 0 && (
-                <div className="mb-10">
-                    <h3 className="font-sans-display text-xs uppercase tracking-[0.15em] text-text-secondary mb-4 flex items-center gap-2">
-                        <span className="w-4 h-[1px] bg-rose-500" />
-                        Videos
-                    </h3>
-                    <div className="space-y-4">
-                        {videos.map((video) => (
-                            <div key={video.id} className="space-y-3">
-                                <SmartEmbed
-                                    url={video.url}
-                                    title={video.title}
-                                    description={video.description}
-                                />
-                                <div className="flex items-center justify-between px-1">
-                                    <div>
-                                        <h4 className="font-sans-display text-sm font-bold text-text-primary">{video.title}</h4>
-                                        {video.description && <p className="text-text-muted text-xs mt-0.5">{video.description}</p>}
-                                    </div>
-                                    {video.duration && (
-                                        <span className="font-sans-display text-[10px] uppercase tracking-widest text-text-muted tabular-nums">
-                                            {video.duration}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Resources */}
-            {resources.length > 0 && (
-                <div className="mb-10">
-                    <h3 className="font-sans-display text-xs uppercase tracking-[0.15em] text-text-secondary mb-4 flex items-center gap-2">
-                        <span className="w-4 h-[1px] bg-amber-500" />
-                        Resources
-                    </h3>
-                    <div className="space-y-3">
-                        {resources.map((res) => (
-                            <div key={res.id}>
-                                <button
-                                    type="button"
-                                    className={`w-full flex items-center gap-4 p-4 border text-left transition-all ${expandedResource === res.id
-                                            ? "border-indigo-500/30 bg-indigo-500/5"
-                                            : "border-white/5 bg-obsidian-surface/40 hover:border-white/10"
-                                        }`}
-                                    onClick={() => setExpandedResource(expandedResource === res.id ? null : res.id)}
-                                >
-                                    <span className="text-lg shrink-0">{resourceTypeIcon(res.type)}</span>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="font-sans-display text-sm font-bold text-text-primary truncate">{res.title}</h4>
-                                        {res.description && <p className="text-text-muted text-xs mt-0.5 truncate">{res.description}</p>}
-                                    </div>
-                                    <span className="font-sans-display text-[10px] uppercase tracking-widest text-text-muted shrink-0">{res.type}</span>
-                                    <span className={`text-text-muted text-xs transition-transform ${expandedResource === res.id ? "rotate-180" : ""}`}>▼</span>
-                                </button>
-
-                                {expandedResource === res.id && (
-                                    <div className="border border-t-0 border-white/5 p-4 animate-fade-in">
-                                        <SmartEmbed url={res.url} title={res.title} description={res.description} />
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+                <button
+                    onClick={() => nextModule && onNavigate?.(nextModule.id)}
+                    disabled={!nextModule}
+                    className={`px-5 py-2.5 flex items-center gap-3 font-sans-display text-[10px] uppercase tracking-[0.15em] font-bold rounded-lg transition-all ${nextModule
+                        ? "hover:bg-indigo-500/10 text-indigo-400 border border-transparent hover:border-indigo-500/30"
+                        : "opacity-30 cursor-not-allowed text-text-muted"
+                        }`}
+                >
+                    Next module →
+                </button>
+            </div>
         </div>
+    );
+}
+
+function TargetIcon(props: any) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="6" />
+            <circle cx="12" cy="12" r="2" />
+        </svg>
     );
 }
