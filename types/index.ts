@@ -24,6 +24,7 @@ export interface Roadmap {
     title: string;
     mode: "general" | "intern";
     summary?: string; // Overall goals banner
+    objectives?: string[]; // Top-level course objectives
     sections: Section[];
     rawContent: string;
     createdAt: string;
@@ -57,6 +58,8 @@ export interface ModuleSection extends SectionBase {
         description: string;
         estimatedTime?: string;
         concepts?: string;
+        objectives?: string[];
+        notes?: string;
         tasks: Task[];
         resources: Resource[];
         videos: Video[];
