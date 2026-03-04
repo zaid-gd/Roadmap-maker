@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import type { NotesSection, Section, Note } from "@/types";
+import type { NoteSection, Section, Note } from "@/types";
 
 interface Props {
-    section: NotesSection;
+    section: NoteSection;
     onUpdate: (updater: (s: Section) => Section) => void;
 }
 
@@ -17,7 +17,7 @@ export default function Notes({ section, onUpdate }: Props) {
 
     const updateNote = (noteId: string, updates: Partial<Note>) => {
         onUpdate((s) => {
-            const ns = s as NotesSection;
+            const ns = s as NoteSection;
             return {
                 ...ns,
                 data: ns.data.map((n) => (n.id === noteId ? { ...n, ...updates, updatedAt: new Date().toISOString() } : n)),
@@ -34,7 +34,7 @@ export default function Notes({ section, onUpdate }: Props) {
             updatedAt: new Date().toISOString(),
         };
         onUpdate((s) => {
-            const ns = s as NotesSection;
+            const ns = s as NoteSection;
             return { ...ns, data: [newNote, ...ns.data] };
         });
         setActiveNoteId(newNote.id);
@@ -90,8 +90,8 @@ export default function Notes({ section, onUpdate }: Props) {
                                 key={note.id}
                                 onClick={() => setActiveNoteId(note.id)}
                                 className={`w-full text-left p-4 rounded-xl transition-all duration-300 group overflow-hidden relative ${isActive
-                                        ? "bg-indigo-500/10 border border-indigo-500/20 shadow-[0_5px_15px_-5px_rgba(99,102,241,0.2)]"
-                                        : "hover:bg-obsidian border border-transparent hover:border-white/5"
+                                    ? "bg-indigo-500/10 border border-indigo-500/20 shadow-[0_5px_15px_-5px_rgba(99,102,241,0.2)]"
+                                    : "hover:bg-obsidian border border-transparent hover:border-white/5"
                                     }`}
                             >
                                 {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 drop-shadow-[0_0_8px_rgba(99,102,241,1)]" />}

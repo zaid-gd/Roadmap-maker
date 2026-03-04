@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { VideosSection, Section } from "@/types";
+import type { VideoSection, Section } from "@/types";
 import VideoPlayer from "@/components/shared/VideoPlayer";
 
 interface Props {
-    section: VideosSection;
+    section: VideoSection;
     onUpdate: (updater: (s: Section) => Section) => void;
 }
 
@@ -78,8 +78,8 @@ export default function Videos({ section, onUpdate }: Props) {
                                     key={video.id}
                                     type="button"
                                     className={`w-full flex gap-3 p-3 rounded-xl text-left transition-all duration-300 relative group overflow-hidden ${isActive
-                                            ? "bg-indigo-500/10 border border-indigo-500/20 shadow-[inset_0_0_20px_rgba(99,102,241,0.05)]"
-                                            : "hover:bg-obsidian-surface border border-transparent hover:border-white/5"
+                                        ? "bg-indigo-500/10 border border-indigo-500/20 shadow-[inset_0_0_20px_rgba(99,102,241,0.05)]"
+                                        : "hover:bg-obsidian-surface border border-transparent hover:border-white/5"
                                         }`}
                                     onClick={() => setActiveVideoId(video.id)}
                                 >
