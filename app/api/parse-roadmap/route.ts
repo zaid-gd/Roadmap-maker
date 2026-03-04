@@ -45,174 +45,6 @@ Section data shapes:
 
 CRITICAL: Return ONLY the JSON object. No wrapping, no explanation.`;
 
-function generateMockResponse(content: string, mode: string, title?: string) {
-    const inferredTitle = title || content.split("\n")[0]?.replace(/^#+\s*/, "").trim() || "My Roadmap";
-    const now = new Date().toISOString();
-
-    return {
-        success: true,
-        roadmap: {
-            title: inferredTitle,
-            mode,
-            sections: [
-                {
-                    id: "sec-milestones",
-                    type: "milestones",
-                    title: "Milestones",
-                    order: 0,
-                    data: [
-                        {
-                            id: "m1",
-                            title: "Phase 1: Getting Started",
-                            description: "Foundation concepts and initial setup to begin your journey.",
-                            tasks: [
-                                { id: "m1t1", title: "Review the introduction material", completed: false, notes: "", subtasks: [], attachments: [] },
-                                {
-                                    id: "m1t2", title: "Set up your environment", completed: false, notes: "", subtasks: [
-                                        { id: "m1t2s1", title: "Install required tools", completed: false },
-                                        { id: "m1t2s2", title: "Configure your workspace", completed: false },
-                                    ], attachments: []
-                                },
-                            ],
-                            resources: [
-                                { id: "r1", title: "Official Documentation", url: "https://docs.example.com", type: "doc", description: "Complete reference documentation" },
-                            ],
-                            videos: [],
-                            completed: false,
-                            order: 0,
-                        },
-                        {
-                            id: "m2",
-                            title: "Phase 2: Core Concepts",
-                            description: "Deep dive into the fundamental concepts and techniques.",
-                            tasks: [
-                                { id: "m2t1", title: "Learn the core principles", completed: false, notes: "", subtasks: [], attachments: [] },
-                                { id: "m2t2", title: "Practice with exercises", completed: false, notes: "", subtasks: [], attachments: [] },
-                                {
-                                    id: "m2t3", title: "Build a practice project", completed: false, notes: "", subtasks: [
-                                        { id: "m2t3s1", title: "Plan the project scope", completed: false },
-                                        { id: "m2t3s2", title: "Implement core features", completed: false },
-                                        { id: "m2t3s3", title: "Review and refine", completed: false },
-                                    ], attachments: []
-                                },
-                            ],
-                            resources: [],
-                            videos: [
-                                { id: "v1", title: "Core Concepts Tutorial", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", videoId: "dQw4w9WgXcQ", platform: "youtube", description: "Comprehensive walkthrough of core concepts" },
-                            ],
-                            completed: false,
-                            order: 1,
-                        },
-                        {
-                            id: "m3",
-                            title: "Phase 3: Advanced Techniques",
-                            description: "Master advanced workflows and professional techniques.",
-                            tasks: [
-                                { id: "m3t1", title: "Study advanced patterns", completed: false, notes: "", subtasks: [], attachments: [] },
-                                { id: "m3t2", title: "Complete the capstone project", completed: false, notes: "", subtasks: [], attachments: [] },
-                            ],
-                            resources: [],
-                            videos: [],
-                            completed: false,
-                            order: 2,
-                        },
-                    ],
-                },
-                {
-                    id: "sec-tasks",
-                    type: "tasks",
-                    title: "Tasks",
-                    order: 1,
-                    data: [
-                        {
-                            id: "tg1",
-                            title: "Setup & Configuration",
-                            tasks: [
-                                { id: "t1", title: "Download and install required software", completed: false, notes: "", subtasks: [], attachments: [] },
-                                {
-                                    id: "t2", title: "Complete initial configuration", completed: false, notes: "", subtasks: [
-                                        { id: "t2s1", title: "Set preferences", completed: false },
-                                        { id: "t2s2", title: "Import starter templates", completed: false },
-                                    ], attachments: []
-                                },
-                            ],
-                        },
-                        {
-                            id: "tg2",
-                            title: "Learning & Practice",
-                            tasks: [
-                                { id: "t3", title: "Complete all tutorial exercises", completed: false, notes: "", subtasks: [], attachments: [] },
-                                { id: "t4", title: "Watch recommended video tutorials", completed: false, notes: "", subtasks: [], attachments: [] },
-                                { id: "t5", title: "Build your portfolio project", completed: false, notes: "", subtasks: [], attachments: [] },
-                            ],
-                        },
-                    ],
-                },
-                {
-                    id: "sec-progress",
-                    type: "progress",
-                    title: "Progress",
-                    order: 2,
-                    data: {},
-                },
-                {
-                    id: "sec-resources",
-                    type: "resources",
-                    title: "Resources",
-                    order: 3,
-                    data: [
-                        { id: "res1", title: "Official Documentation", url: "https://docs.example.com", type: "doc", description: "Complete reference documentation", category: "Documentation" },
-                        { id: "res2", title: "Getting Started Guide", url: "https://guide.example.com", type: "link", description: "Quick start guide for beginners", category: "Guides" },
-                        { id: "res3", title: "Community Forum", url: "https://forum.example.com", type: "link", description: "Ask questions and connect with others", category: "Community" },
-                        { id: "res4", title: "Cheat Sheet PDF", url: "https://example.com/cheatsheet.pdf", type: "pdf", description: "Quick reference cheat sheet", category: "Reference" },
-                    ],
-                },
-                {
-                    id: "sec-videos",
-                    type: "videos",
-                    title: "Videos",
-                    order: 4,
-                    data: [
-                        { id: "vid1", title: "Introduction & Overview", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", videoId: "dQw4w9WgXcQ", platform: "youtube", description: "A complete introduction to get you started", duration: "15:30" },
-                        { id: "vid2", title: "Advanced Techniques Deep Dive", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", videoId: "dQw4w9WgXcQ", platform: "youtube", description: "Going deeper into professional workflows", duration: "28:45" },
-                    ],
-                },
-                {
-                    id: "sec-notes",
-                    type: "notes",
-                    title: "Notes",
-                    order: 5,
-                    data: [
-                        { id: "n1", title: "Key Takeaways", content: "Add your personal notes and key takeaways here as you progress through the roadmap.", createdAt: now, updatedAt: now },
-                    ],
-                },
-                {
-                    id: "sec-glossary",
-                    type: "glossary",
-                    title: "Glossary",
-                    order: 6,
-                    data: [
-                        { id: "g1", term: "Roadmap", definition: "A structured plan outlining the steps and milestones needed to achieve a specific goal.", relatedSections: ["sec-milestones"] },
-                        { id: "g2", term: "Milestone", definition: "A significant checkpoint or achievement point within a roadmap that marks progress.", relatedSections: ["sec-milestones"] },
-                        { id: "g3", term: "Workspace", definition: "The interactive environment generated from your content where all learning and tracking happens.", relatedSections: [] },
-                    ],
-                },
-                ...(mode === "intern"
-                    ? [
-                        {
-                            id: "sec-submissions",
-                            type: "submissions" as const,
-                            title: "Submissions",
-                            order: 7,
-                            data: [],
-                        },
-                    ]
-                    : []),
-            ],
-        },
-    };
-}
-
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
@@ -227,11 +59,12 @@ export async function POST(req: NextRequest) {
 
         const apiKey = process.env.GEMINI_API_KEY;
 
-        // If no AI provider configured, return mock response
         if (!apiKey) {
-            console.warn("No GEMINI_API_KEY provided. Using fallback mock response.");
-            const mock = generateMockResponse(content, mode || "general", title);
-            return NextResponse.json(mock);
+            console.error("No GEMINI_API_KEY provided in environment variables.");
+            return NextResponse.json(
+                { success: false, error: "Server configuration missing: API key is required" },
+                { status: 500 }
+            );
         }
 
         const model = "gemini-2.5-flash";
@@ -263,7 +96,7 @@ export async function POST(req: NextRequest) {
             const errText = await aiResponse.text();
             console.error("Gemini API error:", errText);
             return NextResponse.json(
-                { success: false, error: "AI provider returned an error. Using fallback." },
+                { success: false, error: `Gemini API Error: ${aiResponse.status} ${aiResponse.statusText}` },
                 { status: 502 }
             );
         }
@@ -273,7 +106,7 @@ export async function POST(req: NextRequest) {
 
         if (!rawContent) {
             return NextResponse.json(
-                { success: false, error: "AI returned empty response" },
+                { success: false, error: "AI returned an empty or invalid response structure" },
                 { status: 500 }
             );
         }
@@ -281,13 +114,14 @@ export async function POST(req: NextRequest) {
         // Parse JSON from the AI response (handle potential code fences)
         let parsed;
         try {
-            const cleaned = rawContent.replace(/^```json?\n?/g, "").replace(/\n?```$/g, "").trim();
+            const cleaned = rawContent.replace(/^```(json)?\n?/i, "").replace(/\n?```$/g, "").trim();
             parsed = JSON.parse(cleaned);
-        } catch {
-            console.error("Failed to parse AI JSON:", rawContent);
-            // Fallback to mock
-            const mock = generateMockResponse(content, mode || "general", title);
-            return NextResponse.json(mock);
+        } catch (parseError) {
+            console.error("Failed to parse AI JSON:", rawContent, parseError);
+            return NextResponse.json(
+                { success: false, error: "AI response was not valid JSON" },
+                { status: 500 }
+            );
         }
 
         return NextResponse.json({ success: true, roadmap: parsed });
