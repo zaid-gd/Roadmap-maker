@@ -32,19 +32,50 @@ export default function WorkspaceShell({ roadmap, onUpdateSection }: WorkspaceSh
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, []);
 
-    const activeSection = roadmap.sections.find((s) => s.id === activeSectionId);
+    const isEmptySection = (section: Section): boolean => {
+        if (section.type === "progress") return false; // always show progress if present
+        if (section.type === "notes") return false; // keep notes as it's interactive
+
+        if (section.type === "module") {
+            const md = (section as ModuleSectionType).data;
+            if (!md) return true;
+            return !md.description && !md.concepts &&
+                (!md.tasks || md.tasks.length === 0) &&
+                (!md.resources || md.resources.length === 0) &&
+                (!md.videos || md.videos.length === 0) &&
+                (!md.objectives || md.objectives.length === 0);
+        }
+
+        if (section.type === "custom") {
+            return !section.data || !section.data.items || section.data.items.length === 0;
+        }
+
+        return !section.data || (Array.isArray(section.data) && section.data.length === 0);
+    };
+
+    const validSections = roadmap.sections.filter(s => !isEmptySection(s));
+    const activeSection = validSections.find((s) => s.id === activeSectionId);
 
     // Separate modules from utility sections
-    const moduleSections = roadmap.sections.filter((s) => s.type === "module" || s.type === "milestones");
-    const utilitySections = roadmap.sections.filter((s) => s.type !== "module" && s.type !== "milestones");
+    const moduleSections = validSections.filter((s) => s.type === "module" || s.type === "milestones");
+    const utilitySections = validSections.filter((s) => s.type !== "module" && s.type !== "milestones");
 
     const getModuleProgress = (section: Section): number => {
         if (section.type === "module") {
             const ms = section as ModuleSectionType;
+            if (ms.data.completed) return 100;
             const tasks = ms.data.tasks || [];
-            const total = tasks.length;
-            if (total === 0) return ms.data.completed ? 100 : 0;
-            const done = tasks.filter((t) => t.completed).length;
+            let total = 0;
+            let done = 0;
+            for (const task of tasks) {
+                total++;
+                if (task.completed) done++;
+                for (const sub of task.subtasks || []) {
+                    total++;
+                    if (sub.completed) done++;
+                }
+            }
+            if (total === 0) return 0;
             return Math.round((done / total) * 100);
         }
         return 0;
@@ -63,12 +94,12 @@ export default function WorkspaceShell({ roadmap, onUpdateSection }: WorkspaceSh
 
     // Stats for Dashboard
     const totalModules = moduleSections.length;
-    const totalResources = roadmap.sections.reduce((acc, s) => {
+    const totalResources = validSections.reduce((acc, s) => {
         if (s.type === "module") return acc + ((s as ModuleSectionType).data.resources?.length || 0);
         if (s.type === "resources") return acc + (s as any).data?.length || 0;
         return acc;
     }, 0);
-    const totalVideos = roadmap.sections.reduce((acc, s) => {
+    const totalVideos = validSections.reduce((acc, s) => {
         if (s.type === "module") return acc + ((s as ModuleSectionType).data.videos?.length || 0);
         if (s.type === "videos") return acc + (s as any).data?.length || 0;
         return acc;

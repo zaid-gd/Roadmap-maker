@@ -57,6 +57,7 @@ export default function CreatePage() {
     const [error, setError] = useState("");
     const [isDragging, setIsDragging] = useState(false);
     const [tipsOpen, setTipsOpen] = useState(false);
+    const [textareaOverflow, setTextareaOverflow] = useState(false);
 
     // Loading-screen state
     const [visibleSteps, setVisibleSteps] = useState<number[]>([]);
@@ -69,12 +70,12 @@ export default function CreatePage() {
     const charCount = content.length;
     const hasContent = content.trim().length > 0;
 
-    /* ── Auto-grow textarea ── */
+    /* ── Check textarea overflow ── */
     useEffect(() => {
         const el = textareaRef.current;
         if (!el) return;
-        el.style.height = "auto";
-        el.style.height = `${Math.max(el.scrollHeight, 200)}px`;
+        // Check if content overflows the bounded height
+        setTextareaOverflow(el.scrollHeight > el.clientHeight);
     }, [content]);
 
     /* ── File processing (shared) ── */
@@ -301,8 +302,8 @@ export default function CreatePage() {
                         {/* Drop zone */}
                         <div
                             className={`relative border-2 border-dashed rounded-lg p-10 text-center transition-all duration-300 cursor-pointer group/drop ${isDragging
-                                    ? "border-indigo-400 bg-indigo-500/8 scale-[1.01]"
-                                    : "border-white/10 hover:border-white/20 bg-obsidian-surface/30 hover:bg-obsidian-surface/50"
+                                ? "border-indigo-400 bg-indigo-500/8 scale-[1.01]"
+                                : "border-white/10 hover:border-white/20 bg-obsidian-surface/30 hover:bg-obsidian-surface/50"
                                 }`}
                             onDragOver={handleDragOver}
                             onDragLeave={handleDragLeave}
@@ -346,17 +347,25 @@ export default function CreatePage() {
                             <div className="flex-1 h-px bg-white/8" />
                         </div>
 
-                        {/* Textarea */}
+                        {/* Textarea — bounded at 280px max */}
                         <div className="relative">
                             <textarea
                                 ref={textareaRef}
                                 id="course-content"
-                                className="w-full bg-transparent border-none outline-none resize-none font-body text-[15px] text-text-primary/90 leading-relaxed placeholder:text-text-muted/25 min-h-[200px]"
+                                className="w-full bg-transparent border-none outline-none resize-none font-body text-[15px] text-text-primary/90 leading-relaxed placeholder:text-text-muted/25 min-h-[200px] max-h-[280px] overflow-y-auto"
                                 placeholder="Paste any AI-generated guide, roadmap, curriculum, or research notes here…"
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
                                 spellCheck={false}
                             />
+                            {/* Scroll-to-read fade indicator */}
+                            {textareaOverflow && (
+                                <div className="absolute bottom-0 left-0 right-2 h-10 bg-gradient-to-t from-obsidian to-transparent pointer-events-none flex items-end justify-center pb-1">
+                                    <span className="font-body text-[10px] text-text-muted/50 uppercase tracking-wider pointer-events-none select-none">
+                                        ↓ Scroll to read more
+                                    </span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Word / char counter */}
@@ -384,14 +393,14 @@ export default function CreatePage() {
                                 id="mode-general"
                                 onClick={() => setMode("general")}
                                 className={`relative text-left rounded-xl p-6 transition-all duration-300 overflow-hidden group/card ${mode === "general"
-                                        ? "bg-indigo-500/8 border-2 border-indigo-500/60 shadow-[0_0_24px_rgba(245,158,11,0.08)] create-mode-selected"
-                                        : "bg-obsidian-surface/40 border-2 border-white/6 hover:border-white/15 hover:bg-obsidian-surface/60 opacity-60 hover:opacity-80"
+                                    ? "bg-indigo-500/8 border-2 border-indigo-500/60 shadow-[0_0_24px_rgba(245,158,11,0.08)] create-mode-selected"
+                                    : "bg-obsidian-surface/40 border-2 border-white/6 hover:border-white/15 hover:bg-obsidian-surface/60 opacity-60 hover:opacity-80"
                                     }`}
                             >
                                 {/* Illustration / Icon */}
                                 <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-all duration-300 ${mode === "general"
-                                        ? "bg-indigo-500/15 shadow-[0_0_12px_rgba(245,158,11,0.1)]"
-                                        : "bg-white/5 group-hover/card:bg-white/8"
+                                    ? "bg-indigo-500/15 shadow-[0_0_12px_rgba(245,158,11,0.1)]"
+                                    : "bg-white/5 group-hover/card:bg-white/8"
                                     }`}>
                                     <svg className={`w-6 h-6 transition-colors duration-300 ${mode === "general" ? "text-indigo-400" : "text-text-muted/60"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
@@ -420,13 +429,13 @@ export default function CreatePage() {
                                 id="mode-intern"
                                 onClick={() => setMode("intern")}
                                 className={`relative text-left rounded-xl p-6 transition-all duration-300 overflow-hidden group/card ${mode === "intern"
-                                        ? "bg-indigo-500/8 border-2 border-indigo-500/60 shadow-[0_0_24px_rgba(245,158,11,0.08)] create-mode-selected"
-                                        : "bg-obsidian-surface/40 border-2 border-white/6 hover:border-white/15 hover:bg-obsidian-surface/60 opacity-60 hover:opacity-80"
+                                    ? "bg-indigo-500/8 border-2 border-indigo-500/60 shadow-[0_0_24px_rgba(245,158,11,0.08)] create-mode-selected"
+                                    : "bg-obsidian-surface/40 border-2 border-white/6 hover:border-white/15 hover:bg-obsidian-surface/60 opacity-60 hover:opacity-80"
                                     }`}
                             >
                                 <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-all duration-300 ${mode === "intern"
-                                        ? "bg-indigo-500/15 shadow-[0_0_12px_rgba(245,158,11,0.1)]"
-                                        : "bg-white/5 group-hover/card:bg-white/8"
+                                    ? "bg-indigo-500/15 shadow-[0_0_12px_rgba(245,158,11,0.1)]"
+                                    : "bg-white/5 group-hover/card:bg-white/8"
                                     }`}>
                                     <svg className={`w-6 h-6 transition-colors duration-300 ${mode === "intern" ? "text-indigo-400" : "text-text-muted/60"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
@@ -504,8 +513,8 @@ export default function CreatePage() {
                             disabled={!hasContent}
                             onClick={handleGenerate}
                             className={`relative w-full py-5 rounded-xl font-body text-base font-semibold tracking-wide transition-all duration-500 overflow-hidden ${hasContent
-                                    ? "bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-400 text-obsidian hover:brightness-110 cursor-pointer create-btn-glow"
-                                    : "bg-white/5 text-text-muted/30 cursor-not-allowed"
+                                ? "bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-400 text-obsidian hover:brightness-110 cursor-pointer create-btn-glow"
+                                : "bg-white/5 text-text-muted/30 cursor-not-allowed"
                                 }`}
                         >
                             {/* Shimmer overlay when active */}

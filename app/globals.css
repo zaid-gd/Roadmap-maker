@@ -4,61 +4,75 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════
-   ZNS RoadMap Studio — "Editorial Midnight & Liquid Gold"
+   ZNS RoadMap Studio — "Linear Midnight" Theme
+   Inspired by Linear, Vercel, Raycast
    ═══════════════════════════════════════════════════════════ */
 
 /* ── Theme / Custom Properties ── */
 @theme {
-    /* Pure Black / Deep Charcoal backgrounds */
-    --color-obsidian: #050505;
-    --color-obsidian-light: #0a0a0a;
-    --color-obsidian-surface: #0f0f0f;
-    --color-obsidian-elevated: #141414;
-    --color-obsidian-hover: #1c1c1c;
+    /* Backgrounds — near-black with subtle blue tint */
+    --color-obsidian: #0A0A0F;
+    --color-obsidian-light: #0D0D14;
+    --color-obsidian-surface: #111118;
+    --color-obsidian-elevated: #18182B;
+    --color-obsidian-hover: #1C1C28;
 
-    /* Theme overrides (Replacing Indigo/Purple with Liquid Gold / Amber) */
-    --color-indigo-100: #fef3c7;
-    --color-indigo-200: #fde68a;
-    --color-indigo-300: #fcd34d;
-    --color-indigo-400: #fbbf24;
-    --color-indigo-500: #f59e0b;
-    /* Overrides Tailwind default */
-    --color-indigo-600: #d97706;
-    --color-indigo-700: #b45309;
+    /* Primary accent — Electric indigo/violet */
+    --color-indigo-50: #EEF2FF;
+    --color-indigo-100: #E0E7FF;
+    --color-indigo-200: #C7D2FE;
+    --color-indigo-300: #A5B4FC;
+    --color-indigo-400: #818CF8;
+    --color-indigo-500: #6366F1;
+    --color-indigo-600: #4F46E5;
+    --color-indigo-700: #4338CA;
 
-    --color-purple-400: #eab308;
-    --color-purple-500: #ca8a04;
-    --color-purple-600: #a16207;
+    /* Secondary accent — Cyan/teal for highlights */
+    --color-cyan-400: #22D3EE;
+    --color-cyan-500: #06B6D4;
 
-    --color-indigo-accent: #d97706;
-    --color-indigo-glow: #f59e0b;
-    --color-indigo-deep: #b45309;
-    --color-indigo-soft: #fde68a;
-    --color-violet-accent: #fbbf24;
+    /* Status colors */
+    --color-emerald-400: #34D399;
+    --color-emerald-500: #10B981;
+    --color-amber-400: #FBBF24;
+    --color-amber-500: #F59E0B;
+    --color-red-400: #F87171;
+    --color-red-500: #EF4444;
 
-    /* Refined Editorial Text Colors */
-    --color-text-primary: #F0EAD6;
-    /* Alabaster / Bone */
-    --color-text-secondary: #A3A3A3;
-    --color-text-muted: #666666;
-    --color-text-inverse: #050505;
+    /* Purple scale (true purple, not gold) */
+    --color-purple-400: #A78BFA;
+    --color-purple-500: #8B5CF6;
+    --color-purple-600: #7C3AED;
 
-    /* Sharp, thin architectural borders */
-    --color-border: #222222;
-    --color-border-subtle: #171717;
-    --color-border-active: #d97706;
+    /* Semantic accent tokens */
+    --color-indigo-accent: #6366F1;
+    --color-indigo-glow: #818CF8;
+    --color-indigo-deep: #4F46E5;
+    --color-indigo-soft: #C7D2FE;
+    --color-violet-accent: #8B5CF6;
+
+    /* Text — clean, slate-based */
+    --color-text-primary: #F1F5F9;
+    --color-text-secondary: #94A3B8;
+    --color-text-muted: #475569;
+    --color-text-inverse: #0A0A0F;
+
+    /* Borders */
+    --color-border: #1C1C28;
+    --color-border-subtle: #14141F;
+    --color-border-active: #6366F1;
 
     /* Typography */
     --font-display: "Zodiak", serif;
     --font-sans-display: "Cabinet Grotesk", sans-serif;
     --font-body: "Satoshi", system-ui, sans-serif;
 
-    /* Brutalist/Architectural Radii (Sharp edges) */
-    --radius-sm: 0rem;
-    --radius-md: 0.125rem;
-    --radius-lg: 0.125rem;
-    --radius-xl: 0.125rem;
-    --radius-2xl: 0.125rem;
+    /* Radii — slightly rounded for Linear feel */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    --radius-2xl: 1rem;
 
     --animate-fade-in: fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
     --animate-slide-up: slide-up 1s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -201,7 +215,7 @@ h6 {
     text-wrap: balance;
 }
 
-/* ── Focus States (web-design-guidelines) ── */
+/* ── Focus States ── */
 :focus-visible {
     outline: 2px solid var(--color-indigo-accent);
     outline-offset: 2px;
@@ -245,7 +259,7 @@ h6 {
 }
 
 .text-gradient {
-    background: linear-gradient(135deg, var(--color-indigo-accent), var(--color-violet-accent));
+    background: linear-gradient(135deg, var(--color-indigo-400), var(--color-violet-accent));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -257,14 +271,14 @@ h6 {
 
 /* ── Glass & Surface Utilities ── */
 .glass {
-    background: rgba(20, 26, 46, 0.6);
+    background: rgba(17, 17, 24, 0.7);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--color-border);
 }
 
 .glass-elevated {
-    background: rgba(26, 33, 64, 0.7);
+    background: rgba(24, 24, 43, 0.8);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--color-border);
@@ -307,13 +321,13 @@ h6 {
 
 /* ── Gradient Backgrounds ── */
 .bg-hero-gradient {
-    background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.15), transparent),
-        radial-gradient(ellipse 60% 40% at 80% 50%, rgba(124, 58, 237, 0.08), transparent),
+    background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 50%, rgba(139, 92, 246, 0.06), transparent),
         var(--color-obsidian);
 }
 
 .bg-gradient-indigo {
-    background: linear-gradient(135deg, var(--color-indigo-glow), var(--color-violet-accent));
+    background: linear-gradient(135deg, var(--color-indigo-500), var(--color-violet-accent));
 }
 
 .bg-gradient-surface {
@@ -353,7 +367,7 @@ h6 {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--color-indigo-glow), var(--color-violet-accent));
+    background: linear-gradient(135deg, var(--color-indigo-500), var(--color-indigo-600));
     color: white;
 }
 
@@ -510,11 +524,11 @@ select {
 
     0%,
     100% {
-        box-shadow: 0 0 20px rgba(245, 158, 11, 0.3), 0 0 60px rgba(245, 158, 11, 0.1);
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.25), 0 0 60px rgba(99, 102, 241, 0.08);
     }
 
     50% {
-        box-shadow: 0 0 30px rgba(245, 158, 11, 0.5), 0 0 80px rgba(245, 158, 11, 0.2), 0 0 120px rgba(245, 158, 11, 0.08);
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.4), 0 0 80px rgba(99, 102, 241, 0.15), 0 0 120px rgba(99, 102, 241, 0.05);
     }
 }
 
@@ -567,7 +581,7 @@ select {
     animation: orbit 20s linear infinite;
 }
 
-.text-shimmer-gold {
+.text-shimmer-indigo {
     background: linear-gradient(90deg,
             var(--color-text-primary) 0%,
             var(--color-indigo-400) 25%,
@@ -583,17 +597,17 @@ select {
 
 .landing-grid-bg {
     background-image:
-        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
     background-size: 60px 60px;
 }
 
 .hero-mesh-gradient {
     background:
-        radial-gradient(ellipse 60% 50% at 20% 30%, rgba(245, 158, 11, 0.12), transparent 70%),
-        radial-gradient(ellipse 50% 60% at 80% 20%, rgba(217, 119, 6, 0.08), transparent 70%),
-        radial-gradient(ellipse 40% 40% at 60% 80%, rgba(251, 191, 36, 0.06), transparent 70%),
-        radial-gradient(ellipse 80% 40% at 50% 50%, rgba(180, 83, 9, 0.04), transparent 80%);
+        radial-gradient(ellipse 60% 50% at 20% 30%, rgba(99, 102, 241, 0.1), transparent 70%),
+        radial-gradient(ellipse 50% 60% at 80% 20%, rgba(139, 92, 246, 0.07), transparent 70%),
+        radial-gradient(ellipse 40% 40% at 60% 80%, rgba(34, 211, 238, 0.04), transparent 70%),
+        radial-gradient(ellipse 80% 40% at 50% 50%, rgba(99, 102, 241, 0.03), transparent 80%);
 }
 
 /* ── Content Visibility for Long Lists ── */
@@ -611,17 +625,17 @@ select {
 
     0%,
     100% {
-        box-shadow: 0 0 20px rgba(245, 158, 11, 0.12), 0 0 40px rgba(245, 158, 11, 0.04);
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.12), 0 0 40px rgba(99, 102, 241, 0.04);
     }
 
     50% {
-        box-shadow: 0 0 30px rgba(245, 158, 11, 0.25), 0 0 60px rgba(245, 158, 11, 0.1);
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.25), 0 0 60px rgba(99, 102, 241, 0.1);
     }
 }
 
 /* ── Create Page: Mode Card Selected ── */
 .create-mode-selected {
-    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2), 0 4px 20px rgba(245, 158, 11, 0.06);
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2), 0 4px 20px rgba(99, 102, 241, 0.06);
 }
 
 /* ── Create Page: Loading Screen Gradient BG ── */
@@ -633,31 +647,31 @@ select {
 
 @keyframes loading-gradient-shift {
     0% {
-        background: linear-gradient(135deg, #050505 0%, #0f0f0f 30%, #0a0a0a 60%, #050505 100%);
+        background: linear-gradient(135deg, #0A0A0F 0%, #111118 30%, #0D0D14 60%, #0A0A0F 100%);
         background-size: 400% 400%;
         background-position: 0% 50%;
     }
 
     25% {
-        background: linear-gradient(135deg, #050505 0%, #0a0e14 30%, #0f0f0f 60%, #050505 100%);
+        background: linear-gradient(135deg, #0A0A0F 0%, #0E1025 30%, #111118 60%, #0A0A0F 100%);
         background-size: 400% 400%;
         background-position: 50% 0%;
     }
 
     50% {
-        background: linear-gradient(135deg, #050505 0%, #0f0c08 30%, #0a0a0a 60%, #050505 100%);
+        background: linear-gradient(135deg, #0A0A0F 0%, #13101F 30%, #0D0D14 60%, #0A0A0F 100%);
         background-size: 400% 400%;
         background-position: 100% 50%;
     }
 
     75% {
-        background: linear-gradient(135deg, #050505 0%, #0a0a10 30%, #0f0f0f 60%, #050505 100%);
+        background: linear-gradient(135deg, #0A0A0F 0%, #0D1020 30%, #111118 60%, #0A0A0F 100%);
         background-size: 400% 400%;
         background-position: 50% 100%;
     }
 
     100% {
-        background: linear-gradient(135deg, #050505 0%, #0f0f0f 30%, #0a0a0a 60%, #050505 100%);
+        background: linear-gradient(135deg, #0A0A0F 0%, #111118 30%, #0D0D14 60%, #0A0A0F 100%);
         background-size: 400% 400%;
         background-position: 0% 50%;
     }

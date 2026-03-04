@@ -22,15 +22,15 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
     const objectives = data.objectives || [];
 
     // Calculate tabs to show
-    const availableTabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
-        { id: 'overview', label: 'Overview', icon: <BookOpen size={14} /> }
-    ];
+    const hasOverview = !!(data.description || data.concepts || objectives.length > 0);
+    const availableTabs: { id: TabType; label: string; icon: React.ReactNode }[] = [];
+    if (hasOverview) availableTabs.push({ id: 'overview', label: 'Overview', icon: <BookOpen size={14} /> });
     if (tasks.length > 0) availableTabs.push({ id: 'tasks', label: 'Tasks', icon: <ListTodo size={14} /> });
     if (resources.length > 0) availableTabs.push({ id: 'resources', label: 'Resources', icon: <FileText size={14} /> });
     if (videos.length > 0) availableTabs.push({ id: 'videos', label: 'Videos', icon: <Video size={14} /> });
     availableTabs.push({ id: 'notes', label: 'Notes', icon: <FileText size={14} /> });
 
-    const [activeTab, setActiveTab] = useState<TabType>('overview');
+    const [activeTab, setActiveTab] = useState<TabType>(availableTabs[0].id);
     const [activeVideoId, setActiveVideoId] = useState<string | null>(videos.length > 0 ? videos[0].id : null);
     const [sidePanelResource, setSidePanelResource] = useState<Resource | null>(null);
 
@@ -54,22 +54,39 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
 
     useEffect(() => {
         // Reset state when section changes
-        setActiveTab('overview');
+        setActiveTab(availableTabs[0].id);
         setActiveVideoId(videos.length > 0 ? videos[0].id : null);
         setSidePanelResource(null);
         setNotesText(section.data.notes || "");
     }, [section.id]); // only on section ID change
 
-    const completedCount = tasks.filter((t) => t.completed).length;
-    const totalCount = tasks.length;
-    const taskPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : (data.completed ? 100 : 0);
+    let completedCount = 0;
+    let totalCount = 0;
+    tasks.forEach(t => {
+        totalCount++;
+        if (t.completed) completedCount++;
+        (t.subtasks || []).forEach(st => {
+            totalCount++;
+            if (st.completed) completedCount++;
+        });
+    });
+    const taskPercent = data.completed ? 100 : (totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0);
 
     const toggleModuleComplete = () => {
         onUpdate((s) => {
             const ms = s as ModuleSectionType;
+            const isNowCompleted = !ms.data.completed;
             return {
                 ...ms,
-                data: { ...ms.data, completed: !ms.data.completed },
+                data: {
+                    ...ms.data,
+                    completed: isNowCompleted,
+                    tasks: isNowCompleted ? (ms.data.tasks || []).map(t => ({
+                        ...t,
+                        completed: true,
+                        subtasks: (t.subtasks || []).map(st => ({ ...st, completed: true }))
+                    })) : ms.data.tasks
+                },
             };
         });
     };
