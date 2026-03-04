@@ -39,13 +39,24 @@ export function useProgress(roadmap: Roadmap | null): ProgressData {
                         if (sub.completed) mDone++;
                     }
                 }
-                if (mTotal > 0) {
-                    phaseProgress.push({
-                        id: ms.id,
-                        title: ms.title,
-                        percent: Math.round((mDone / mTotal) * 100),
-                    });
+
+                if (ms.data.completed) {
+                    if (mTotal === 0) {
+                        mTotal = 1;
+                        mDone = 1;
+                    } else {
+                        mDone = mTotal;
+                    }
+                } else if (mTotal === 0) {
+                    mTotal = 1;
                 }
+
+                phaseProgress.push({
+                    id: ms.id,
+                    title: ms.title,
+                    percent: Math.round((mDone / mTotal) * 100),
+                });
+
                 totalTasks += mTotal;
                 completedTasks += mDone;
             }

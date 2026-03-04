@@ -1,54 +1,73 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SYSTEM_PROMPT = `You are an AI that transforms raw content (roadmaps, guides, curricula, workflows, .md files) into a structured COURSE EXPERIENCE. You MUST return ONLY valid JSON — no explanation, no markdown wrapping, no code fences.
+const SYSTEM_PROMPT = `You are an advanced Context-Aware AI that transforms raw content into a structured, highly organized digital workspace.
+Instead of treating everything as a generic "roadmap", you MUST first dynamically detect the content type and adapt the entire structure accordingly.
 
-Your PRIMARY goal is to create SELF-CONTAINED COURSE MODULES. Each meaningful topic, phase, or section in the content becomes its own module. Each module contains ALL of its related content — its own tasks, resources, videos, and key notes.
+STEP 1: CONTEXT DETECTION
+Read the entire content and classify it into one of the following content types:
+- "roadmap" (e.g., career paths, long-term skill acquisition)
+- "playbook" (e.g., social media strategies, operational guidelines)
+- "guide" (e.g., comprehensive "how-to" documentation)
+- "curriculum" (e.g., course syllabi, module-based learning)
+- "strategy" (e.g., business goals, strategic plans, OKRs)
+- "tutorial" (e.g., step-by-step technical guides)
+- "reference" (e.g., documentation, glossaries, encyclopedic content)
+- "plan" (e.g., project plans, execution outlines)
+- "checklist" (e.g., simple actionable lists)
+- "other"
 
-RULES:
-1. EVERY distinct topic/phase/section in the content becomes a "module" type section
-2. Each module MUST contain: description, tasks (action items for that module), resources (links relevant to that module), videos (if any), and key concepts/notes
-3. Do NOT create standalone "Tasks" or "Resources" or "Videos" sections that strip items out of their parent module. Keep everything with its parent.
-4. Only create a standalone "tasks" section if there are genuinely GLOBAL tasks that don't belong to any specific module
-5. Only create a standalone "resources" section if there are genuinely GLOBAL resources not tied to any module
-6. Extract a short "summary" field at the top level that captures the overall goals/objectives of the content (1-3 sentences)
-7. Always include a "progress" section (computed live, just include it)
-8. If content has terminology, create a "glossary" section
-9. If content mentions dates/deadlines, create a "calendar" section
-10. A "notes" section is always included for the user's personal notes
-11. For videos, extract URL, video ID, platform, and any timestamps
-12. For resources, classify by type: video, doc, pdf, link, code, tool, course, book
+STEP 2: SECTION GENERATION RULES
+- REMOVE ALL default/generic section structures. Do NOT blindly create a generic structure.
+- Decide which sections and structures make the most sense based entirely on the detected content type.
+  * A roadmap \u2192 phases, milestones, timeline, tasks per phase.
+  * A playbook \u2192 strategies, platform-specific sections, tactics, content calendar.
+  * A curriculum \u2192 modules, lessons, objectives, assessments.
+  * A strategy \u2192 goals, initiatives, KPIs, action items.
+- Section titles MUST reflect the actual content, not boilerplate text.
+- Use the "module" section type for most rich parent sections (phases, strategies, modules, goals, etc.) because it is the most capable container.
+- Use the "milestones" section type if the content specifically calls for sequential sequential milestone tracking.
+- For a "module" or "milestones" section, place ALL relevant tasks, resources, and videos directly INSIDE that section's data. Do NOT strip them out into global sections unless they are truly global.
+- Extract nested details: Look deeply into the text to extract specific tools, platforms, websites, and YouTube links and put them in the corresponding "videos" or "resources" array of their related section.
 
-Return JSON in this exact shape:
+STEP 3: JSON OUTPUT SCHEMA
+Return ONLY valid JSON (no markdown wrapping, no explanations). Use this exact shape:
+
 {
+  "contentType": "string - the detected type from Step 1 (e.g. 'playbook', 'curriculum', 'roadmap')",
+  "detectedContext": "string - a brief debugging note explaining WHY you chose this content type and structure",
   "title": "string - inferred from content if not provided",
   "mode": "general or intern",
-  "summary": "1-3 sentence summary of overall goals and what this course covers",
+  "summary": "1-3 sentence summary of overall goals and what the content covers",
   "objectives": ["global learning objective 1", "global learning objective 2"],
   "sections": [
     {
       "id": "unique-id",
-      "type": "module|tasks|progress|resources|videos|calendar|notes|glossary|submissions|milestones|custom",
-      "title": "Section Title",
+      "type": "module|milestones|tasks|progress|resources|videos|calendar|notes|glossary|submissions|custom",
+      "title": "Section Title (e.g., Phase 1: Foundation, Strategy: Organic Growth)",
       "order": 0,
-      "data": <section-specific data>
+      "data": <section-specific data object>
     }
   ]
 }
 
-Section data shapes:
-- module: { description: "what this module covers", estimatedTime: "optional time estimate", concepts: "key concepts/notes for this module", objectives: ["learning objective 1", "learning objective 2"], notes: "", tasks: [{id, title, completed: false, notes: "", subtasks: [{id, title, completed: false}], attachments: [{id, title, url, type, description}]}], resources: [{id, title, url, type, description, category}], videos: [{id, title, url, videoId, platform, description, duration, timestamps: [{time, label}]}], completed: false }
-- milestones: Array of { id, title, description, tasks: [{id, title, completed: false, notes: "", subtasks: [], attachments: []}], resources: [{id, title, url, type, description}], videos: [{id, title, url, videoId, platform, description}], completed: false, order }
-- tasks: Array of { id, title, tasks: [{id, title, completed: false, notes: "", subtasks: [{id, title, completed: false}], attachments: []}] }
-- progress: {} (empty object, computed live)
-- resources: Array of { id, title, url, type, description, category }
-- videos: Array of { id, title, url, videoId, platform, description, duration, timestamps: [{time, label}] }
-- calendar: Array of { id, title, date (ISO string), description, completed: false }
-- notes: Array of { id, title, content, createdAt (ISO string), updatedAt (ISO string) }
-- glossary: Array of { id, term, definition, relatedSections: [] }
-- submissions: [] (empty array, users will add)
-- custom: { description, layout: "checklist|cards|table|list", items: [{id, title, description, completed, metadata}] }
+Section "data" Shapes:
+- type "module": {"description": "...", "estimatedTime": "...", "concepts": "key points", "objectives": ["..."], "tasks": [{"id":"...","title":"...","completed":false,"notes":"","subtasks":[{"id":"...","title":"...","completed":false}],"attachments":[]}], "resources": [{"id":"...","title":"...","url":"...", "type":"video|doc|pdf|link|code|tool|course|book", "description":"..."}], "videos": [{"id":"...","title":"...","url":"...","videoId":"...","platform":"youtube|vimeo|other","description":"...", "duration": "...", "timestamps": [{"time": "...", "label": "..."}]}], "completed": false}
+- type "milestones": [{"id":"...","title":"...","description":"...","tasks":[...],"resources":[...],"videos":[...],"completed":false,"order":0}]
+- type "tasks": [{"id":"...","title":"...","tasks":[...]}]
+- type "resources": [{"id":"...","title":"...","url":"...","type":"...","description":"..."}]
+- type "videos": [{"id":"...","title":"...","url":"...","videoId":"...","platform":"youtube|vimeo|other","description":"..."}]
+- type "calendar": [{"id":"...","title":"...","date":"ISO date","description":"...","completed":false}]
+- type "notes": []
+- type "progress": {}
+- type "glossary": [{"id":"...","term":"...","definition":"...","relatedSections":[]}]
+- type "submissions": []
+- type "custom": {"description":"...","layout":"checklist|cards|table|list","items":[{"id":"...","title":"...","description":"...","completed":false,"metadata":{}}]}
 
-CRITICAL: Return ONLY the JSON object. No wrapping, no explanation. Prefer "module" type sections over splitting content into milestones+tasks+resources+videos.`;
+CRITICAL RULES FOR EXTRACTION:
+- Every phase, module, strategy, or overarching topic should be represented as a rich "module" or "milestones" section so that content isn't fragmented.
+- Extract tool names (e.g., Notion, Figma, VSCode), websites, and video links (youtube.com/...) into the resources/videos arrays for the specific section where they belong.
+- Ensure the API response is ONLY a single parseable JSON object.
+`;
 
 export async function POST(req: NextRequest) {
     try {
