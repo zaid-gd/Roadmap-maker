@@ -463,10 +463,195 @@ select {
     animation: check-bounce 0.3s ease-out;
 }
 
+/* ── Landing Page Keyframes ── */
+@keyframes float-particle {
+
+    0%,
+    100% {
+        transform: translateY(0) translateX(0) scale(1);
+        opacity: 0.4;
+    }
+
+    25% {
+        transform: translateY(-30px) translateX(10px) scale(1.1);
+        opacity: 0.7;
+    }
+
+    50% {
+        transform: translateY(-15px) translateX(-15px) scale(0.9);
+        opacity: 0.5;
+    }
+
+    75% {
+        transform: translateY(-40px) translateX(5px) scale(1.05);
+        opacity: 0.6;
+    }
+}
+
+@keyframes mesh-rotate {
+    0% {
+        transform: rotate(0deg) scale(1);
+    }
+
+    33% {
+        transform: rotate(120deg) scale(1.1);
+    }
+
+    66% {
+        transform: rotate(240deg) scale(0.95);
+    }
+
+    100% {
+        transform: rotate(360deg) scale(1);
+    }
+}
+
+@keyframes cta-glow-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.3), 0 0 60px rgba(245, 158, 11, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 30px rgba(245, 158, 11, 0.5), 0 0 80px rgba(245, 158, 11, 0.2), 0 0 120px rgba(245, 158, 11, 0.08);
+    }
+}
+
+@keyframes grid-line-pulse {
+
+    0%,
+    100% {
+        opacity: 0.03;
+    }
+
+    50% {
+        opacity: 0.08;
+    }
+}
+
+@keyframes orbit {
+    0% {
+        transform: rotate(0deg) translateX(120px) rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg) translateX(120px) rotate(-360deg);
+    }
+}
+
+@keyframes text-shimmer {
+    0% {
+        background-position: -200% center;
+    }
+
+    100% {
+        background-position: 200% center;
+    }
+}
+
+/* ── Landing Page Utilities ── */
+.animate-float {
+    animation: float-particle 8s ease-in-out infinite;
+}
+
+.animate-mesh {
+    animation: mesh-rotate 30s linear infinite;
+}
+
+.animate-cta-glow {
+    animation: cta-glow-pulse 3s ease-in-out infinite;
+}
+
+.animate-orbit {
+    animation: orbit 20s linear infinite;
+}
+
+.text-shimmer-gold {
+    background: linear-gradient(90deg,
+            var(--color-text-primary) 0%,
+            var(--color-indigo-400) 25%,
+            var(--color-indigo-500) 50%,
+            var(--color-indigo-400) 75%,
+            var(--color-text-primary) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: text-shimmer 4s linear infinite;
+}
+
+.landing-grid-bg {
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+}
+
+.hero-mesh-gradient {
+    background:
+        radial-gradient(ellipse 60% 50% at 20% 30%, rgba(245, 158, 11, 0.12), transparent 70%),
+        radial-gradient(ellipse 50% 60% at 80% 20%, rgba(217, 119, 6, 0.08), transparent 70%),
+        radial-gradient(ellipse 40% 40% at 60% 80%, rgba(251, 191, 36, 0.06), transparent 70%),
+        radial-gradient(ellipse 80% 40% at 50% 50%, rgba(180, 83, 9, 0.04), transparent 80%);
+}
+
 /* ── Content Visibility for Long Lists ── */
 .content-auto {
     content-visibility: auto;
     contain-intrinsic-size: 0 60px;
+}
+
+/* ── Create Page: Generate Button Glow ── */
+.create-btn-glow {
+    animation: create-pulse-glow 2.5s ease-in-out infinite;
+}
+
+@keyframes create-pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.15), 0 0 40px rgba(245, 158, 11, 0.05);
+    }
+
+    50% {
+        box-shadow: 0 0 30px rgba(245, 158, 11, 0.3), 0 0 60px rgba(245, 158, 11, 0.12);
+    }
+}
+
+/* ── Create Page: Drop Zone Active ── */
+.create-drop-active {
+    transform: scale(1.005);
+}
+
+/* ── Loading Screen: Floating Particles ── */
+@keyframes loading-float {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 0.4;
+    }
+
+    50% {
+        transform: translateY(-20px) scale(1.5);
+        opacity: 0.8;
+    }
+}
+
+/* ── Loading Screen: Ring Pulse ── */
+@keyframes loading-ring-pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.6;
+    }
 }
 
 /* ── Reduced Motion ── */

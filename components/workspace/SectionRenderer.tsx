@@ -1,6 +1,7 @@
 "use client";
 
 import type { Roadmap, Section } from "@/types";
+import ModuleSection from "@/components/workspace/sections/ModuleSection";
 import MilestonesSection from "@/components/workspace/sections/MilestonesSection";
 import TaskListSection from "@/components/workspace/sections/TaskListSection";
 import ProgressSection from "@/components/workspace/sections/ProgressSection";
@@ -22,6 +23,7 @@ export default function SectionRenderer({ section, roadmap, onUpdate }: SectionR
 
     const renderContent = () => {
         switch (section.type) {
+            case "module": return <ModuleSection section={section} onUpdate={onUpdate} />;
             case "milestones": return <MilestonesSection section={section} onUpdate={onUpdate} />;
             case "tasks": return <TaskListSection section={section} onUpdate={onUpdate} />;
             case "progress": return <ProgressSection roadmap={roadmap} />;
@@ -37,7 +39,6 @@ export default function SectionRenderer({ section, roadmap, onUpdate }: SectionR
     };
 
     return (
-        // We use a simple CSS keyframes trigger via a unique key wrapper, ensuring smooth transition without adding heavy deps.
         <div key={section.id} className="animate-fade-in transition-all duration-300">
             {renderContent()}
         </div>

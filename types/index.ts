@@ -5,6 +5,7 @@
 // ── Section Types ──
 
 export type SectionType =
+    | "module"
     | "milestones"
     | "tasks"
     | "progress"
@@ -22,6 +23,7 @@ export interface Roadmap {
     id: string;
     title: string;
     mode: "general" | "intern";
+    summary?: string; // Overall goals banner
     sections: Section[];
     rawContent: string;
     createdAt: string;
@@ -37,6 +39,7 @@ export interface SectionBase {
 }
 
 export type Section =
+    | ModuleSection
     | MilestoneSection
     | TaskSection
     | ProgressSection
@@ -47,6 +50,19 @@ export type Section =
     | GlossarySection
     | SubmissionSection
     | CustomSection;
+
+export interface ModuleSection extends SectionBase {
+    type: "module";
+    data: {
+        description: string;
+        estimatedTime?: string;
+        concepts?: string;
+        tasks: Task[];
+        resources: Resource[];
+        videos: Video[];
+        completed: boolean;
+    };
+}
 
 export interface MilestoneSection extends SectionBase {
     type: "milestones";

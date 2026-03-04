@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Roadmap, Section, TaskSection, MilestoneSection } from "@/types";
+import type { Roadmap, TaskSection, MilestoneSection, ModuleSection } from "@/types";
 
 interface ProgressData {
     overall: number;
@@ -25,6 +25,32 @@ export function useProgress(roadmap: Roadmap | null): ProgressData {
         const phaseProgress: { id: string; title: string; percent: number }[] = [];
 
         for (const section of roadmap.sections) {
+            // Module sections
+            if (section.type === "module") {
+                const ms = section as ModuleSection;
+                const moduleTasks = ms.data.tasks || [];
+                let mTotal = 0;
+                let mDone = 0;
+                for (const task of moduleTasks) {
+                    mTotal++;
+                    if (task.completed) mDone++;
+                    for (const sub of task.subtasks || []) {
+                        mTotal++;
+                        if (sub.completed) mDone++;
+                    }
+                }
+                if (mTotal > 0) {
+                    phaseProgress.push({
+                        id: ms.id,
+                        title: ms.title,
+                        percent: Math.round((mDone / mTotal) * 100),
+                    });
+                }
+                totalTasks += mTotal;
+                completedTasks += mDone;
+            }
+
+            // Task sections
             if (section.type === "tasks") {
                 const ts = section as TaskSection;
                 for (const group of ts.data || []) {
@@ -39,6 +65,7 @@ export function useProgress(roadmap: Roadmap | null): ProgressData {
                 }
             }
 
+            // Milestone sections
             if (section.type === "milestones") {
                 const ms = section as MilestoneSection;
                 for (const milestone of ms.data || []) {
@@ -52,7 +79,6 @@ export function useProgress(roadmap: Roadmap | null): ProgressData {
                             if (sub.completed) mDone++;
                         }
                     }
-                    // Also count the milestone itself if it has no tasks
                     if (mTotal === 0) {
                         mTotal = 1;
                         if (milestone.completed) mDone = 1;
