@@ -18,13 +18,14 @@ interface SectionRendererProps {
     roadmap: Roadmap;
     onUpdate: (updater: (s: Section) => Section) => void;
     onNavigate?: (id: string) => void;
+    onApiError?: (error: { message: string }) => void;
 }
 
-export default function SectionRenderer({ section, roadmap, onUpdate, onNavigate }: SectionRendererProps) {
+export default function SectionRenderer({ section, roadmap, onUpdate, onNavigate, onApiError }: SectionRendererProps) {
 
     const renderContent = () => {
         switch (section.type) {
-            case "module": return <ModuleSection section={section} roadmap={roadmap} onUpdate={onUpdate} onNavigate={onNavigate} />;
+            case "module": return <ModuleSection section={section} roadmap={roadmap} onUpdate={onUpdate} onNavigate={onNavigate} onApiError={onApiError} />;
             case "milestones": return <MilestonesSection section={section} onUpdate={onUpdate} />;
             case "tasks": return <TaskListSection section={section} onUpdate={onUpdate} />;
             case "progress": return <ProgressSection roadmap={roadmap} />;

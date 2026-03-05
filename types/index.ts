@@ -35,6 +35,13 @@ export interface Roadmap {
         accentColor?: string;
         logoUrl?: string;
     };
+
+    // AI generated new fields
+    contentType?: "roadmap" | "playbook" | "curriculum" | "strategy" | "tutorial" | "reference" | "plan" | "other" | string;
+    detectedContext?: string;
+    totalEstimatedDuration?: string;
+    difficulty?: "beginner" | "intermediate" | "advanced";
+    goal?: string;
 }
 
 // ── Section (discriminated union) ──
@@ -43,6 +50,12 @@ export interface SectionBase {
     id: string;
     title: string;
     order: number;
+    metadata?: {
+        estimatedDuration?: string;
+        difficulty?: "beginner" | "intermediate" | "advanced" | string;
+        taskCount?: number;
+        keyOutcome?: string;
+    };
 }
 
 export type Section =
@@ -149,6 +162,13 @@ export interface Task {
     notes: string;
     subtasks: SubTask[];
     attachments: Resource[];
+
+    // AI generated new fields
+    text?: string;
+    description?: string;
+    estimatedTime?: string;
+    priority?: "core" | "optional" | "advanced" | string;
+    done?: boolean;
 }
 
 export interface SubTask {

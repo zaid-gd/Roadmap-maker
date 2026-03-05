@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Clock } from "lucide-react";
 import type { TaskSection, Section, TaskGroup, Task } from "@/types";
 
 interface Props {
@@ -9,6 +10,54 @@ interface Props {
 }
 
 export default function TaskListSection({ section, onUpdate }: Props) {
+    const [focusedTaskPath, setFocusedTaskPath] = useState<{g: number, t: number} | null>(null);
+
+    // Flatten tasks for navigation
+    const allTasks = (section.data || []).flatMap((g, gIdx) => 
+        (g.tasks || []).map((t, tIdx) => ({ groupId: g.id, taskId: t.id, gIdx, tIdx, original: t }))
+    );
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const el = e.currentTarget as HTMLElement;
+            if (el.tagName === 'INPUT' && (el as HTMLInputElement).type === 'text') return;
+            if (el.tagName === 'TEXTAREA') return;
+
+            if (e.key === 'j' || e.key === 'J') {
+                e.preventDefault();
+                setFocusedTaskPath(prev => {
+                    if (!prev) return allTasks.length > 0 ? {g: allTasks[0].gIdx, t: allTasks[0].tIdx} : null;
+                    const idx = allTasks.findIndex(t => t.gIdx === prev.g && t.tIdx === prev.t);
+                    if (idx < allTasks.length - 1) {
+                        return {g: allTasks[idx + 1].gIdx, t: allTasks[idx + 1].tIdx};
+                    }
+                    return prev;
+                });
+            } else if (e.key === 'k' || e.key === 'K') {
+                e.preventDefault();
+                setFocusedTaskPath(prev => {
+                    if (!prev) return null;
+                    const idx = allTasks.findIndex(t => t.gIdx === prev.g && t.tIdx === prev.t);
+                    if (idx > 0) {
+                        return {g: allTasks[idx - 1].gIdx, t: allTasks[idx - 1].tIdx};
+                    }
+                    return prev;
+                });
+            } else if (e.key === ' ') {
+                if (focusedTaskPath) {
+                    const task = allTasks.find(t => t.gIdx === focusedTaskPath.g && t.tIdx === focusedTaskPath.t);
+                    if (task) {
+                        e.preventDefault();
+                        toggleComplete(task.groupId, task.taskId);
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [allTasks, focusedTaskPath]);
+
     const toggleComplete = (groupId: string, taskId: string, subtaskId?: string) => {
         onUpdate((s) => {
             const ts = s as TaskSection;
@@ -101,7 +150,7 @@ export default function TaskListSection({ section, onUpdate }: Props) {
                                     {(group.tasks || []).map((task) => (
                                         <div
                                             key={task.id}
-                                            className={`relative bg-obsidian-elevated/40 border border-border rounded-xl p-3 sm:p-4 transition-all duration-500 ease-out hover:bg-obsidian-hover hover:border-border-subtle ${task.completed ? "opacity-40 scale-[0.98] grayscale" : "opacity-100 scale-100"}`}
+                                            className={`relative bg-obsidian-elevated/40 border rounded-xl p-3 sm:p-4 transition-all duration-500 ease-out hover:bg-obsidian-hover hover:border-border-subtle ${task.completed ? "opacity-40 scale-[0.98] grayscale" : "opacity-100 scale-100"} ${focusedTaskPath?.g === section.data.indexOf(group) && focusedTaskPath?.t === group.tasks.indexOf(task) ? "border-indigo-500 shadow-[0_0_0_1px_rgba(99,102,241,0.5)]" : "border-border"}`}
                                         >
                                             <label className="flex items-start gap-3 cursor-pointer group/label">
                                                 <div className="relative flex items-center justify-center w-5 h-5 mt-0.5 shrink-0">
@@ -121,6 +170,21 @@ export default function TaskListSection({ section, onUpdate }: Props) {
                                                             }`}
                                                     >
                                                         {task.title}
+                                                        {task.priority && (
+                                                            <span className={`ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
+                                                                task.priority === 'core' ? 'bg-indigo-500/10 text-indigo-400' :
+                                                                task.priority === 'optional' ? 'bg-zinc-500/10 text-zinc-400' :
+                                                                task.priority === 'advanced' ? 'bg-amber-500/10 text-amber-400' : ''
+                                                            }`}>
+                                                                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                                                            </span>
+                                                        )}
+                                                        {task.estimatedTime && (
+                                                            <span className="ml-3 inline-flex items-center gap-1 text-[12px] text-text-secondary opacity-70">
+                                                                <Clock size={12} />
+                                                                {task.estimatedTime}
+                                                            </span>
+                                                        )}
                                                     </span>
                                                 </div>
                                             </label>

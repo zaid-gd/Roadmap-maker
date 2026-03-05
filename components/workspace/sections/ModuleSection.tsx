@@ -3,18 +3,19 @@
 import { useState, useEffect } from "react";
 import type { ModuleSection as ModuleSectionType, Section, Task, Roadmap, Resource } from "@/types";
 import SmartEmbed from "@/components/shared/SmartEmbed";
-import { CheckCircle2, ChevronRight, BookOpen, Video, ListTodo, FileText, X, Navigation, Circle } from "lucide-react";
+import { CheckCircle2, Clock, ChevronRight, BookOpen, Video, ListTodo, FileText, X, Navigation, Circle, RefreshCw, BarChart2, Target } from "lucide-react";
 
 interface Props {
     section: ModuleSectionType;
     roadmap?: Roadmap;
     onUpdate: (updater: (s: Section) => Section) => void;
     onNavigate?: (id: string) => void;
+    onApiError?: (error: { message: string }) => void;
 }
 
 type TabType = 'overview' | 'tasks' | 'resources' | 'videos' | 'notes';
 
-export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }: Props) {
+export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, onApiError }: Props) {
     const data = section.data;
     const tasks = data.tasks || [];
     const resources = data.resources || [];
@@ -34,29 +35,77 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
     const [activeVideoId, setActiveVideoId] = useState<string | null>(videos.length > 0 ? videos[0].id : null);
     const [sidePanelResource, setSidePanelResource] = useState<Resource | null>(null);
 
-    // Provide autosave for notes
+    const [showRegenConfirm, setShowRegenConfirm] = useState(false);
+    const [isRegenerating, setIsRegenerating] = useState(false);
+    const [regenError, setRegenError] = useState("");
+    const [focusedTaskIdx, setFocusedTaskIdx] = useState(-1);
+
     const [notesText, setNotesText] = useState(data.notes || "");
     const [saveStatus, setSaveStatus] = useState<"saved " | "saving..." | "">("");
 
-    useEffect(() => {
-        const timeout = setTimeout(() => {
-            if (notesText !== (data.notes || "")) {
-                setSaveStatus("saving...");
+    const handleRegenerate = async () => {
+        setShowRegenConfirm(false);
+        setIsRegenerating(true);
+        setRegenError("");
+        try {
+            // Get user config if available
+            let userConfig = null;
+            if (typeof window !== "undefined") {
+                try {
+                    const stored = localStorage.getItem("zns_user_config");
+                    if (stored) userConfig = JSON.parse(stored);
+                } catch {}
+            }
+
+            const payload: any = {
+                content: "Regenerate only this section data: " + JSON.stringify(section.data),
+                mode: roadmap?.mode || "general",
+                title: section.title + " (REGENERATE SECTION ONLY)",
+            };
+
+            if (userConfig?.useCustomKey && userConfig?.apiKey) {
+                payload.userApiKey = userConfig.apiKey;
+                payload.userProvider = userConfig.provider;
+                payload.userModel = userConfig.model;
+            }
+
+            const res = await fetch("/api/parse-roadmap", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+
+            if (json.error === "invalid_key") {
+                setRegenError("Your API key is invalid. Update it in Settings.");
+                onApiError?.({ message: "Your API key is invalid or expired. Update it in Settings." });
+                setIsRegenerating(false);
+                return;
+            }
+            if (json.success && json.roadmap?.sections?.length > 0) {
+                const newSectionData = json.roadmap.sections[0].data;
                 onUpdate((s) => {
                     const ms = s as ModuleSectionType;
-                    return { ...ms, data: { ...ms.data, notes: notesText } };
+                    return {
+                        ...s,
+                        data: {
+                            ...s.data,
+                            ...newSectionData,
+                            completed: ms.data.completed // preserve completion
+                        }
+                    };
                 });
-                setTimeout(() => setSaveStatus("saved "), 500);
+            } else {
+                setRegenError("Failed to regenerate module.");
             }
-        }, 1000);
-        return () => clearTimeout(timeout);
-    }, [notesText, data.notes, onUpdate]);
+        } catch (e) {
+            setRegenError("An error occurred during regeneration.");
+        } finally {
+            setIsRegenerating(false);
+        }
+    };
 
     useEffect(() => {
-        // Reset state when section changes
-        setActiveTab(availableTabs[0].id);
-        setActiveVideoId(videos.length > 0 ? videos[0].id : null);
-        setSidePanelResource(null);
         setNotesText(section.data.notes || "");
     }, [section.id]); // only on section ID change
 
@@ -174,9 +223,56 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                             </h2>
                         </div>
                     </div>
+                    {section.metadata && (
+                        <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-text-secondary/70">
+                            {section.metadata.estimatedDuration && (
+                                <span className="flex items-center gap-1.5">
+                                    <Clock size={12} />
+                                    {section.metadata.estimatedDuration}
+                                </span>
+                            )}
+                            {section.metadata.difficulty && (
+                                <span className="flex items-center gap-1.5">
+                                    <BarChart2 size={12} />
+                                    <span className={`px-1.5 py-0.5 rounded-sm font-medium ${
+                                        section.metadata.difficulty === 'beginner' ? 'bg-emerald-500/10 text-emerald-400' :
+                                        section.metadata.difficulty === 'intermediate' ? 'bg-amber-500/10 text-amber-400' :
+                                        section.metadata.difficulty === 'advanced' ? 'bg-red-500/10 text-red-400' : 'bg-white/5 text-white'
+                                    }`}>
+                                        {section.metadata.difficulty.charAt(0).toUpperCase() + section.metadata.difficulty.slice(1)}
+                                    </span>
+                                </span>
+                            )}
+                            {section.metadata.keyOutcome && (
+                                <span className="flex items-center gap-1.5">
+                                    <Target size={12} />
+                                    {section.metadata.keyOutcome}
+                                </span>
+                            )}
+                        </div>
+                    )}
 
-                    <button
-                        onClick={toggleModuleComplete}
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowRegenConfirm(!showRegenConfirm)}
+                                className="shrink-0 flex items-center justify-center w-11 h-11 rounded-lg transition-all bg-obsidian-elevated text-text-secondary border border-border-subtle hover:border-indigo-500/50 hover:text-indigo-300"
+                                title="Regenerate Module"
+                            >
+                                <RefreshCw size={18} className={isRegenerating ? "animate-spin" : ""} />
+                            </button>
+                            {showRegenConfirm && (
+                                <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-obsidian-elevated border border-border rounded-lg shadow-xl z-50 animate-in fade-in zoom-in duration-200">
+                                    <p className="text-sm text-text-primary mb-3">Regenerate just this module? Your other modules won't change.</p>
+                                    <div className="flex justify-end gap-2">
+                                        <button onClick={() => setShowRegenConfirm(false)} className="px-3 py-1.5 text-xs text-text-secondary hover:text-white transition-colors">Cancel</button>
+                                        <button onClick={handleRegenerate} className="px-3 py-1.5 text-xs bg-indigo-500 hover:bg-indigo-600 text-white rounded font-medium transition-colors">Confirm</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <button
+                            onClick={toggleModuleComplete}
                         className={`shrink-0 flex items-center gap-2 px-5 py-3 rounded-lg font-sans-display text-xs uppercase tracking-widest font-bold transition-all ${data.completed
                             ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20"
                             : "bg-obsidian-elevated text-text-secondary border border-border-subtle hover:border-indigo-500/50 hover:text-indigo-300"
@@ -185,7 +281,18 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                         {data.completed ? <><CheckCircle2 size={16} /> Mark Incomplete</> : <><Circle size={16} /> Mark Complete</>}
                     </button>
                 </div>
-
+                </div>
+                {regenError && (
+                    <div className="px-8 pb-4 text-red-400 text-sm">{regenError}</div>
+                )}
+                {isRegenerating && (
+                    <div className="absolute inset-0 z-40 bg-obsidian/50 backdrop-blur-sm flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-3">
+                            <RefreshCw size={24} className="text-indigo-400 animate-spin" />
+                            <span className="text-sm font-medium text-white">Regenerating module...</span>
+                        </div>
+                    </div>
+                )}
                 {/* Tab Bar */}
                 <div className="flex items-center gap-1 overflow-x-auto no-scrollbar mt-8 border-b border-border pb-px">
                     {availableTabs.map((tab) => (
@@ -264,7 +371,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
 
                         <div className="space-y-3">
                             {tasks.map((task: Task) => (
-                                <div key={task.id} className="group border border-border bg-obsidian-surface/40 hover:bg-obsidian-surface/80 hover:border-border-subtle rounded-xl transition-all overflow-hidden">
+                                <div key={task.id} className={`group border bg-obsidian-surface/40 hover:bg-obsidian-surface/80 rounded-xl transition-all overflow-hidden ${focusedTaskIdx === tasks.indexOf(task) ? 'border-indigo-500 shadow-[0_0_0_1px_rgba(99,102,241,0.5)]' : 'border-border hover:border-border-subtle'}`}>
                                     <button
                                         type="button"
                                         className="w-full flex items-start gap-4 p-5 text-left"
@@ -279,6 +386,21 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                                         <span className={`font-body text-base leading-snug transition-colors ${task.completed ? "text-text-secondary line-through" : "text-text-primary"
                                             }`}>
                                             {task.title}
+                                            {task.priority && (
+                                                <span className={`ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
+                                                    task.priority === 'core' ? 'bg-indigo-500/10 text-indigo-400' :
+                                                    task.priority === 'optional' ? 'bg-zinc-500/10 text-zinc-400' :
+                                                    task.priority === 'advanced' ? 'bg-amber-500/10 text-amber-400' : ''
+                                                }`}>
+                                                    {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                                                </span>
+                                            )}
+                                            {task.estimatedTime && (
+                                                <span className="ml-3 inline-flex items-center gap-1 text-[12px] text-text-secondary opacity-70">
+                                                    <Clock size={12} />
+                                                    {task.estimatedTime}
+                                                </span>
+                                            )}
                                         </span>
                                     </button>
 

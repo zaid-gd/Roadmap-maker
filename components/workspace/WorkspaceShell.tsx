@@ -12,8 +12,11 @@ import ShareEmbedModal from "@/components/workspace/ShareEmbedModal";
 import SettingsModal from "@/components/workspace/SettingsModal";
 import Link from "next/link";
 import { SECTION_LABELS } from "@/lib/constants";
-import { Search, Settings, Home, ArrowRight, CheckCircle2, Circle, LayoutDashboard, SearchCode, BookOpen, Video, ListTodo, Trophy, Layers, Calendar, Clock, Lock, Target, Flame, Info, Plus, Share, RefreshCw } from "lucide-react";
+import { Search, Settings, Home, ArrowRight, CheckCircle2, Circle, LayoutDashboard, SearchCode, BookOpen, Video, ListTodo, Trophy, Layers, Calendar, Clock, Lock, Target, Flame, Info, Plus, Share, RefreshCw, HardDrive, BarChart2, HelpCircle, X, FileText, Braces, Printer, History, ChevronDown, Key } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { exportAsMarkdown, exportAsJSON, exportAsPDF } from "@/lib/export";
+import { saveVersion, getVersions } from "@/lib/versioning";
+import { getUserConfig } from "@/lib/userConfig";
 
 interface WorkspaceShellProps {
     roadmap: Roadmap;
@@ -21,9 +24,10 @@ interface WorkspaceShellProps {
     onUpdateRoadmap?: (updates: Partial<Roadmap>) => void;
     isEmbed?: boolean;
     isReadOnly?: boolean;
+    onApiError?: (error: { message: string }) => void;
 }
 
-export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadmap, isEmbed = false, isReadOnly = false }: WorkspaceShellProps) {
+export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadmap, isEmbed = false, isReadOnly = false, onApiError }: WorkspaceShellProps) {
     const [activeSectionId, setActiveSectionId] = useState<string>("dashboard");
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -34,6 +38,11 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
     const { unlockedBadges, unlockBadge, recentBadge, clearRecentBadge, getBadges } = useAchievements();
     const { sessionTimeMs, getModuleTime } = useTimeTracker(activeSectionId !== "dashboard" ? activeSectionId : undefined);
     const router = useRouter();
+    const [userConfig, setUserConfig] = useState<any>(null);
+
+    useEffect(() => {
+        setUserConfig(getUserConfig());
+    }, []);
 
     // Tour State
     const [tourStep, setTourStep] = useState(-1);
@@ -41,10 +50,47 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
 
     // Quick Actions
     const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+    const [showShortcuts, setShowShortcuts] = useState(false);
+
+    // Keyboard Shortcuts Navigation
+    useEffect(() => {
+        const handleGlobalKeys = (e: KeyboardEvent) => {
+            // Ignore if in input
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
+            if (e.key === '[' || e.key === ']') {
+                e.preventDefault();
+                const mods = roadmap.sections.filter((s) => s.type === "module" || s.type === "milestones");
+                const currentIdx = mods.findIndex(m => m.id === activeSectionId);
+                if (currentIdx === -1) {
+                    if (mods.length > 0) setActiveSectionId(mods[0].id);
+                    return;
+                }
+                
+                if (e.key === '[' && currentIdx > 0) {
+                    setActiveSectionId(mods[currentIdx - 1].id);
+                } else if (e.key === ']' && currentIdx < mods.length - 1) {
+                    setActiveSectionId(mods[currentIdx + 1].id);
+                }
+            }
+        };
+        window.addEventListener('keydown', handleGlobalKeys);
+        return () => window.removeEventListener('keydown', handleGlobalKeys);
+    }, [activeSectionId, roadmap.sections]);
 
     // Share & Embed Modal
     const [shareModalOpen, setShareModalOpen] = useState(false);
-    
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const [showVersionHistory, setShowVersionHistory] = useState(false);
+    const [versions, setVersions] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (roadmap?.id) {
+            setVersions(getVersions(roadmap.id));
+        }
+    }, [roadmap?.id]);
+
     // Settings Modal
     const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
@@ -554,14 +600,53 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                     </Link>
                                 )}
                                 {!isEmbed && !isReadOnly && (
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setSettingsModalOpen(true)}
-                                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors text-left w-full"
-                                    >
-                                        <Settings size={16} />
-                                        <span>Settings</span>
-                                    </button>
+                                    <>
+                                        <Link href="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors">
+                                            <Settings size={16} />
+                                            <span>Settings</span>
+                                        </Link>
+                                        {userConfig?.useCustomKey && (
+                                            <div className="flex items-center gap-1.5 px-3 py-1 text-cyan-400 text-[10px] uppercase tracking-wider font-medium" title={`Using your ${userConfig.provider} API key`}>
+                                                <Key size={12} /> Custom API
+                                            </div>
+                                        )}
+                                        {userConfig?.showProgressNotice !== false && (
+                                            <div className="flex items-center justify-between px-3 py-1 mt-1 mb-1">
+                                                <div className="flex items-center gap-1.5 text-text-secondary opacity-70">
+                                                    <HardDrive size={12} />
+                                                    <span className="text-[10px] uppercase tracking-wider font-medium">Progress saved in your browser</span>
+                                                </div>
+                                                <button 
+                                                    onClick={() => {
+                                                        if (window.confirm("Are you sure you want to reset all progress? This cannot be undone.")) {
+                                                            const freshSections = roadmap.sections.map(s => {
+                                                                if (s.type === "module") {
+                                                                    return {
+                                                                        ...s,
+                                                                        data: {
+                                                                            ...s.data,
+                                                                            completed: false,
+                                                                            tasks: (s.data.tasks || []).map(t => ({
+                                                                                ...t,
+                                                                                completed: false,
+                                                                                subtasks: (t.subtasks || []).map(st => ({ ...st, completed: false }))
+                                                                            }))
+                                                                        }
+                                                                    };
+                                                                }
+                                                                return s;
+                                                            });
+                                                            onUpdateRoadmap?.({ sections: freshSections });
+                                                            window.location.reload();
+                                                        }
+                                                    }}
+                                                    className="text-[10px] uppercase tracking-wider font-bold text-red-400 hover:text-red-300 transition-colors"
+                                                >
+                                                    Reset
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </>
                         ) : (
@@ -572,13 +657,16 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                     </Link>
                                 )}
                                 {!isEmbed && !isReadOnly && (
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setSettingsModalOpen(true)}
-                                        className="flex items-center justify-center p-2 rounded-lg text-text-secondary hover:text-white hover:bg-white/5 transition-colors" title="Settings"
-                                    >
-                                        <Settings size={18} />
-                                    </button>
+                                    <>
+                                        <Link href="/settings" className="flex items-center justify-center p-2 rounded-lg text-text-secondary hover:text-white hover:bg-white/5 transition-colors" title="Settings">
+                                            <Settings size={18} />
+                                        </Link>
+                                        {userConfig?.useCustomKey && (
+                                            <div className="flex items-center gap-1.5 text-cyan-400 text-[8px] uppercase tracking-wider font-medium" title={`Using your ${userConfig.provider} API key`}>
+                                                <Key size={10} />
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </>
                         )}
@@ -602,6 +690,67 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                 {/* Potential breadcrumbs or workspace specific title override here */}
                             </div>
                             <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => setShowShortcuts(!showShortcuts)}
+                                    className="flex items-center justify-center w-8 h-8 rounded-lg bg-obsidian-surface text-text-secondary hover:text-white hover:bg-white/5 transition-colors border border-border"
+                                    title="Keyboard Shortcuts"
+                                >
+                                    <HelpCircle size={16} />
+                                </button>
+                                {showShortcuts && (
+                                    <div className="absolute top-16 right-6 w-80 bg-obsidian-elevated border border-border rounded-xl shadow-2xl z-50 animate-fade-in p-5">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="font-sans-display text-xs uppercase tracking-widest text-text-primary font-bold">Keyboard Shortcuts</h3>
+                                            <button onClick={() => setShowShortcuts(false)} className="text-text-secondary hover:text-white"><X size={14} /></button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {[
+                                                { k: 'J', d: 'Next task' },
+                                                { k: 'K', d: 'Previous task' },
+                                                { k: 'Space', d: 'Toggle task status' },
+                                                { k: '[', d: 'Previous module' },
+                                                { k: ']', d: 'Next module' }
+                                            ].map(s => (
+                                                <div key={s.k} className="flex items-center justify-between">
+                                                    <span className="text-sm text-text-secondary">{s.d}</span>
+                                                    <kbd className="px-2 py-1 bg-obsidian rounded border border-border-subtle text-[10px] font-mono text-white min-w-[24px] text-center">{s.k}</kbd>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {/* Export Dropdown */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowExportMenu(!showExportMenu)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors border border-indigo-500/30"
+                                    >
+                                        Export <ChevronDown size={12} />
+                                    </button>
+                                    {showExportMenu && (
+                                        <div className="absolute right-0 top-full mt-2 w-48 bg-obsidian-elevated border border-border rounded-lg shadow-xl z-50 animate-in fade-in zoom-in duration-200 py-1">
+                                            <button onClick={() => { exportAsMarkdown(roadmap); setShowExportMenu(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text-primary hover:bg-white/5 text-left">
+                                                <FileText size={14} /> Download as Markdown
+                                            </button>
+                                            <button onClick={() => { exportAsJSON(roadmap); setShowExportMenu(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text-primary hover:bg-white/5 text-left">
+                                                <Braces size={14} /> Download as JSON
+                                            </button>
+                                            <button onClick={() => { exportAsPDF(roadmap); setShowExportMenu(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text-primary hover:bg-white/5 text-left">
+                                                <Printer size={14} /> Print / Save as PDF
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Version History */}
+                                <button
+                                    onClick={() => setShowVersionHistory(true)}
+                                    className="flex items-center justify-center w-8 h-8 rounded-lg bg-obsidian-surface text-text-secondary hover:text-white hover:bg-white/5 transition-colors border border-border"
+                                    title="Version History"
+                                >
+                                    <History size={16} />
+                                </button>
+
                                 <button
                                     onClick={() => setShareModalOpen(true)}
                                     className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors border border-indigo-500/30"
@@ -901,6 +1050,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                     section={activeSection}
                                     roadmap={roadmap}
                                     onUpdate={(updater) => onUpdateSection(activeSection.id, updater)}
+                                    onApiError={onApiError}
                                 />
                             </div>
                         ) : null}
@@ -979,6 +1129,49 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                             </div>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Version History Drawer */}
+            {showVersionHistory && (
+                <div className="fixed inset-0 z-50 flex justify-end bg-obsidian/50 backdrop-blur-sm" onClick={() => setShowVersionHistory(false)}>
+                    <div className="w-full max-w-md bg-obsidian border-l border-border h-full shadow-2xl animate-in slide-in-from-right duration-300 overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-border flex items-center justify-between sticky top-0 bg-obsidian z-10">
+                            <h3 className="font-sans-display text-xs uppercase tracking-widest text-text-primary font-bold">Version History</h3>
+                            <button onClick={() => setShowVersionHistory(false)} className="text-text-secondary hover:text-white"><X size={16} /></button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            {versions.length === 0 ? (
+                                <p className="text-text-secondary text-sm text-center py-8">No saved versions yet.</p>
+                            ) : (
+                                versions.map((v, i) => (
+                                    <div key={i} className="bg-obsidian-surface border border-border rounded-xl p-4 flex flex-col gap-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-text-primary">{v.label}</span>
+                                            <button 
+                                                onClick={async () => {
+                                                    if (window.confirm("Restore this version? Current progress will be saved as a new version.")) {
+                                                        saveVersion(roadmap);
+                                                        const restored = { ...roadmap, sections: v.sections };
+                                                        // We need to update parent. Assuming onUpdateRoadmap exists.
+                                                        onUpdateRoadmap?.(restored);
+                                                        setShowVersionHistory(false);
+                                                        window.location.reload();
+                                                    }
+                                                }}
+                                                className="text-xs bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 px-2 py-1 rounded border border-indigo-500/30"
+                                            >
+                                                Restore
+                                            </button>
+                                        </div>
+                                        <div className="text-xs text-text-secondary">
+                                            {v.sections?.length || 0} modules • {new Date(v.createdAt).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
 
