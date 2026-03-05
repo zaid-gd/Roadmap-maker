@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { Shield } from "lucide-react";
 
 export const viewport: Viewport = {
     themeColor: "#0a0e1a",
@@ -27,8 +28,15 @@ export default function RootLayout({
             <head>
                 <meta name="color-scheme" content="dark" />
             </head>
-            <body className="noise-overlay min-h-screen">
+            <body className="noise-overlay min-h-screen flex flex-col">
                 {children}
+                <footer className="border-t border-border bg-obsidian py-3 px-6 flex items-center justify-between text-[12px] text-[#5C6378] select-none">
+                    <div>Powered by ZNS Nexus · ZNS Enterprises © 2026</div>
+                    <div className="flex items-center gap-1.5">
+                        <Shield size={12} />
+                        <span>Your content is never stored or used for training</span>
+                    </div>
+                </footer>
             </body>
         </html>
     );

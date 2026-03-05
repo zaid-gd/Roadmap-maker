@@ -693,3 +693,58 @@ select {
         scroll-behavior: auto !important;
     }
 }
+
+@media print {
+    @page {
+        margin: 1cm;
+        size: A4;
+    }
+
+    body {
+        background: white !important;
+        color: black !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    nav, aside, footer, button, .no-print, header button, .sidebar, [class*="sidebar"] {
+        display: none !important;
+    }
+
+    main, .main-content, [class*="main"] {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+        overflow: visible !important;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        color: black !important;
+        page-break-after: avoid;
+        break-after: avoid;
+    }
+
+    p, li {
+        orphans: 3;
+        widows: 3;
+    }
+
+    a {
+        color: black !important;
+        text-decoration: underline !important;
+    }
+
+    .bg-obsidian, .bg-obsidian-surface, .bg-obsidian-light, .bg-obsidian-elevated {
+        background: white !important;
+        border: 1px solid #ddd !important;
+    }
+
+    .text-white, .text-text-primary, .text-text-secondary {
+        color: black !important;
+    }
+
+    .border, .border-border, .border-border-subtle {
+        border-color: #ddd !important;
+    }
+}

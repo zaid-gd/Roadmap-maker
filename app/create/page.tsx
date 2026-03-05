@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useCallback, useEffect, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { getStorage } from "@/lib/storage";
@@ -45,7 +46,16 @@ const STEP_DELAY_MS = 600;
    ═══════════════════════════════════════════════════════════ */
 
 export default function CreatePage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-obsidian" />}>
+            <CreatePageContent />
+        </Suspense>
+    );
+}
+
+function CreatePageContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -58,6 +68,18 @@ export default function CreatePage() {
     const [isDragging, setIsDragging] = useState(false);
     const [tipsOpen, setTipsOpen] = useState(false);
     const [textareaOverflow, setTextareaOverflow] = useState(false);
+    const [showOptional, setShowOptional] = useState(false);
+    const [goal, setGoal] = useState("");
+    const [difficulty, setDifficulty] = useState<"beginner" | "intermediate" | "advanced" | null>(null);
+    const [estimatedDuration, setEstimatedDuration] = useState("");
+
+    // Pre-fill from URL query params (e.g. ?title=...&content=...)
+    useEffect(() => {
+        const qTitle = searchParams.get("title");
+        const qContent = searchParams.get("content");
+        if (qTitle) setTitle(qTitle);
+        if (qContent) setContent(qContent);
+    }, [searchParams]);
 
     // Loading-screen state
     const [visibleSteps, setVisibleSteps] = useState<number[]>([]);
@@ -148,7 +170,14 @@ export default function CreatePage() {
             const res = await fetch("/api/parse-roadmap", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content: content.trim(), mode, title: title.trim() || undefined }),
+                body: JSON.stringify({ 
+                    content: content.trim(), 
+                    mode, 
+                    title: title.trim() || undefined,
+                    goal: goal || undefined,
+                    difficulty: difficulty || undefined,
+                    estimatedDuration: estimatedDuration || undefined
+                }),
             });
 
             if (!res.ok) {
@@ -456,6 +485,67 @@ export default function CreatePage() {
                                 <div className={`absolute -bottom-4 -right-4 w-24 h-24 rounded-full transition-opacity duration-300 ${mode === "intern" ? "opacity-8" : "opacity-0"}`} style={{ background: "radial-gradient(circle, var(--color-indigo-500) 0%, transparent 70%)" }} />
                             </button>
                         </div>
+                    </div>
+
+                    {/* Optional Details Collapsible */}
+                    <div className="mb-8 animate-slide-up stagger-3">
+                        <button
+                            type="button"
+                            onClick={() => setShowOptional(!showOptional)}
+                            className="flex items-center gap-2 text-text-secondary hover:text-white transition-colors text-sm font-medium"
+                        >
+                            {showOptional ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            Optional Details
+                        </button>
+
+                        {showOptional && (
+                            <div className="mt-4 p-6 bg-obsidian-surface/30 border border-border rounded-xl space-y-6 animate-fade-in">
+                                {/* Goal */}
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase tracking-widest text-text-secondary font-bold">What do you want to achieve?</label>
+                                    <input
+                                        type="text"
+                                        value={goal}
+                                        onChange={(e) => setGoal(e.target.value)}
+                                        placeholder="e.g., Learn React, Build a portfolio"
+                                        className="w-full bg-obsidian border border-border rounded-lg px-4 py-2.5 text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                                    />
+                                </div>
+
+                                {/* Difficulty */}
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase tracking-widest text-text-secondary font-bold">Difficulty Level</label>
+                                    <div className="flex gap-2">
+                                        {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
+                                            <button
+                                                key={d}
+                                                type="button"
+                                                onClick={() => setDifficulty(difficulty === d ? null : d)}
+                                                className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium capitalize transition-all ${
+                                                    difficulty === d
+                                                        ? "bg-indigo-500/10 border-indigo-500 text-indigo-400"
+                                                        : "bg-obsidian border-border text-text-secondary hover:border-white/20"
+                                                }`}
+                                            >
+                                                {d}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Estimated Duration */}
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase tracking-widest text-text-secondary font-bold">Estimated Duration</label>
+                                    <input
+                                        type="text"
+                                        value={estimatedDuration}
+                                        onChange={(e) => setEstimatedDuration(e.target.value)}
+                                        placeholder="e.g., 2 weeks, 10 hours"
+                                        className="w-full bg-obsidian border border-border rounded-lg px-4 py-2.5 text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* ════════════════════════════════════════

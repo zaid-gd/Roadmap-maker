@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { getStorage } from "@/lib/storage";
 import type { Roadmap } from "@/types";
@@ -16,7 +17,22 @@ import {
     Clock,
     ArrowRight,
     Map,
+    Upload,
+    Cpu,
+    BarChart2,
+    Shield,
 } from "lucide-react";
+
+const SAMPLE_MARKDOWN = `# Social Media Strategy
+## Phase 1: Setup
+- Create Instagram & TikTok accounts
+- Set up Google Business Profile
+## Phase 2: Content
+- Post 3x per week
+- Use Reels for maximum reach
+## Resources
+- Hootsuite Instagram Guide
+- Buffer TikTok Algorithm Guide`;
 
 /* ═══════════════════════════════════════════════════════════
    Helpers
@@ -327,6 +343,218 @@ function CourseCard({
 }
 
 /* ═══════════════════════════════════════════════════════════
+   BEFORE / AFTER Visual Section
+   ═══════════════════════════════════════════════════════════ */
+
+function BeforeAfterSection() {
+    const router = useRouter();
+
+    const handleTrySample = () => {
+        const params = new URLSearchParams({
+            title: "Social Media Strategy Sample",
+            content: SAMPLE_MARKDOWN,
+        });
+        router.push(`/create?${params.toString()}`);
+    };
+
+    return (
+        <section className="w-full border-b border-white/[0.04]">
+            <div className="max-w-7xl mx-auto px-5 lg:px-10 py-14">
+                <div className="text-center mb-10">
+                    <p className="font-sans-display text-[11px] uppercase tracking-[0.25em] text-indigo-400/80 mb-3">See it in action</p>
+                    <h2 className="font-display text-3xl sm:text-4xl font-light text-text-primary leading-tight tracking-tight">
+                        From raw content <span className="text-gradient italic">to structured workspace</span>
+                    </h2>
+                </div>
+
+                <div className="relative rounded-2xl border border-indigo-500/20 bg-obsidian-surface/50 shadow-[0_0_60px_rgba(99,102,241,0.06)] overflow-hidden p-6 md:p-10">
+                    {/* Ambient glow */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.04] via-transparent to-transparent pointer-events-none" />
+
+                    <div className="relative grid md:grid-cols-[1fr_auto_1fr] gap-6 items-stretch">
+                        {/* LEFT — Your Content */}
+                        <div>
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="font-sans-display text-[10px] uppercase tracking-[0.25em] text-text-secondary/70 px-2 py-0.5 border border-white/10 bg-white/[0.03]">Your Content</span>
+                            </div>
+                            <div className="bg-obsidian rounded-xl border border-white/[0.07] p-5 h-full overflow-auto">
+                                <pre className="font-mono text-xs leading-relaxed text-text-secondary whitespace-pre-wrap select-none">
+                                    {`# Social Media Strategy
+`}<span className="text-text-primary/60">{`## Phase 1: Setup
+`}</span>{`- Create Instagram & TikTok accounts
+- Set up Google Business Profile
+`}<span className="text-text-primary/60">{`## Phase 2: Content
+`}</span>{`- Post 3x per week
+- Use Reels for maximum reach
+`}<span className="text-text-primary/60">{`## Resources
+`}</span>{`- Hootsuite Instagram Guide
+- Buffer TikTok Algorithm Guide`}
+                                </pre>
+                            </div>
+                        </div>
+
+                        {/* DIVIDER arrow */}
+                        <div className="hidden md:flex items-center justify-center px-2">
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="w-px h-16 bg-gradient-to-b from-transparent via-indigo-500/40 to-transparent" />
+                                <div className="w-9 h-9 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-sm shadow-[0_0_20px_rgba(99,102,241,0.2)]">
+                                    →
+                                </div>
+                                <div className="w-px h-16 bg-gradient-to-b from-transparent via-indigo-500/40 to-transparent" />
+                            </div>
+                        </div>
+
+                        {/* RIGHT — Your Workspace mockup */}
+                        <div>
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="font-sans-display text-[10px] uppercase tracking-[0.25em] text-indigo-400/80 px-2 py-0.5 border border-indigo-500/20 bg-indigo-500/5">Your Workspace</span>
+                            </div>
+                            <div className="bg-obsidian rounded-xl border border-white/[0.07] overflow-hidden h-full flex">
+                                {/* Mini sidebar */}
+                                <div className="w-[110px] shrink-0 bg-obsidian-light border-r border-white/[0.06] p-2 flex flex-col gap-1">
+                                    <div className="h-6 rounded-md bg-indigo-500/20 border-l-2 border-indigo-500 px-2 flex items-center">
+                                        <span className="text-[9px] text-indigo-400 font-sans-display font-bold truncate">Dashboard</span>
+                                    </div>
+                                    {["01 Phase 1: Setup", "02 Phase 2: Content", "📚 Resources"].map((label, i) => (
+                                        <div key={i} className="h-6 rounded-md px-2 flex items-center gap-1.5 opacity-60">
+                                            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${i < 1 ? "bg-emerald-400" : "bg-white/20"}`} />
+                                            <span className="text-[8px] text-text-secondary truncate">{label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Content area */}
+                                <div className="flex-1 p-3 space-y-2.5">
+                                    {/* Progress ring row */}
+                                    <div className="flex items-center gap-2 bg-white/[0.02] rounded-lg p-2 border border-white/[0.04]">
+                                        <svg width="36" height="36" viewBox="0 0 36 36" className="shrink-0">
+                                            <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="3" />
+                                            <circle cx="18" cy="18" r="15" fill="none" stroke="#6366F1" strokeWidth="3"
+                                                strokeDasharray="94.25" strokeDashoffset="61" strokeLinecap="round"
+                                                transform="rotate(-90 18 18)" />
+                                            <text x="18" y="21" textAnchor="middle" fill="#E8EAF0" fontSize="8" fontFamily="Cabinet Grotesk" fontWeight="700">35%</text>
+                                        </svg>
+                                        <div>
+                                            <div className="text-[9px] text-text-secondary font-sans-display uppercase tracking-wide">Progress</div>
+                                            <div className="text-[9px] text-indigo-400 font-bold">4 of 11 tasks done</div>
+                                        </div>
+                                    </div>
+                                    {/* Task list */}
+                                    <div className="space-y-1">
+                                        {[
+                                            { done: true, label: "Create Instagram account" },
+                                            { done: true, label: "Set up Google Business" },
+                                            { done: false, label: "Post 3x per week" },
+                                            { done: false, label: "Use Reels for reach" },
+                                        ].map((task, i) => (
+                                            <div key={i} className="flex items-center gap-2 px-2 py-1 rounded bg-white/[0.02]">
+                                                <div className={`w-3 h-3 rounded-sm border shrink-0 flex items-center justify-center ${task.done ? "bg-emerald-500/30 border-emerald-500/60" : "border-white/20"}`}>
+                                                    {task.done && <span className="text-[7px] text-emerald-400">✓</span>}
+                                                </div>
+                                                <span className={`text-[9px] ${task.done ? "text-text-secondary/50 line-through" : "text-text-secondary"}`}>{task.label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {/* Resource card */}
+                                    <div className="flex items-center gap-2 bg-indigo-500/5 border border-indigo-500/20 rounded-lg p-2">
+                                        <span className="text-sm">📚</span>
+                                        <div>
+                                            <div className="text-[9px] text-indigo-400 font-bold">Hootsuite Guide</div>
+                                            <div className="text-[8px] text-text-secondary/60">hootsuite.com →</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* CTA below panels */}
+                    <div className="mt-8 flex justify-center">
+                        <button
+                            type="button"
+                            onClick={handleTrySample}
+                            className="inline-flex items-center gap-2.5 font-sans-display text-xs uppercase tracking-widest text-indigo-300 hover:text-white border border-indigo-500/30 hover:border-indigo-500/60 bg-indigo-500/5 hover:bg-indigo-500/10 px-6 py-3 rounded-lg transition-all duration-300"
+                        >
+                            Try it with this sample <ArrowRight size={14} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HOW IT WORKS Section
+   ═══════════════════════════════════════════════════════════ */
+
+function HowItWorksSection() {
+    const steps = [
+        {
+            icon: <Upload size={32} className="text-indigo-400" />,
+            num: "01",
+            title: "Paste or Upload",
+            desc: "Drop any guide, roadmap, or .md file",
+        },
+        {
+            icon: <Cpu size={32} className="text-indigo-400" />,
+            num: "02",
+            title: "AI Reads & Structures",
+            desc: "AI detects content type and builds your workspace",
+        },
+        {
+            icon: <BarChart2 size={32} className="text-indigo-400" />,
+            num: "03",
+            title: "Learn & Track",
+            desc: "Interactive modules, tasks, videos and progress tracking",
+        },
+    ];
+
+    return (
+        <section className="w-full border-b border-white/[0.04]">
+            <div className="max-w-7xl mx-auto px-5 lg:px-10 py-14">
+                <div className="text-center mb-10">
+                    <p className="font-sans-display text-[11px] uppercase tracking-[0.25em] text-indigo-400/80 mb-3">Simple process</p>
+                    <h2 className="font-display text-3xl sm:text-4xl font-light text-text-primary leading-tight tracking-tight">
+                        How it works
+                    </h2>
+                </div>
+
+                <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-8">
+                    {/* Connecting line (desktop) */}
+                    <div className="hidden sm:block absolute top-[3rem] left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
+
+                    {steps.map((step, i) => (
+                        <div key={i} className="flex flex-col items-center text-center relative">
+                            {/* Icon container with glow */}
+                            <div className="relative mb-6">
+                                <div className="w-24 h-24 rounded-2xl bg-indigo-500/5 border border-indigo-500/15 flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.08)]">
+                                    {step.icon}
+                                </div>
+                                {/* Step number badge */}
+                                <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-obsidian-elevated border border-indigo-500/30 flex items-center justify-center">
+                                    <span className="font-sans-display text-[10px] font-bold text-indigo-400">{step.num}</span>
+                                </div>
+                            </div>
+                            <h3 className="font-display text-xl font-semibold text-text-primary mb-2">{step.title}</h3>
+                            <p className="font-body text-sm text-text-secondary leading-relaxed">{step.desc}</p>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Privacy note */}
+                <div className="mt-12 flex items-center justify-center gap-2 text-text-muted/70">
+                    <Shield size={13} className="text-indigo-500/50 shrink-0" />
+                    <p className="font-body text-[12px]">
+                        Your content is only used to generate your workspace. We never store or train on your documents.
+                    </p>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+/* ═══════════════════════════════════════════════════════════
    HOME PAGE
    ═══════════════════════════════════════════════════════════ */
 
@@ -443,6 +671,16 @@ export default function HomePage() {
                         </div>
                     </div>
                 </section>
+
+                {/* ═══════════════════════════════════════════════
+                    ZONE 1.5 — BEFORE / AFTER VISUAL
+                   ═══════════════════════════════════════════════ */}
+                <BeforeAfterSection />
+
+                {/* ═══════════════════════════════════════════════
+                    ZONE 1.6 — HOW IT WORKS
+                   ═══════════════════════════════════════════════ */}
+                <HowItWorksSection />
 
                 {/* ═══════════════════════════════════════════════
                     ZONE 2 — COURSE LIBRARY

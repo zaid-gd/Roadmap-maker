@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { generateStructuredContent } from "@/lib/aiClient";
 
 const SYSTEM_PROMPT = `You are an advanced Context-Aware AI that transforms raw content into a structured, highly organized digital workspace.
 Instead of treating everything as a generic "roadmap", you MUST first dynamically detect the content type and adapt the entire structure accordingly.
@@ -19,10 +20,10 @@ Read the entire content and classify it into one of the following content types:
 STEP 2: SECTION GENERATION RULES
 - REMOVE ALL default/generic section structures. Do NOT blindly create a generic structure.
 - Decide which sections and structures make the most sense based entirely on the detected content type.
-  * A roadmap \u2192 phases, milestones, timeline, tasks per phase.
-  * A playbook \u2192 strategies, platform-specific sections, tactics, content calendar.
-  * A curriculum \u2192 modules, lessons, objectives, assessments.
-  * A strategy \u2192 goals, initiatives, KPIs, action items.
+  * A roadmap -> phases, milestones, timeline, tasks per phase.
+  * A playbook -> strategies, platform-specific sections, tactics, content calendar.
+  * A curriculum -> modules, lessons, objectives, assessments.
+  * A strategy -> goals, initiatives, KPIs, action items.
 - Section titles MUST reflect the actual content, not boilerplate text.
 - Use the "module" section type for most rich parent sections (phases, strategies, modules, goals, etc.) because it is the most capable container.
 - Use the "milestones" section type if the content specifically calls for sequential sequential milestone tracking.
@@ -33,25 +34,33 @@ STEP 3: JSON OUTPUT SCHEMA
 Return ONLY valid JSON (no markdown wrapping, no explanations). Use this exact shape:
 
 {
-  "contentType": "string - the detected type from Step 1 (e.g. 'playbook', 'curriculum', 'roadmap')",
-  "detectedContext": "string - a brief debugging note explaining WHY you chose this content type and structure",
   "title": "string - inferred from content if not provided",
-  "mode": "general or intern",
   "summary": "1-3 sentence summary of overall goals and what the content covers",
-  "objectives": ["global learning objective 1", "global learning objective 2"],
+  "contentType": "string - the detected type from Step 1 (roadmap|playbook|curriculum|etc)",
+  "detectedContext": "One sentence describing what the content is about",
+  "totalEstimatedDuration": "e.g. 12 hours or 3 weeks",
+  "difficulty": "beginner|intermediate|advanced",
+  "goal": "What the user will achieve by completing this",
+  "mode": "general|intern",
   "sections": [
     {
       "id": "unique-id",
       "type": "module|milestones|tasks|progress|resources|videos|calendar|notes|glossary|submissions|custom",
       "title": "Section Title (e.g., Phase 1: Foundation, Strategy: Organic Growth)",
       "order": 0,
+      "metadata": {
+        "estimatedDuration": "2 hours",
+        "difficulty": "beginner|intermediate|advanced",
+        "taskCount": 5,
+        "keyOutcome": "One sentence — what the learner will be able to do after this module"
+      },
       "data": <section-specific data object>
     }
   ]
 }
 
 Section "data" Shapes:
-- type "module": {"description": "...", "estimatedTime": "...", "concepts": "key points", "objectives": ["..."], "tasks": [{"id":"...","title":"...","completed":false,"notes":"","subtasks":[{"id":"...","title":"...","completed":false}],"attachments":[]}], "resources": [{"id":"...","title":"...","url":"...", "type":"video|doc|pdf|link|code|tool|course|book", "description":"..."}], "videos": [{"id":"...","title":"...","url":"...","videoId":"...","platform":"youtube|vimeo|other","description":"...", "duration": "...", "timestamps": [{"time": "...", "label": "..."}]}], "completed": false}
+- type "module": {"description": "...", "estimatedTime": "...", "concepts": "key points", "objectives": ["..."], "tasks": [{"id":"...","text":"...","description":"...","estimatedTime":"~30 mins","priority":"core|optional|advanced","done":false,"notes":"","subtasks":[{"id":"...","title":"...","completed":false}],"attachments":[]}], "resources": [{"id":"...","title":"...","url":"...", "type":"video|doc|pdf|link|code|tool|course|book", "description":"..."}], "videos": [{"id":"...","title":"...","url":"...","videoId":"...","platform":"youtube|vimeo|other","description":"...", "duration": "...", "timestamps": [{"time": "...", "label": "..."}]}], "completed": false}
 - type "milestones": [{"id":"...","title":"...","description":"...","tasks":[...],"resources":[...],"videos":[...],"completed":false,"order":0}]
 - type "tasks": [{"id":"...","title":"...","tasks":[...]}]
 - type "resources": [{"id":"...","title":"...","url":"...","type":"...","description":"..."}]
@@ -72,7 +81,7 @@ CRITICAL RULES FOR EXTRACTION:
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { content, mode, title } = body;
+        const { content, mode, title, goal, difficulty, estimatedDuration, userApiKey, userProvider, userModel } = body;
 
         if (!content || typeof content !== "string") {
             return NextResponse.json(
@@ -81,52 +90,29 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const apiKey = process.env.GEMINI_API_KEY;
+        // Use user key if provided
+        const useUserKey = userApiKey && userProvider;
 
-        if (!apiKey) {
-            console.error("No GEMINI_API_KEY provided in environment variables.");
-            return NextResponse.json(
-                { success: false, error: "Server configuration missing: API key is required" },
-                { status: 500 }
-            );
+        let extraContext = "";
+        if (goal) extraContext += `User Goal: ${goal}\n`;
+        if (difficulty) extraContext += `Target Difficulty: ${difficulty}\n`;
+        if (estimatedDuration) extraContext += `Estimated Duration: ${estimatedDuration}\n`;
+
+        const fullPrompt = `${SYSTEM_PROMPT}\n\n${title ? `Title: ${title}\n` : ""}Mode: ${mode || "general"}\n${extraContext}Content:\n${content}`;
+        
+        let rawContent;
+        try {
+            rawContent = await generateStructuredContent(fullPrompt, useUserKey ? userApiKey : undefined, useUserKey ? userProvider : undefined);
+        } catch (aiError: any) {
+            const errMsg = aiError.message || "";
+            if (errMsg.includes("401") || errMsg.includes("403") || errMsg.includes("API key") || errMsg.includes("permission")) {
+                return NextResponse.json(
+                    { success: false, error: "invalid_key", message: "Your API key is invalid or expired. Update it in Settings." },
+                    { status: 401 }
+                );
+            }
+            throw aiError;
         }
-
-        const model = "gemini-2.5-flash";
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-        // Call Google Gemini API
-        const aiResponse = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                systemInstruction: {
-                    parts: [{ text: SYSTEM_PROMPT }]
-                },
-                contents: [{
-                    parts: [{
-                        text: `${title ? `Title: ${title}\n\n` : ""}Mode: ${mode || "general"}\n\nContent:\n${content}`
-                    }]
-                }],
-                generationConfig: {
-                    temperature: 0.3,
-                    responseMimeType: "application/json"
-                }
-            }),
-        });
-
-        if (!aiResponse.ok) {
-            const errText = await aiResponse.text();
-            console.error("Gemini API error:", errText);
-            return NextResponse.json(
-                { success: false, error: `Gemini API Error: ${aiResponse.status} ${aiResponse.statusText}` },
-                { status: 502 }
-            );
-        }
-
-        const aiData = await aiResponse.json();
-        const rawContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!rawContent) {
             return NextResponse.json(
@@ -140,6 +126,23 @@ export async function POST(req: NextRequest) {
         try {
             const cleaned = rawContent.replace(/^```(json)?\n?/i, "").replace(/\n?```$/g, "").trim();
             parsed = JSON.parse(cleaned);
+
+            // Backward compatibility map for Task schema
+            // AI returns `text` and `done`, we duplicate they into `title` and `completed` if missing
+            if (parsed.sections) {
+                parsed.sections.forEach((section: any) => {
+                    if (section.type === "module" || section.type === "milestones") {
+                        const tasks = section.data?.tasks;
+                        if (Array.isArray(tasks)) {
+                            tasks.forEach((t: any) => {
+                                if (t.text && !t.title) t.title = t.text;
+                                if (t.done !== undefined && t.completed === undefined) t.completed = t.done;
+                            });
+                        }
+                    }
+                });
+            }
+
         } catch (parseError) {
             console.error("Failed to parse AI JSON:", rawContent, parseError);
             return NextResponse.json(
