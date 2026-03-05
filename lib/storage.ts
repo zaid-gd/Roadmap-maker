@@ -7,7 +7,7 @@
 import type { Roadmap, StorageProvider } from "@/types";
 
 const STORAGE_VERSION = "v1";
-const ROADMAPS_KEY = `zns:${STORAGE_VERSION}:roadmaps`;
+const ROADMAPS_KEY = `zns_workspaces`;
 
 class LocalStorageProvider implements StorageProvider {
     private readStore(): Roadmap[] {

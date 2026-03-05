@@ -67,7 +67,6 @@
     --font-sans-display: "Cabinet Grotesk", sans-serif;
     --font-body: "Satoshi", system-ui, sans-serif;
 
-    /* Radii — slightly rounded for Linear feel */
     --radius-sm: 0.25rem;
     --radius-md: 0.375rem;
     --radius-lg: 0.5rem;
@@ -80,6 +79,27 @@
     --animate-scale-in: scale-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
     --animate-pulse-glow: pulse-glow 4s ease-in-out infinite;
     --animate-shimmer: shimmer 2s linear infinite;
+}
+
+:root {
+    color-scheme: dark;
+}
+
+.light {
+    color-scheme: light;
+    --color-obsidian: #FFFFFF;
+    --color-obsidian-light: #F9FAFB;
+    --color-obsidian-surface: #F3F4F6;
+    --color-obsidian-elevated: #FFFFFF;
+    --color-obsidian-hover: #E5E7EB;
+
+    --color-text-primary: #111827;
+    --color-text-secondary: #4B5563;
+    --color-text-muted: #6B7280;
+    --color-text-inverse: #FFFFFF;
+
+    --color-border: #E5E7EB;
+    --color-border-subtle: #F3F4F6;
 }
 
 /* ── Keyframes ── */
@@ -198,7 +218,6 @@ html {
 body {
     font-family: var(--font-body);
     font-size: 14px;
-    min-font-size: 14px;
     line-height: 1.6;
     letter-spacing: 0.01em;
     background-color: var(--color-obsidian);
@@ -707,11 +726,20 @@ select {
         print-color-adjust: exact;
     }
 
-    nav, aside, footer, button, .no-print, header button, .sidebar, [class*="sidebar"] {
+    nav,
+    aside,
+    footer,
+    button,
+    .no-print,
+    header button,
+    .sidebar,
+    [class*="sidebar"] {
         display: none !important;
     }
 
-    main, .main-content, [class*="main"] {
+    main,
+    .main-content,
+    [class*="main"] {
         margin: 0 !important;
         padding: 0 !important;
         width: 100% !important;
@@ -719,13 +747,19 @@ select {
         overflow: visible !important;
     }
 
-    h1, h2, h3, h4, h5, h6 {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
         color: black !important;
         page-break-after: avoid;
         break-after: avoid;
     }
 
-    p, li {
+    p,
+    li {
         orphans: 3;
         widows: 3;
     }
@@ -735,16 +769,23 @@ select {
         text-decoration: underline !important;
     }
 
-    .bg-obsidian, .bg-obsidian-surface, .bg-obsidian-light, .bg-obsidian-elevated {
+    .bg-obsidian,
+    .bg-obsidian-surface,
+    .bg-obsidian-light,
+    .bg-obsidian-elevated {
         background: white !important;
         border: 1px solid #ddd !important;
     }
 
-    .text-white, .text-text-primary, .text-text-secondary {
+    .text-white,
+    .text-text-primary,
+    .text-text-secondary {
         color: black !important;
     }
 
-    .border, .border-border, .border-border-subtle {
+    .border,
+    .border-border,
+    .border-border-subtle {
         border-color: #ddd !important;
     }
 }

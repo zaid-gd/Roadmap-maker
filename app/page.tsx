@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Header from "@/components/layout/Header";
 
 import { getStorage } from "@/lib/storage";
 import type { Roadmap } from "@/types";
@@ -491,22 +492,22 @@ function BeforeAfterSection() {
 function HowItWorksSection() {
     const steps = [
         {
-            icon: <Upload size={32} className="text-indigo-400" />,
-            num: "01",
+            icon: "📋",
+            num: "1",
             title: "Paste or Upload",
-            desc: "Drop any guide, roadmap, or .md file",
+            desc: "Any text, guide, or .md file",
         },
         {
-            icon: <Cpu size={32} className="text-indigo-400" />,
-            num: "02",
-            title: "AI Reads & Structures",
-            desc: "AI detects content type and builds your workspace",
+            icon: "🤖",
+            num: "2",
+            title: "AI Structures It",
+            desc: "Modules, tasks & a learning path built automatically",
         },
         {
-            icon: <BarChart2 size={32} className="text-indigo-400" />,
-            num: "03",
-            title: "Learn & Track",
-            desc: "Interactive modules, tasks, videos and progress tracking",
+            icon: "🚀",
+            num: "3",
+            title: "Track & Learn",
+            desc: "Work through tasks and track your progress",
         },
     ];
 
@@ -520,34 +521,24 @@ function HowItWorksSection() {
                     </h2>
                 </div>
 
-                <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-8">
-                    {/* Connecting line (desktop) */}
-                    <div className="hidden sm:block absolute top-[3rem] left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
-
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {steps.map((step, i) => (
-                        <div key={i} className="flex flex-col items-center text-center relative">
-                            {/* Icon container with glow */}
-                            <div className="relative mb-6">
-                                <div className="w-24 h-24 rounded-2xl bg-indigo-500/5 border border-indigo-500/15 flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.08)]">
-                                    {step.icon}
-                                </div>
-                                {/* Step number badge */}
-                                <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-obsidian-elevated border border-indigo-500/30 flex items-center justify-center">
-                                    <span className="font-sans-display text-[10px] font-bold text-indigo-400">{step.num}</span>
-                                </div>
+                        <div 
+                            key={i} 
+                            className="relative flex flex-col p-6 rounded-xl border border-white/10 bg-obsidian-surface/40 hover:-translate-y-1 hover:shadow-md hover:border-white/20 transition-all duration-200"
+                        >
+                            {/* Numbered Badge */}
+                            <div className="absolute top-4 left-4 w-6 h-6 rounded-full bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-xs font-bold text-indigo-400">
+                                {step.num}
                             </div>
-                            <h3 className="font-display text-xl font-semibold text-text-primary mb-2">{step.title}</h3>
-                            <p className="font-body text-sm text-text-secondary leading-relaxed">{step.desc}</p>
+                            
+                            <div className="text-4xl mt-6 mb-4 text-center">
+                                {step.icon}
+                            </div>
+                            <h3 className="font-display text-xl font-semibold text-text-primary mb-2 text-center">{step.title}</h3>
+                            <p className="font-body text-sm text-text-secondary leading-relaxed text-center">{step.desc}</p>
                         </div>
                     ))}
-                </div>
-
-                {/* Privacy note */}
-                <div className="mt-12 flex items-center justify-center gap-2 text-text-muted/70">
-                    <Shield size={13} className="text-indigo-500/50 shrink-0" />
-                    <p className="font-body text-[12px]">
-                        Your content is only used to generate your workspace. We never store or train on your documents.
-                    </p>
                 </div>
             </div>
         </section>
@@ -610,33 +601,9 @@ export default function HomePage() {
 
     return (
         <div className="min-h-screen flex flex-col bg-obsidian text-text-primary selection:bg-indigo-500/30">
-            {/* ═══════════════════════════════════════════════
-                STICKY NAVBAR
-               ═══════════════════════════════════════════════ */}
-            <nav className="sticky top-0 z-50 bg-obsidian/90 backdrop-blur-xl border-b border-white/[0.06]">
-                <div className="max-w-7xl mx-auto px-5 lg:px-10 h-14 flex items-center justify-between">
-                    {/* Logo */}
-                    <Link href="/" className="flex items-center gap-3 group">
-                        <div className="w-7 h-7 bg-indigo-500 rounded flex items-center justify-center group-hover:rotate-45 transition-transform duration-500">
-                            <div className="w-2 h-2 bg-obsidian rounded-sm" />
-                        </div>
-                        <span className="font-sans-display font-black text-sm tracking-[0.15em] text-text-primary">
-                            ZNS <span className="text-text-secondary font-medium">RoadMap Studio</span>
-                        </span>
-                    </Link>
+            <Header />
 
-                    {/* New Course CTA */}
-                    <Link
-                        href="/create"
-                        className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-obsidian font-sans-display font-bold text-xs uppercase tracking-wider px-4 py-2 transition-all duration-300 animate-cta-glow"
-                    >
-                        <Plus size={14} strokeWidth={2.5} />
-                        New Course
-                    </Link>
-                </div>
-            </nav>
-
-            <main className="flex-1 flex flex-col">
+            <main className="flex-1 flex flex-col pt-20">
                 {/* ═══════════════════════════════════════════════
                     ZONE 1 — MINI HERO (max ~35vh)
                    ═══════════════════════════════════════════════ */}

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Brain, Sparkles } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { getStorage } from "@/lib/storage";
@@ -12,12 +12,11 @@ import type { Roadmap } from "@/types";
    Constants
    ═══════════════════════════════════════════════════════════ */
 
-const LOADING_STEPS = [
-    { text: "Reading your content…", icon: "📖" },
-    { text: "Identifying course modules…", icon: "🧩" },
-    { text: "Extracting tasks & resources…", icon: "🔗" },
-    { text: "Building your workspace…", icon: "🏗️" },
-    { text: "Almost ready…", icon: "✨" },
+const LOADING_MESSAGES = [
+    "Reading your guide...",
+    "Identifying key concepts...",
+    "Structuring your modules...",
+    "Building your workspace..."
 ];
 
 const TIPS = [
@@ -82,10 +81,14 @@ function CreatePageContent() {
     }, [searchParams]);
 
     // Loading-screen state
-    const [visibleSteps, setVisibleSteps] = useState<number[]>([]);
-    const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-    const [showSlowMsg, setShowSlowMsg] = useState(false);
-    const loadingStartRef = useRef<number>(0);
+    const [loadingPhase, setLoadingPhase] = useState(0);
+    const [progress, setProgress] = useState(0);
+    const [isDone, setIsDone] = useState(false);
+    const [isFadingOut, setIsFadingOut] = useState(false);
+
+    // For typewriter effect
+    const [displayedText, setDisplayedText] = useState("");
+    const typewriterRef = useRef<number | NodeJS.Timeout>(0);
 
     // ── Derived ──
     const wordCount = useMemo(() => (content.trim() ? content.trim().split(/\s+/).length : 0), [content]);
@@ -161,18 +164,33 @@ function CreatePageContent() {
 
         setError("");
         setIsLoading(true);
-        setVisibleSteps([]);
-        setCompletedSteps([]);
-        setShowSlowMsg(false);
-        loadingStartRef.current = Date.now();
+        setProgress(0);
+        setLoadingPhase(0);
+        setIsDone(false);
+        setIsFadingOut(false);
+
+        const startTime = Date.now();
+        let interval: NodeJS.Timeout;
+
+        interval = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+
+            if (elapsed < 2000) setLoadingPhase(0);
+            else if (elapsed < 4000) setLoadingPhase(1);
+            else if (elapsed < 6000) setLoadingPhase(2);
+            else setLoadingPhase(3);
+
+            const newProgress = Math.min(90, (elapsed / 8000) * 90);
+            setProgress(newProgress);
+        }, 100);
 
         try {
             const res = await fetch("/api/parse-roadmap", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    content: content.trim(), 
-                    mode, 
+                body: JSON.stringify({
+                    content: content.trim(),
+                    mode,
                     title: title.trim() || undefined,
                     goal: goal || undefined,
                     difficulty: difficulty || undefined,
@@ -197,90 +215,84 @@ function CreatePageContent() {
             };
 
             getStorage().saveRoadmap(roadmap);
-            router.push(`/workspace/${roadmap.id}`);
+
+            clearInterval(interval);
+            setProgress(100);
+            setIsDone(true);
+
+            setTimeout(() => {
+                setIsFadingOut(true);
+                setTimeout(() => {
+                    router.push(`/workspace/${roadmap.id}`);
+                }, 400);
+            }, 600);
         } catch (err) {
+            clearInterval(interval!);
             setError(err instanceof Error ? err.message : "An unexpected error occurred");
             setIsLoading(false);
-            setVisibleSteps([]);
-            setCompletedSteps([]);
-            setShowSlowMsg(false);
         }
     };
 
-    /* ── Loading step animations ── */
+    /* ── Typewriter Effect ── */
     useEffect(() => {
         if (!isLoading) return;
 
-        // Reveal steps one-by-one
-        const timers: ReturnType<typeof setTimeout>[] = [];
-        LOADING_STEPS.forEach((_, i) => {
-            timers.push(setTimeout(() => setVisibleSteps((p) => [...p, i]), i * STEP_DELAY_MS));
-            // mark previous as completed when next appears
-            if (i > 0) {
-                timers.push(setTimeout(() => setCompletedSteps((p) => [...p, i - 1]), i * STEP_DELAY_MS));
+        const currentMsg = LOADING_MESSAGES[loadingPhase] || LOADING_MESSAGES[LOADING_MESSAGES.length - 1];
+        setDisplayedText("");
+
+        let i = 0;
+        clearInterval(typewriterRef.current as NodeJS.Timeout);
+
+        typewriterRef.current = setInterval(() => {
+            if (i < currentMsg.length) {
+                setDisplayedText(currentMsg.substring(0, i + 1));
+                i++;
+            } else {
+                clearInterval(typewriterRef.current as NodeJS.Timeout);
             }
-        });
+        }, 30);
 
-        // Slow-loading message after 15 sec
-        timers.push(setTimeout(() => setShowSlowMsg(true), 15000));
-
-        return () => timers.forEach(clearTimeout);
-    }, [isLoading]);
+        return () => clearInterval(typewriterRef.current as NodeJS.Timeout);
+    }, [loadingPhase, isLoading]);
 
     /* ═══════════════════════════════════════════════════════════
        LOADING SCREEN  — Full-page Notion-style progress
        ═══════════════════════════════════════════════════════════ */
     if (isLoading) {
         return (
-            <div className="create-loading-bg fixed inset-0 z-50 flex items-center justify-center">
-                <div className="relative z-10 w-full max-w-lg mx-auto px-6 text-center">
+            <div className={`create-loading-bg fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-500 bg-obsidian ${isFadingOut ? "opacity-0" : "opacity-100"}`}>
+                <div className="relative z-10 w-full max-w-md mx-auto px-6 text-center flex flex-col items-center">
+
+                    {/* Icon */}
+                    <div className={`w-24 h-24 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center mb-8 transition-all duration-500 ${isDone ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 scale-110" : "text-indigo-400 animate-pulse shadow-[0_0_40px_rgba(99,102,241,0.2)]"}`}>
+                        {isDone ? <Sparkles size={40} className="animate-in zoom-in" /> : <Brain size={40} />}
+                    </div>
+
                     {/* Course title */}
                     {(title || "Untitled Course") && (
-                        <p className="font-display text-lg text-text-secondary mb-1 italic animate-fade-in">
+                        <p className="font-display text-sm text-text-secondary uppercase tracking-widest font-bold mb-4 animate-fade-in">
                             {title || "Untitled Course"}
                         </p>
                     )}
-                    <h2 className="font-display text-3xl sm:text-4xl font-bold text-text-primary text-text-primary mb-10 tracking-tight animate-fade-in">
-                        Creating your workspace…
-                    </h2>
 
-                    {/* Steps */}
-                    <div className="space-y-0 text-left mb-8">
-                        {LOADING_STEPS.map((step, i) => {
-                            const visible = visibleSteps.includes(i);
-                            const done = completedSteps.includes(i);
-                            const isCurrent = visible && !done && !completedSteps.includes(i);
-                            return (
-                                <div
-                                    key={i}
-                                    className={`flex items-center gap-4 py-3 transition-all duration-500 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
-                                >
-                                    {/* Indicator */}
-                                    <div className="w-7 h-7 shrink-0 flex items-center justify-center">
-                                        {done ? (
-                                            <svg className="w-5 h-5 text-emerald-400 animate-scale-in" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        ) : isCurrent ? (
-                                            <div className="w-5 h-5 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin" />
-                                        ) : (
-                                            <div className="w-2 h-2 rounded-full bg-white/10" />
-                                        )}
-                                    </div>
-                                    <span className={`font-body text-[15px] transition-colors duration-300 ${done ? "text-text-secondary line-through" : isCurrent ? "text-text-primary font-medium" : "text-text-secondary"}`}>
-                                        {step.text}
-                                    </span>
-                                </div>
-                            );
-                        })}
+                    {/* Message */}
+                    <div className="h-10 mb-8">
+                        <h2 className="font-display text-2xl sm:text-3xl text-white tracking-tight">
+                            {isDone ? "Workspace ready" : displayedText}<span className="animate-pulse">_</span>
+                        </h2>
                     </div>
 
-                    {/* Slow message */}
-                    {showSlowMsg && (
-                        <p className="text-text-secondary text-sm font-body animate-fade-in mt-4">
-                            This is a detailed course — taking a little longer than usual…
-                        </p>
-                    )}
+                    {/* Progress Bar */}
+                    <div className="w-full max-w-[240px] h-1.5 bg-white/5 rounded-full overflow-hidden relative mb-3">
+                        <div
+                            className={`absolute top-0 left-0 h-full rounded-full transition-all duration-300 ease-out ${isDone ? "bg-emerald-500" : "bg-indigo-500"}`}
+                            style={{ width: `${progress}%` }}
+                        />
+                    </div>
+                    <div className="text-xs text-text-secondary font-mono">
+                        {Math.round(progress)}%
+                    </div>
+
                 </div>
             </div>
         );
@@ -521,11 +533,10 @@ function CreatePageContent() {
                                                 key={d}
                                                 type="button"
                                                 onClick={() => setDifficulty(difficulty === d ? null : d)}
-                                                className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium capitalize transition-all ${
-                                                    difficulty === d
+                                                className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium capitalize transition-all ${difficulty === d
                                                         ? "bg-indigo-500/10 border-indigo-500 text-indigo-400"
                                                         : "bg-obsidian border-border text-text-secondary hover:border-white/20"
-                                                }`}
+                                                    }`}
                                             >
                                                 {d}
                                             </button>
