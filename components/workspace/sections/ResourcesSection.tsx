@@ -42,25 +42,25 @@ export default function Resources({ section, onUpdate }: Props) {
                     return (
                         <div key={category} className="animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
                             <div className="flex items-center gap-3 mb-6 px-2 sm:px-0">
-                                <h3 className="font-display font-bold text-lg text-text-secondary uppercase tracking-widest">{category}</h3>
+                                <h3 className="font-display font-bold text-text-primary text-lg text-text-secondary uppercase tracking-widest">{category}</h3>
                                 <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent" />
-                                <span className="text-xs font-bold text-text-muted bg-obsidian-elevated px-2 py-0.5 rounded shadow-inner">{catResources.length} items</span>
+                                <span className="text-[12px] font-bold text-text-primary bg-obsidian-elevated px-2 py-0.5 rounded shadow-inner">{catResources.length} items</span>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                                 {catResources.map((res: Resource) => (
                                     <button
                                         key={res.id}
                                         onClick={() => setViewerUrl(res.url)}
-                                        className="group relative flex flex-col p-5 rounded-2xl surface border border-white/5 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_15px_30px_-10px_rgba(99,102,241,0.2)] hover:border-indigo-500/30 overflow-hidden"
+                                        className="group relative flex flex-col p-5 rounded-2xl surface border border-border text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_15px_30px_-10px_rgba(99,102,241,0.2)] hover:border-indigo-500/30 overflow-hidden"
                                     >
                                         {/* Hover Glow Background */}
                                         <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
                                         <div className="flex items-start justify-between mb-4 relative z-10 w-full gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-obsidian flex items-center justify-center text-xl shrink-0 shadow-inner group-hover:scale-110 transition-transform duration-300 border border-white/5">
+                                            <div className="w-10 h-10 rounded-xl bg-obsidian flex items-center justify-center text-xl shrink-0 shadow-inner group-hover:scale-110 transition-transform duration-300 border border-border">
                                                 {getIcon(res.type)}
                                             </div>
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted bg-white/5 px-2 py-1 rounded">
+                                            <span className="text-[12px] font-bold uppercase tracking-wider text-text-secondary bg-white/5 px-2 py-1 rounded">
                                                 {res.type}
                                             </span>
                                         </div>

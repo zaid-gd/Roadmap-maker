@@ -45,7 +45,7 @@ export default function GlossarySection({ section, onUpdate }: Props) {
             </div>
 
             {/* A-Z Filter Bar */}
-            <div className="surface rounded-2xl p-4 sm:p-5 flex flex-wrap gap-2 sm:gap-3 justify-center border border-white/5 shadow-lg bg-obsidian-surface/80 backdrop-blur-md sticky top-20 z-10 transition-all duration-300">
+            <div className="surface rounded-2xl p-4 sm:p-5 flex flex-wrap gap-2 sm:gap-3 justify-center border border-border shadow-lg bg-obsidian-surface/80 backdrop-blur-md sticky top-20 z-10 transition-all duration-300">
                 <button
                     onClick={() => setActiveLetter(null)}
                     className={`flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold transition-all ${activeLetter === null
@@ -67,7 +67,7 @@ export default function GlossarySection({ section, onUpdate }: Props) {
                                     ? "bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.5)]"
                                     : hasTerms
                                         ? "text-text-secondary hover:bg-obsidian hover:text-text-primary"
-                                        : "text-text-muted/20 cursor-not-allowed"
+                                        : "text-text-secondary/20 cursor-not-allowed"
                                 }`}
                         >
                             {letter}
@@ -93,7 +93,7 @@ export default function GlossarySection({ section, onUpdate }: Props) {
                                         key={item.id}
                                         className={`surface rounded-2xl overflow-hidden border transition-all duration-300 ${isExpanded
                                                 ? 'border-indigo-500/40 shadow-[0_0_30px_rgba(99,102,241,0.1)] bg-obsidian-elevated/80 ring-1 ring-indigo-500/20'
-                                                : 'border-white/5 hover:border-white/10 hover:bg-obsidian-hover'
+                                                : 'border-border hover:border-border-subtle hover:bg-obsidian-hover'
                                             }`}
                                     >
                                         <button
@@ -104,7 +104,7 @@ export default function GlossarySection({ section, onUpdate }: Props) {
                                             <span className={`font-bold text-base transition-colors duration-300 ${isExpanded ? 'text-indigo-300' : 'text-text-primary group-hover:text-indigo-200'}`}>
                                                 {item.term}
                                             </span>
-                                            <span className={`text-text-muted text-xs shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-black/20 transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180 bg-indigo-500/20 text-indigo-300' : ''}`}>
+                                            <span className={`text-text-secondary text-xs shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-black/20 transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180 bg-indigo-500/20 text-indigo-300' : ''}`}>
                                                 ▼
                                             </span>
                                         </button>
@@ -112,7 +112,7 @@ export default function GlossarySection({ section, onUpdate }: Props) {
                                         {/* Smooth Accordion Body */}
                                         <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
                                             <div className="overflow-hidden">
-                                                <div className="p-5 pt-0 text-sm text-text-secondary leading-relaxed border-t border-white/5 bg-gradient-to-b from-transparent to-black/10">
+                                                <div className="p-5 pt-0 text-sm text-text-secondary leading-relaxed border-t border-border bg-gradient-to-b from-transparent to-black/10">
                                                     {item.definition}
                                                 </div>
                                             </div>

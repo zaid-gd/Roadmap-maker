@@ -4,11 +4,31 @@ import { useState, useCallback, useEffect } from "react";
 import type { Roadmap, Section } from "@/types";
 import { getStorage } from "@/lib/storage";
 
-export function useRoadmap(id?: string) {
+export function useRoadmap(id?: string, isSession: boolean = false) {
     // Lazy state initialization (vercel best practice: 5.10)
     const [roadmap, setRoadmap] = useState<Roadmap | null>(() => {
         if (typeof window === "undefined" || !id) return null;
-        return getStorage().getRoadmap(id);
+        const base = getStorage().getRoadmap(id);
+        
+        if (base && isSession) {
+            // Merge session data (progress tracking only)
+            const sessionData = localStorage.getItem(`zns:v1:session:${id}`);
+            if (sessionData) {
+                try {
+                    const sessionSections = JSON.parse(sessionData);
+                    return {
+                        ...base,
+                        sections: base.sections.map(s => {
+                            const sessionSection = sessionSections.find((ss: Section) => ss.id === s.id);
+                            return sessionSection ? { ...s, data: sessionSection.data } : s;
+                        })
+                    };
+                } catch (e) {
+                    return base;
+                }
+            }
+        }
+        return base;
     });
 
     const [roadmaps, setRoadmaps] = useState<Roadmap[]>(() => {
@@ -54,20 +74,42 @@ export function useRoadmap(id?: string) {
                         s.id === sectionId ? updater(s) : s
                     ),
                 };
-                getStorage().saveRoadmap(updated);
+
+                if (isSession) {
+                    // Only save progress to session store
+                    localStorage.setItem(`zns:v1:session:${id}`, JSON.stringify(updated.sections));
+                } else {
+                    getStorage().saveRoadmap(updated);
+                }
                 return updated;
             });
         },
-        []
+        [id, isSession]
     );
 
     // Sync on mount if id changes
     useEffect(() => {
         if (id) {
-            const r = getStorage().getRoadmap(id);
-            setRoadmap(r);
+            const base = getStorage().getRoadmap(id);
+            if (base && isSession) {
+                const sessionData = localStorage.getItem(`zns:v1:session:${id}`);
+                if (sessionData) {
+                    try {
+                        const sessionSections = JSON.parse(sessionData);
+                        setRoadmap({
+                            ...base,
+                            sections: base.sections.map(s => {
+                                const sessionSection = sessionSections.find((ss: Section) => ss.id === s.id);
+                                return sessionSection ? { ...s, data: sessionSection.data } : s;
+                            })
+                        });
+                        return;
+                    } catch (e) {}
+                }
+            }
+            setRoadmap(base);
         }
-    }, [id]);
+    }, [id, isSession]);
 
     return {
         roadmap,

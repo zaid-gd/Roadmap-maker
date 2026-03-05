@@ -1,64 +1,134 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import type { Roadmap, Section, ModuleSection as ModuleSectionType } from "@/types";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import type { Roadmap, Section, ModuleSection as ModuleSectionType, CalendarSection } from "@/types";
 import { useProgress } from "@/hooks/useProgress";
+import { useStreak } from "@/hooks/useStreak";
+import { useAchievements, BadgeType, BADGES_CONFIG } from "@/hooks/useAchievements";
+import { useTimeTracker } from "@/hooks/useTimeTracker";
 import ProgressRing from "@/components/shared/ProgressRing";
 import SectionRenderer from "@/components/workspace/SectionRenderer";
+import ShareEmbedModal from "@/components/workspace/ShareEmbedModal";
+import SettingsModal from "@/components/workspace/SettingsModal";
 import Link from "next/link";
 import { SECTION_LABELS } from "@/lib/constants";
-import { Search, Settings, Home, ArrowRight, CheckCircle2, Circle, LayoutDashboard, SearchCode, BookOpen, Video, ListTodo, Trophy, Layers } from "lucide-react";
+import { Search, Settings, Home, ArrowRight, CheckCircle2, Circle, LayoutDashboard, SearchCode, BookOpen, Video, ListTodo, Trophy, Layers, Calendar, Clock, Lock, Target, Flame, Info, Plus, Share, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface WorkspaceShellProps {
     roadmap: Roadmap;
     onUpdateSection: (sectionId: string, updater: (s: Section) => Section) => void;
+    onUpdateRoadmap?: (updates: Partial<Roadmap>) => void;
+    isEmbed?: boolean;
+    isReadOnly?: boolean;
 }
 
-export default function WorkspaceShell({ roadmap, onUpdateSection }: WorkspaceShellProps) {
+export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadmap, isEmbed = false, isReadOnly = false }: WorkspaceShellProps) {
     const [activeSectionId, setActiveSectionId] = useState<string>("dashboard");
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const progress = useProgress(roadmap);
 
-    // Keyboard shortcut for sidebar toggle
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.ctrlKey && e.key === "\\") {
-                e.preventDefault();
-                setSidebarOpen(prev => !prev);
-            }
+    // Gamification Hooks
+    const { currentStreak, isAtRisk, logActivity, tasksCompletedToday, tasksCompletedYesterday } = useStreak();
+    const { unlockedBadges, unlockBadge, recentBadge, clearRecentBadge, getBadges } = useAchievements();
+    const { sessionTimeMs, getModuleTime } = useTimeTracker(activeSectionId !== "dashboard" ? activeSectionId : undefined);
+    const router = useRouter();
+
+    // Tour State
+    const [tourStep, setTourStep] = useState(-1);
+    const [tourTarget, setTourTarget] = useState<DOMRect | null>(null);
+
+    // Quick Actions
+    const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+
+    // Share & Embed Modal
+    const [shareModalOpen, setShareModalOpen] = useState(false);
+    
+    // Settings Modal
+    const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+
+    const branding = roadmap.branding;
+    const accentColor = branding?.accentColor || "#6366f1"; // Default indigo-500
+    const workspaceTitle = branding?.customTitle || roadmap.title;
+    const logoUrl = branding?.logoUrl;
+    const hideWatermark = branding?.hideWatermark || false;
+
+    // Helper to generate lighter/darker shades of the accent color
+    const getAccentShades = (hex: string) => {
+        // Simple hex to rgba for opacity-based shades
+        return {
+            base: hex,
+            light: `${hex}33`, // 20% opacity
+            lighter: `${hex}1a`, // 10% opacity
+            dark: hex, // For now just use base or we could do proper darkening
         };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, []);
-
-    const isEmptySection = (section: Section): boolean => {
-        if (section.type === "progress") return false; // always show progress if present
-        if (section.type === "notes") return false; // keep notes as it's interactive
-
-        if (section.type === "module") {
-            const md = (section as ModuleSectionType).data;
-            if (!md) return true;
-            return !md.description && !md.concepts &&
-                (!md.tasks || md.tasks.length === 0) &&
-                (!md.resources || md.resources.length === 0) &&
-                (!md.videos || md.videos.length === 0) &&
-                (!md.objectives || md.objectives.length === 0);
-        }
-
-        if (section.type === "custom") {
-            return !section.data || !section.data.items || section.data.items.length === 0;
-        }
-
-        return !section.data || (Array.isArray(section.data) && section.data.length === 0);
     };
 
-    const validSections = roadmap.sections.filter(s => !isEmptySection(s));
-    const activeSection = validSections.find((s) => s.id === activeSectionId);
+    const shades = getAccentShades(accentColor);
 
-    // Separate modules from utility sections
-    const moduleSections = validSections.filter((s) => s.type === "module" || s.type === "milestones");
-    const utilitySections = validSections.filter((s) => s.type !== "module" && s.type !== "milestones");
+    const checkTour = useCallback(() => {
+        if (!localStorage.getItem("zns_tour_done")) {
+            setTimeout(() => setTourStep(0), 1000);
+        }
+    }, []);
+
+    useEffect(() => {
+        checkTour();
+    }, [checkTour]);
+
+    // Track previous completion count to detect new completions
+    const prevCompletedTasks = useRef(progress.completedTasks);
+    // Track module completion states to detect newly finished modules
+    const prevModuleCompletion = useRef<Record<string, boolean>>({});
+
+    const handleNextTourStep = () => {
+        if (tourStep === 2) {
+            // Navigate to first module, then advance tour
+            const firstMod = moduleSections[0];
+            if (firstMod) {
+                onNavigate(firstMod.id);
+                setTimeout(() => setTourStep(3), 500); // give it time to render Mod and button
+            } else {
+                endTour();
+            }
+        } else if (tourStep === 3) {
+            endTour();
+        } else {
+            setTourStep(tourStep + 1);
+        }
+    };
+
+    const endTour = () => {
+        localStorage.setItem("zns_tour_done", "true");
+        setTourStep(-1);
+    };
+
+    // Keep spotlight rect updated
+    useEffect(() => {
+        if (tourStep < 0) return;
+        const ids = ["tour-sidebar", "tour-progress", "tour-first-module", "tour-mark-complete"];
+        const id = ids[tourStep];
+
+        const updateRect = () => {
+            const el = document.getElementById(id);
+            if (el) {
+                setTourTarget(el.getBoundingClientRect());
+                el.classList.add("relative", "z-[60]");
+            }
+        };
+
+        updateRect();
+        const interval = setInterval(updateRect, 200);
+        window.addEventListener("resize", updateRect);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener("resize", updateRect);
+            const el = document.getElementById(id);
+            if (el) el.classList.remove("relative", "z-[60]");
+        };
+    }, [tourStep]);
 
     const getModuleProgress = (section: Section): number => {
         if (section.type === "module") {
@@ -80,6 +150,140 @@ export default function WorkspaceShell({ roadmap, onUpdateSection }: WorkspaceSh
         }
         return 0;
     };
+
+    const moduleSections = roadmap.sections.filter((s) => s.type === "module" || s.type === "milestones");
+
+    // Achievement triggers
+    useEffect(() => {
+        // Daily Activity Check & Explorer
+        try {
+            const workspacesStr = localStorage.getItem("zns:v1:roadmaps");
+            if (workspacesStr) {
+                const workspaces = JSON.parse(workspacesStr);
+                if (Array.isArray(workspaces) && workspaces.length >= 3) {
+                    unlockBadge("explorer");
+                }
+            }
+        } catch (e) {
+            // Ignore parse errors
+        }
+
+        // Detect new task completion
+        if (progress.completedTasks > prevCompletedTasks.current) {
+            const tasksCompletedNow = progress.completedTasks - prevCompletedTasks.current;
+            logActivity(true); // Log as task completion
+
+            // First Step
+            if (progress.completedTasks >= 1) {
+                unlockBadge("first_step");
+            }
+
+            // On A Roll
+            if (currentStreak >= 3) {
+                unlockBadge("on_a_roll");
+            }
+        }
+        prevCompletedTasks.current = progress.completedTasks;
+
+        // Detect module completion
+        let anyModuleCompleted = false;
+        moduleSections.forEach(mod => {
+            const isCompleted = getModuleProgress(mod) === 100;
+            const wasCompleted = prevModuleCompletion.current[mod.id];
+
+            if (isCompleted && !wasCompleted) {
+                anyModuleCompleted = true;
+
+                // Track start time for Speed Learner
+                const startTimeStr = localStorage.getItem(`zns_mod_start_${mod.id}`);
+                if (startTimeStr) {
+                    const startTime = parseInt(startTimeStr, 10);
+                    const hoursPassed = (Date.now() - startTime) / (1000 * 60 * 60);
+                    if (hoursPassed < 24) {
+                        unlockBadge("speed_learner");
+                    }
+                }
+            } else if (!isCompleted && !wasCompleted && getModuleProgress(mod) > 0) {
+                // Record start time if not recorded
+                if (!localStorage.getItem(`zns_mod_start_${mod.id}`)) {
+                    localStorage.setItem(`zns_mod_start_${mod.id}`, Date.now().toString());
+                }
+            }
+
+            prevModuleCompletion.current[mod.id] = isCompleted;
+        });
+
+        if (anyModuleCompleted) {
+            unlockBadge("module_master");
+        }
+
+        // Course Complete
+        if (progress.overall === 100 && progress.totalTasks > 0) {
+            unlockBadge("course_complete");
+        }
+
+    }, [progress, currentStreak, logActivity, moduleSections, unlockBadge]);
+
+    // Resource tracking for Deep Diver
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const link = target.closest('a');
+            if (link && link.target === '_blank') {
+                const clickedResources = JSON.parse(sessionStorage.getItem('zns_clicked_resources') || '[]');
+                if (!clickedResources.includes(link.href)) {
+                    clickedResources.push(link.href);
+                    sessionStorage.setItem('zns_clicked_resources', JSON.stringify(clickedResources));
+                    if (clickedResources.length >= 5) {
+                        unlockBadge("deep_diver");
+                    }
+                }
+            }
+        };
+        document.addEventListener('click', handleClick);
+        return () => document.removeEventListener('click', handleClick);
+    }, [unlockBadge]);
+
+    // Keyboard shortcut for sidebar toggle
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey && e.key === "\\") {
+                e.preventDefault();
+                setSidebarOpen(prev => !prev);
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
+
+    const isEmptySection = (section: Section): boolean => {
+        if (section.type === "progress") return false;
+        if (section.type === "notes") return false;
+
+        if (section.type === "module") {
+            const md = (section as ModuleSectionType).data;
+            if (!md) return true;
+            return !md.description && !md.concepts &&
+                (!md.tasks || md.tasks.length === 0) &&
+                (!md.resources || md.resources.length === 0) &&
+                (!md.videos || md.videos.length === 0) &&
+                (!md.objectives || md.objectives.length === 0);
+        }
+
+        if (section.type === "custom") {
+            return !section.data || !section.data.items || section.data.items.length === 0;
+        }
+
+        return false; // we no longer hide anything
+    };
+
+    const validSections = roadmap.sections;
+    const activeSection = validSections.find((s) => s.id === activeSectionId);
+    const utilitySections = validSections.filter((s) => s.type !== "module" && s.type !== "milestones" && s.type !== "progress");
+
+    // Check for AI generation quality (fewer than 3 sections total, or minimal data)
+    // Roadmap generally has progress/calendar by default plus modules. If less than let's say 4 sections total.
+    const isLowQuality = roadmap.sections.length <= 3;
 
     const getMotivationalMessage = (percent: number) => {
         if (percent === 0) return "Just getting started 🚀";
@@ -130,26 +334,83 @@ export default function WorkspaceShell({ roadmap, onUpdateSection }: WorkspaceSh
         if (window.innerWidth < 1024) setSidebarOpen(false);
     };
 
+    // Calculate intelligent insights
+    const mostTimeSpentModule = useMemo(() => {
+        let maxTime = 0;
+        let maxMod: Section | null = null;
+        moduleSections.forEach(m => {
+            const time = getModuleTime(m.id);
+            if (time > maxTime) {
+                maxTime = time;
+                maxMod = m;
+            }
+        });
+        return { module: maxMod as Section | null, time: maxTime };
+    }, [moduleSections, getModuleTime]);
+
+    // Find deadlines
+    const calendarEvents = useMemo(() => {
+        const calSection = roadmap.sections.find(s => s.type === "calendar") as CalendarSection;
+        if (!calSection || !calSection.data) return [];
+        return [...calSection.data]
+            .filter(e => !e.completed)
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }, [roadmap]);
+
+    const formatTime = (ms: number) => {
+        const hrs = Math.floor(ms / 3600000);
+        const mins = Math.floor((ms % 3600000) / 60000);
+        if (hrs > 0) return `${hrs}h ${mins}m`;
+        return `${mins}m`;
+    };
+
     return (
-        <div className="h-screen flex flex-col overflow-hidden bg-obsidian selection:bg-indigo-500/30">
+        <div 
+            className="h-screen flex flex-col overflow-hidden bg-obsidian selection:bg-[var(--workspace-accent)]/30"
+            style={{
+                "--color-indigo-500": accentColor,
+                "--color-indigo-600": accentColor,
+                "--color-indigo-400": accentColor,
+                "--workspace-accent": accentColor,
+            } as any}
+        >
+            {/* Gamification Toast */}
+            {recentBadge && (
+                <div className="fixed bottom-6 right-6 z-50 animate-slide-up-fade flex items-center gap-4 bg-obsidian-elevated border border-indigo-500/30 shadow-[0_0_30px_rgba(99,102,241,0.2)] p-4 rounded-2xl cursor-pointer" onClick={clearRecentBadge}>
+                    <div className="w-12 h-12 rounded-full bg-indigo-500/10 border border-indigo-500/50 flex items-center justify-center text-2xl">
+                        {recentBadge.icon}
+                    </div>
+                    <div>
+                        <div className="font-sans-display text-xs uppercase tracking-widest text-indigo-400 font-bold mb-1">Achievement Unlocked</div>
+                        <div className="font-display text-white text-lg">{recentBadge.title}</div>
+                    </div>
+                </div>
+            )}
+
             <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar */}
                 <aside
-                    className={`${sidebarOpen ? "w-64 sm:w-72" : "w-16"} shrink-0 border-r border-white/5 bg-obsidian-surface/60 backdrop-blur-sm overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-30 flex flex-col group`}
+                    id="tour-sidebar"
+                    className={`${sidebarOpen ? "w-64 sm:w-72" : "w-16"} shrink-0 border-r border-border bg-obsidian-light backdrop-blur-sm overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-30 flex flex-col group`}
                 >
                     {/* Header: Collapse Toggle */}
-                    <div className="h-14 flex items-center px-4 border-b border-white/5">
+                    <div className="h-14 flex items-center px-4 border-b border-border">
                         <button
                             type="button"
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 transition-colors text-text-muted hover:text-white shrink-0"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 transition-colors text-text-secondary hover:text-white shrink-0"
                             title="Toggle Sidebar (Ctrl+\)"
                         >
                             ☰
                         </button>
                         {sidebarOpen && (
-                            <div className="ml-3 font-sans-display text-xs uppercase tracking-widest text-text-primary truncate font-bold">
-                                {roadmap.title}
+                            <div className="ml-3 flex items-center gap-2 truncate">
+                                {logoUrl && (
+                                    <img src={logoUrl} alt="Logo" className="w-5 h-5 object-contain" />
+                                )}
+                                <div className="font-sans-display text-xs uppercase tracking-widest text-text-primary truncate font-bold">
+                                    {workspaceTitle}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -159,20 +420,20 @@ export default function WorkspaceShell({ roadmap, onUpdateSection }: WorkspaceSh
                         {sidebarOpen && (
                             <div className="p-4 space-y-4">
                                 <div className="relative">
-                                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
                                     <input
                                         type="text"
                                         placeholder="Search course..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full bg-obsidian/50 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-xs text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                                        className="w-full bg-obsidian-surface border border-border-subtle rounded-lg pl-9 pr-4 py-2 text-xs text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-indigo-500/50 transition-colors"
                                     />
                                 </div>
 
-                                <div className="bg-obsidian/40 border border-white/5 rounded-lg p-3">
+                                <div className="bg-obsidian-surface border border-border rounded-lg p-3">
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="font-sans-display text-[10px] uppercase tracking-widest text-text-muted">Total Progress</span>
-                                        <span className="font-sans-display text-[10px] text-indigo-400 font-bold">{progress.overall}%</span>
+                                        <span className="font-sans-display text-[12px] uppercase tracking-widest text-text-secondary">Total Progress</span>
+                                        <span className="font-sans-display text-[12px] text-cyan-400 font-bold">{progress.overall}%</span>
                                     </div>
                                     <div className="h-1 bg-white/5 rounded-full overflow-hidden">
                                         <div className="h-full bg-indigo-500 rounded-full transition-all duration-1000" style={{ width: `${progress.overall}%` }} />
@@ -187,7 +448,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection }: WorkspaceSh
                                 <button
                                     type="button"
                                     onClick={() => onNavigate("dashboard")}
-                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 text-sm hover:bg-white/5 ${activeSectionId === "dashboard" ? "bg-indigo-500/10 text-indigo-300 font-medium" : "text-text-secondary"
+                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 text-sm hover:bg-white/5 ${activeSectionId === "dashboard" ? "bg-indigo-500/12 border-l-[3px] border-indigo-500 text-white font-medium font-medium" : "text-text-secondary"
                                         } ${!sidebarOpen && 'justify-center'}`}
                                     title="Course Dashboard"
                                 >
@@ -200,7 +461,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection }: WorkspaceSh
                             {moduleSections.length > 0 && (
                                 <div>
                                     {sidebarOpen && (
-                                        <div className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted/50 mb-2 px-3">
+                                        <div className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary/50 mb-2 px-3">
                                             Modules
                                         </div>
                                     )}
@@ -216,9 +477,9 @@ export default function WorkspaceShell({ roadmap, onUpdateSection }: WorkspaceSh
                                                     key={section.id}
                                                     type="button"
                                                     title={section.title}
-                                                    className={`w-full flex items-center px-3 py-2.5 rounded-lg text-left transition-all duration-200 hover:bg-white/5 group ${isActive
-                                                        ? "bg-indigo-500/10 border-l-2 border-indigo-500 text-indigo-50"
-                                                        : "border-l-2 border-transparent text-text-secondary hover:text-text-primary"
+                                                    className={`w-full flex items-center px-3 py-2.5 rounded-lg text-left text-sm transition-all duration-200 group ${isActive
+                                                        ? "bg-indigo-500/12 border-l-[3px] border-indigo-500 text-white font-medium"
+                                                        : "border-l-[3px] border-transparent text-text-secondary hover:text-text-primary hover:bg-obsidian-hover duration-150"
                                                         } ${!sidebarOpen && 'justify-center !px-0'}`}
                                                     onClick={() => onNavigate(section.id)}
                                                 >
@@ -229,7 +490,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection }: WorkspaceSh
                                                             </div>
                                                             <div className="flex-1 min-w-0">
                                                                 <span className="block text-sm truncate">
-                                                                    <span className="text-text-muted/50 mr-2 text-xs font-mono">{String(idx + 1).padStart(2, "0")}</span>
+                                                                    <span className="text-text-secondary/50 mr-2 text-[12px] font-mono">{String(idx + 1).padStart(2, "0")}</span>
                                                                     {section.title}
                                                                 </span>
                                                             </div>
@@ -241,7 +502,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection }: WorkspaceSh
                                                                 <circle cx="18" cy="18" r="16" fill="transparent" stroke="var(--color-obsidian-elevated)" strokeWidth="4" />
                                                                 <circle cx="18" cy="18" r="16" fill="transparent" stroke={modulePercent === 100 ? "var(--color-emerald-500)" : "var(--color-indigo-500)"} strokeWidth="4" strokeDasharray="100" strokeDashoffset={100 - modulePercent} />
                                                             </svg>
-                                                            <span className="text-[10px] font-bold z-10">{idx + 1}</span>
+                                                            <span className="text-[12px] font-bold z-10">{idx + 1}</span>
                                                         </div>
                                                     )}
                                                 </button>
@@ -254,7 +515,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection }: WorkspaceSh
                             {/* Tools / Utility */}
                             {utilitySections.length > 0 && sidebarOpen && (
                                 <div>
-                                    <div className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted/50 mb-2 px-3">
+                                    <div className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary/50 mb-2 px-3">
                                         Resources & Tools
                                     </div>
                                     <nav className="space-y-1">
@@ -283,26 +544,42 @@ export default function WorkspaceShell({ roadmap, onUpdateSection }: WorkspaceSh
                     </div>
 
                     {/* Sidebar Footer */}
-                    <div className="mt-auto border-t border-white/5 p-3 flex flex-col gap-2">
+                    <div className="mt-auto border-t border-border p-3 flex flex-col gap-2">
                         {sidebarOpen ? (
                             <>
-                                <Link href="/" className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-white hover:bg-white/5 transition-colors">
-                                    <Home size={16} />
-                                    <span>Back to Home</span>
-                                </Link>
-                                <button type="button" className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-white hover:bg-white/5 transition-colors text-left w-full">
-                                    <Settings size={16} />
-                                    <span>Settings</span>
-                                </button>
+                                {!isEmbed && (
+                                    <Link href="/" className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors">
+                                        <Home size={16} />
+                                        <span>Back to Home</span>
+                                    </Link>
+                                )}
+                                {!isEmbed && !isReadOnly && (
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setSettingsModalOpen(true)}
+                                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors text-left w-full"
+                                    >
+                                        <Settings size={16} />
+                                        <span>Settings</span>
+                                    </button>
+                                )}
                             </>
                         ) : (
                             <>
-                                <Link href="/" className="flex items-center justify-center p-2 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-colors" title="Back to Home">
-                                    <Home size={18} />
-                                </Link>
-                                <button type="button" className="flex items-center justify-center p-2 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-colors" title="Settings">
-                                    <Settings size={18} />
-                                </button>
+                                {!isEmbed && (
+                                    <Link href="/" className="flex items-center justify-center p-2 rounded-lg text-text-secondary hover:text-white hover:bg-white/5 transition-colors" title="Back to Home">
+                                        <Home size={18} />
+                                    </Link>
+                                )}
+                                {!isEmbed && !isReadOnly && (
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setSettingsModalOpen(true)}
+                                        className="flex items-center justify-center p-2 rounded-lg text-text-secondary hover:text-white hover:bg-white/5 transition-colors" title="Settings"
+                                    >
+                                        <Settings size={18} />
+                                    </button>
+                                )}
                             </>
                         )}
                     </div>
@@ -317,156 +594,416 @@ export default function WorkspaceShell({ roadmap, onUpdateSection }: WorkspaceSh
                 )}
 
                 {/* Main Content Area */}
-                <main className="flex-1 overflow-y-auto relative bg-obsidian">
-                    {activeSectionId === "dashboard" ? (
-                        // COURSE DASHBOARD
-                        <div className="animate-fade-in p-6 sm:p-10 lg:p-16 max-w-6xl mx-auto space-y-12">
-                            {/* Dashboard Header */}
-                            <div className="flex flex-col items-center text-center space-y-6 max-w-3xl mx-auto">
-                                <div className="inline-flex items-center justify-center px-3 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10">
-                                    <span className="font-sans-display text-[10px] uppercase tracking-widest text-indigo-400 font-bold">
-                                        {roadmap.mode} Course
-                                    </span>
-                                </div>
-                                <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-tight text-white leading-[1.1]">
-                                    {roadmap.title}
-                                </h1>
-                                {roadmap.summary && (
-                                    <p className="font-body text-text-secondary text-lg leading-relaxed">
-                                        {roadmap.summary}
-                                    </p>
-                                )}
-                                {roadmap.objectives && roadmap.objectives.length > 0 && (
-                                    <div className="mt-8 text-left w-full bg-obsidian-surface/40 border border-white/5 rounded-2xl p-8 shadow-inner">
-                                        <h3 className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-muted mb-6 flex items-center gap-2">
-                                            <span className="w-4 h-[1px] bg-indigo-500" />
-                                            Learning Objectives
-                                        </h3>
-                                        <div className="grid sm:grid-cols-2 gap-4">
-                                            {roadmap.objectives.map((obj, i) => (
-                                                <div key={i} className="flex items-start gap-4">
-                                                    <div className="w-6 h-6 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 flex flex-col items-center justify-center shrink-0 mt-0.5">
-                                                        <SearchCode size={12} />
-                                                    </div>
-                                                    <p className="font-body text-text-primary text-sm leading-relaxed">{obj}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                <main className="flex-1 overflow-y-auto relative bg-obsidian flex flex-col">
+                    {/* Workspace Header */}
+                    {!isEmbed && !isReadOnly && (
+                        <div className="sticky top-0 z-30 flex-shrink-0 border-b border-border bg-obsidian/80 backdrop-blur-md flex items-center justify-between px-6 py-3">
+                            <div className="flex-1">
+                                {/* Potential breadcrumbs or workspace specific title override here */}
                             </div>
-
-                            {/* Progress Ring & Continue */}
-                            <div className="flex flex-col items-center bg-obsidian-surface/30 border border-white/5 rounded-2xl p-10 backdrop-blur-md relative overflow-hidden">
-                                <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none" />
-
-                                <ProgressRing percent={progress.overall} size={140} strokeWidth={8} className="mb-6 drop-shadow-[0_0_30px_rgba(99,102,241,0.2)]" />
-
-                                <h3 className="font-display text-xl font-medium mb-2">{getMotivationalMessage(progress.overall)}</h3>
-                                <p className="text-sm text-text-muted mb-8 font-sans-display uppercase tracking-widest">{progress.completedTasks} of {progress.totalTasks} Tasks Completed</p>
-
+                            <div className="flex items-center gap-3">
                                 <button
-                                    onClick={() => onNavigate(firstIncompleteModule.id)}
-                                    className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-sans-display text-xs uppercase tracking-widest font-bold rounded-lg transition-all flex items-center gap-3 group drop-shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+                                    onClick={() => setShareModalOpen(true)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors border border-indigo-500/30"
                                 >
-                                    Continue Learning
-                                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                    <Share size={14} />
+                                    Share & Embed
                                 </button>
                             </div>
+                        </div>
+                    )}
 
-                            {/* Stats Line */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {[
-                                    { label: "Modules", value: totalModules, icon: <Layers size={18} /> },
-                                    { label: "Tasks", value: progress.totalTasks, icon: <ListTodo size={18} /> },
-                                    { label: "Resources", value: totalResources, icon: <BookOpen size={18} /> },
-                                    { label: "Videos", value: totalVideos, icon: <Video size={18} /> },
-                                ].map((stat, i) => (
-                                    <div key={i} className="bg-obsidian-surface/40 border border-white/5 rounded-xl p-5 flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-indigo-400">
-                                            {stat.icon}
-                                        </div>
-                                        <div>
-                                            <div className="font-display text-2xl text-white">{stat.value}</div>
-                                            <div className="font-sans-display text-[10px] uppercase tracking-widest text-text-muted">{stat.label}</div>
-                                        </div>
-                                    </div>
-                                ))}
+                    <div className="flex-1 overflow-y-auto relative bg-obsidian">
+                        {/* Banners */}
+                        {isLowQuality && (
+                            <div className="bg-indigo-500/10 border-b border-indigo-500/20 text-indigo-400 py-3 px-4 flex flex-col sm:flex-row items-center justify-center gap-4 text-sm z-10 relative">
+                                <span className="flex items-center gap-2">
+                                    ⚠️ Your content generated a minimal workspace. For richer results, try adding more detail to your content or use a longer guide.
+                                </span>
+                                <button
+                                    onClick={() => router.push('/create')}
+                                    className="px-3 py-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-bold rounded flex items-center gap-2 transition-colors whitespace-nowrap"
+                                >
+                                    Improve my content <ArrowRight size={14} />
+                                </button>
                             </div>
-
-                            {/* Module Grid */}
-                            {moduleSections.length > 0 && (
-                                <div>
-                                    <h3 className="font-sans-display text-xs uppercase tracking-[0.15em] text-text-secondary mb-6 flex items-center gap-2">
-                                        <span className="w-4 h-[1px] bg-indigo-500" />
-                                        Course Modules
-                                    </h3>
-                                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                                        {moduleSections.map((mod, idx) => {
-                                            const modPercent = getModuleProgress(mod);
-                                            const tasksCount = mod.type === "module" ? ((mod as ModuleSectionType).data.tasks || []).length : 0;
-                                            const status = modPercent === 100 ? "Complete" : modPercent > 0 ? "In Progress" : "Not Started";
-
-                                            return (
-                                                <button
-                                                    key={mod.id}
-                                                    onClick={() => onNavigate(mod.id)}
-                                                    className="group relative flex flex-col items-start bg-obsidian-surface/30 border border-white/5 hover:border-indigo-500/30 rounded-xl p-6 text-left transition-all hover:bg-obsidian-surface/80 overflow-hidden"
-                                                >
-                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl -mr-10 -mt-10 pointer-events-none group-hover:bg-indigo-500/10 transition-colors" />
-
-                                                    <div className="flex items-center justify-between w-full mb-4">
-                                                        <span className="font-mono text-xs text-text-muted/50 group-hover:text-indigo-400 transition-colors">
-                                                            MOD {String(idx + 1).padStart(2, "0")}
-                                                        </span>
-                                                        <span className={`font-sans-display text-[8px] uppercase tracking-widest px-2 py-1 rounded border ${status === "Complete" ? "border-emerald-500/30 text-emerald-400" :
-                                                            status === "In Progress" ? "border-indigo-500/30 text-indigo-400" :
-                                                                "border-white/10 text-text-muted"
-                                                            }`}>
-                                                            {status}
-                                                        </span>
-                                                    </div>
-
-                                                    <h4 className="font-display text-lg text-white mb-2 line-clamp-2">
-                                                        {mod.title}
-                                                    </h4>
-
-                                                    {mod.type === "module" && (mod as ModuleSectionType).data.description && (
-                                                        <p className="text-text-secondary text-sm line-clamp-2 mb-6 font-body">
-                                                            {(mod as ModuleSectionType).data.description}
-                                                        </p>
-                                                    )}
-
-                                                    <div className="mt-auto w-full">
-                                                        <div className="flex items-center justify-between font-sans-display text-[10px] uppercase tracking-widest text-text-muted mb-2">
-                                                            <span>{tasksCount} tasks</span>
-                                                            <span>{modPercent}%</span>
-                                                        </div>
-                                                        <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                                                            <div
-                                                                className={`h-full rounded-full transition-all duration-700 ${modPercent === 100 ? "bg-emerald-500" : "bg-indigo-500"}`}
-                                                                style={{ width: `${modPercent}%` }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
+                        )}
+                        {isAtRisk && (
+                            <div className="bg-indigo-500/10 border-b border-indigo-500/20 text-indigo-400 py-2 px-4 flex items-center justify-center gap-2 text-sm z-10 relative">
+                                <Flame size={16} />
+                                Your {currentStreak} day learning streak is at risk! Complete a task today to keep it going.
+                            </div>
+                        )}
+                        {calendarEvents.some(e => {
+                            const days = (new Date(e.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+                            return days < 0 && !e.completed;
+                        }) && (
+                                <div className="bg-red-500/10 border-b border-red-500/20 text-red-400 py-2 px-4 flex items-center justify-center gap-2 text-sm">
+                                    <Clock size={16} />
+                                    You have overdue deadlines. Check your calendar.
                                 </div>
                             )}
-                        </div>
-                    ) : activeSection ? (
-                        <div className="p-6 sm:p-8 lg:p-12 max-w-5xl mx-auto relative z-10 min-h-full">
-                            <SectionRenderer
-                                section={activeSection}
-                                roadmap={roadmap}
-                                onUpdate={(updater) => onUpdateSection(activeSection.id, updater)}
-                            />
-                        </div>
-                    ) : null}
+
+                        {activeSectionId === "dashboard" ? (
+                            // COURSE DASHBOARD
+                            <div className="animate-fade-in p-6 sm:p-10 lg:p-16 max-w-6xl mx-auto space-y-12">
+                                {/* Dashboard Header */}
+                                <div className="flex flex-col items-center text-center space-y-6 max-w-3xl mx-auto relative">
+                                    {/* Streak indicator right side */}
+                                    {currentStreak > 0 && (
+                                        <div className="absolute top-0 right-0 hidden md:flex items-center gap-2 bg-obsidian-light border border-indigo-500/30 text-indigo-400 px-4 py-2 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.1)]">
+                                            <Flame size={18} className={isAtRisk ? "" : "animate-pulse"} />
+                                            <span className="font-bold">{currentStreak} Day Streak</span>
+                                        </div>
+                                    )}
+                                    <div className="inline-flex items-center justify-center px-3 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10">
+                                        <span className="font-sans-display text-[12px] uppercase tracking-widest text-indigo-400 font-bold">
+                                            {roadmap.mode} Course
+                                        </span>
+                                    </div>
+                                    <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-tight text-white leading-[1.1]">
+                                        {roadmap.title}
+                                    </h1>
+                                    {roadmap.summary && (
+                                        <p className="font-body text-text-secondary text-lg leading-relaxed">
+                                            {roadmap.summary}
+                                        </p>
+                                    )}
+                                    {roadmap.objectives && roadmap.objectives.length > 0 && (
+                                        <div className="mt-8 text-left w-full bg-obsidian-surface/40 border border-border rounded-2xl p-8 shadow-inner">
+                                            <h3 className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary mb-6 flex items-center gap-2">
+                                                <span className="w-4 h-[1px] bg-indigo-500" />
+                                                Learning Objectives
+                                            </h3>
+                                            <div className="grid sm:grid-cols-2 gap-4">
+                                                {roadmap.objectives.map((obj, i) => (
+                                                    <div key={i} className="flex items-start gap-4">
+                                                        <div className="w-6 h-6 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 flex flex-col items-center justify-center shrink-0 mt-0.5">
+                                                            <SearchCode size={12} />
+                                                        </div>
+                                                        <p className="font-body text-text-primary text-sm leading-relaxed">{obj}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Intelligent Insights Row */}
+                                <div className="grid lg:grid-cols-3 gap-6">
+                                    {/* Progress Ring & Continue */}
+                                    <div id="tour-progress" className="lg:col-span-2 flex flex-col items-center justify-center bg-obsidian-surface/30 border border-border rounded-2xl p-10 backdrop-blur-md relative overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none" />
+
+                                        <div className="flex flex-col sm:flex-row items-center gap-10">
+                                            <ProgressRing percent={progress.overall} size={140} strokeWidth={8} className="drop-shadow-[0_0_30px_rgba(99,102,241,0.2)]" />
+
+                                            <div className="text-center sm:text-left flex flex-col items-center sm:items-start">
+                                                <h4 className="font-display text-base font-semibold text-text-primary font-medium mb-2">{getMotivationalMessage(progress.overall)}</h4>
+                                                <p className="text-sm text-text-secondary mb-8 font-sans-display uppercase tracking-widest">{progress.completedTasks} of {progress.totalTasks} Tasks Completed</p>
+
+                                                <button
+                                                    onClick={() => onNavigate(firstIncompleteModule.id)}
+                                                    className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-sans-display text-xs uppercase tracking-widest font-bold rounded-lg transition-all flex items-center gap-3 group drop-shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+                                                >
+                                                    Continue Learning
+                                                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Smart Insights Card */}
+                                    <div className="flex flex-col gap-4">
+                                        <div className="bg-obsidian-surface/40 border border-border rounded-2xl p-6 flex-1">
+                                            <h3 className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary mb-4 flex items-center gap-2">
+                                                <Target size={14} className="text-indigo-400" />
+                                                Your Progress
+                                            </h3>
+                                            <div className="space-y-4">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-text-secondary">Tasks Today</span>
+                                                    <span className="text-sm font-bold text-white flex items-center gap-2">
+                                                        {tasksCompletedToday}
+                                                        {tasksCompletedToday > tasksCompletedYesterday && <span className="text-emerald-400 text-[12px]">↑</span>}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-text-secondary">Tasks Yesterday</span>
+                                                    <span className="text-sm text-white">{tasksCompletedYesterday}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-text-secondary">Est. Remaining Time</span>
+                                                    <span className="text-sm text-white">
+                                                        {progress.completedTasks > 0 && progress.totalTasks > progress.completedTasks
+                                                            ? formatTime((sessionTimeMs / progress.completedTasks) * (progress.totalTasks - progress.completedTasks))
+                                                            : "-"}
+                                                    </span>
+                                                </div>
+                                                <div className="h-[1px] bg-white/5 w-full my-2"></div>
+                                                {mostTimeSpentModule.module && (
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="text-[12px] text-text-secondary font-sans-display uppercase tracking-widest">Most time spent on</span>
+                                                        <span className="text-sm text-indigo-300 line-clamp-1">{mostTimeSpentModule.module.title}</span>
+                                                        <span className="text-[12px] text-text-secondary">{formatTime(mostTimeSpentModule.time)}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {calendarEvents.length > 0 && (
+                                            <div className="bg-obsidian-surface/40 border border-border rounded-2xl p-6 flex-1">
+                                                <h3 className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary mb-4 flex items-center gap-2">
+                                                    <Calendar size={14} className="text-indigo-400" />
+                                                    Upcoming Deadlines
+                                                </h3>
+                                                <div className="space-y-3">
+                                                    {calendarEvents.slice(0, 3).map(event => {
+                                                        const days = (new Date(event.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+                                                        let color = "text-emerald-400 bg-emerald-400/10 border-emerald-400/20";
+                                                        if (days < 0) color = "text-text-secondary bg-white/5 border-border-subtle";
+                                                        else if (days < 3) color = "text-red-400 bg-red-400/10 border-red-400/20";
+                                                        else if (days < 7) color = "text-cyan-400 bg-cyan-400/10 border-cyan-400/20";
+
+                                                        return (
+                                                            <div key={event.id} className="flex flex-col gap-1">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-base font-semibold text-text-primary line-clamp-1">{event.title}</span>
+                                                                    <span className={`text-xs uppercase font-bold px-2 py-0.5 rounded border ${color}`}>
+                                                                        {days < 0 ? 'Past' : `${Math.ceil(days)}d`}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-[12px] text-text-secondary">{new Date(event.date).toLocaleDateString()}</span>
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Stats Line */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {[
+                                        { label: "Modules", value: totalModules, icon: <Layers size={18} /> },
+                                        { label: "Tasks", value: progress.totalTasks, icon: <ListTodo size={18} /> },
+                                        { label: "Resources", value: totalResources, icon: <BookOpen size={18} /> },
+                                        { label: "Videos", value: totalVideos, icon: <Video size={18} /> },
+                                    ].map((stat, i) => (
+                                        <div key={i} className="bg-obsidian-surface/40 border border-border rounded-xl p-5 flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-indigo-400">
+                                                {stat.icon}
+                                            </div>
+                                            <div>
+                                                <div className="font-display text-2xl text-white">{stat.value}</div>
+                                                <div className="font-sans-display text-xs uppercase tracking-widest text-text-secondary">{stat.label}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Achievements Section */}
+                                <div>
+                                    <h3 className="font-sans-display text-xs uppercase tracking-[0.15em] text-text-secondary mb-6 flex items-center gap-2">
+                                        <Trophy size={14} className="text-indigo-500" />
+                                        Achievements
+                                    </h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                                        {getBadges().map(badge => (
+                                            <div
+                                                key={badge.id}
+                                                className={`relative flex flex-col items-center text-center p-4 rounded-xl border transition-all ${badge.unlockedAt
+                                                    ? "bg-indigo-500/10 border-indigo-500/30 hover:bg-indigo-500/20"
+                                                    : "bg-white/5 border-border opacity-50 grayscale hover:grayscale-0"
+                                                    }`}
+                                                title={badge.description}
+                                            >
+                                                <div className="text-3xl mb-2">{badge.icon}</div>
+                                                <div className="text-xs font-bold text-white leading-tight mb-1">{badge.title}</div>
+                                                {!badge.unlockedAt && (
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-obsidian/90 backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity rounded-xl p-2 z-10">
+                                                        <Lock size={12} className="mb-1 text-text-secondary" />
+                                                        <span className="text-[9px] text-text-secondary">{badge.description}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Module Grid */}
+                                {moduleSections.length > 0 && (
+                                    <div>
+                                        <h3 className="font-sans-display text-xs uppercase tracking-[0.15em] text-text-secondary mb-6 flex items-center gap-2">
+                                            <span className="w-4 h-[1px] bg-indigo-500" />
+                                            Course Modules
+                                        </h3>
+                                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                                            {moduleSections.map((mod, idx) => {
+                                                const modPercent = getModuleProgress(mod);
+                                                const tasksCount = mod.type === "module" ? ((mod as ModuleSectionType).data.tasks || []).length : 0;
+                                                const status = modPercent === 100 ? "Complete" : modPercent > 0 ? "In Progress" : "Not Started";
+
+                                                return (
+                                                    <button
+                                                        key={mod.id}
+                                                        id={idx === 0 ? "tour-first-module" : undefined}
+                                                        onClick={() => onNavigate(mod.id)}
+                                                        className="group relative flex flex-col items-start bg-obsidian-surface/30 border border-border hover:border-indigo-500/30 rounded-xl p-6 text-left transition-all hover:bg-obsidian-surface/80 overflow-hidden"
+                                                    >
+                                                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl -mr-10 -mt-10 pointer-events-none group-hover:bg-indigo-500/10 transition-colors" />
+
+                                                        <div className="flex items-center justify-between w-full mb-4">
+                                                            <span className="font-mono text-[12px] text-text-secondary/50 group-hover:text-indigo-400 transition-colors">
+                                                                MOD {String(idx + 1).padStart(2, "0")}
+                                                            </span>
+                                                            <span className={`font-sans-display text-[8px] uppercase tracking-widest px-2 py-1 rounded border ${status === "Complete" ? "border-emerald-500/30 text-emerald-400" :
+                                                                status === "In Progress" ? "border-indigo-500/30 text-indigo-400" :
+                                                                    "border-border-subtle text-text-secondary"
+                                                                }`}>
+                                                                {status}
+                                                            </span>
+                                                        </div>
+
+                                                        <h4 className="font-display text-lg text-white mb-2 line-clamp-2">
+                                                            {mod.title}
+                                                        </h4>
+
+                                                        {mod.type === "module" && (mod as ModuleSectionType).data.description && (
+                                                            <p className="text-text-secondary text-sm line-clamp-2 mb-6 font-body">
+                                                                {(mod as ModuleSectionType).data.description}
+                                                            </p>
+                                                        )}
+
+                                                        <div className="mt-auto w-full">
+                                                            <div className="flex items-center justify-between font-sans-display text-xs uppercase tracking-widest text-text-secondary mb-2">
+                                                                <span>{tasksCount} tasks</span>
+                                                                <span>{modPercent}%</span>
+                                                            </div>
+                                                            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className={`h-full rounded-full transition-all duration-700 ${modPercent === 100 ? "bg-emerald-500" : "bg-indigo-500"}`}
+                                                                    style={{ width: `${modPercent}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : activeSection ? (
+                            <div className="p-6 sm:p-8 lg:p-12 max-w-5xl mx-auto relative z-10 min-h-full">
+                                <SectionRenderer
+                                    section={activeSection}
+                                    roadmap={roadmap}
+                                    onUpdate={(updater) => onUpdateSection(activeSection.id, updater)}
+                                />
+                            </div>
+                        ) : null}
+                    </div>
                 </main>
             </div>
+
+            {/* QUICK ACTIONS FAB */}
+            {!isReadOnly && (
+                <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3">
+                    <div className={`flex flex-col items-end gap-2 transition-all duration-300 origin-bottom right-0 ${quickActionsOpen ? "scale-100 opacity-100 pointer-events-auto" : "scale-90 opacity-0 pointer-events-none"}`}>
+                        <button className="flex items-center gap-2 px-4 py-2.5 bg-obsidian-elevated border border-border-subtle rounded-full text-sm font-bold shadow-lg hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-indigo-300 transition-colors">
+                            <Plus size={16} /> Add Note
+                        </button>
+                        <button className="flex items-center gap-2 px-4 py-2.5 bg-obsidian-elevated border border-border-subtle rounded-full text-sm font-bold shadow-lg hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-indigo-300 transition-colors">
+                            <Plus size={16} /> Add Resource
+                        </button>
+                        <button className="flex items-center gap-2 px-4 py-2.5 bg-obsidian-elevated border border-border-subtle rounded-full text-sm font-bold shadow-lg hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-indigo-300 transition-colors">
+                            <Plus size={16} /> Add Video
+                        </button>
+                        <button 
+                            onClick={() => setShareModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-obsidian-elevated border border-border-subtle rounded-full text-sm font-bold shadow-lg hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-indigo-300 transition-colors"
+                        >
+                            <Share size={16} /> Share Workspace
+                        </button>
+                        <button className="flex items-center gap-2 px-4 py-2.5 bg-obsidian-elevated border border-border-subtle rounded-full text-sm font-bold shadow-lg hover:border-amber-500/50 hover:bg-amber-500/10 hover:text-amber-300 transition-colors">
+                            <RefreshCw size={16} /> Regenerate Workspace
+                        </button>
+                    </div>
+                    <button
+                        onClick={() => setQuickActionsOpen(!quickActionsOpen)}
+                        className="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-xl hover:bg-indigo-500 hover:scale-105 transition-all duration-300"
+                    >
+                        <Plus className={`transition-transform duration-300 ${quickActionsOpen ? "rotate-45" : ""}`} size={24} />
+                    </button>
+                </div>
+            )}
+
+            {/* TOUR OVERLAY */}
+            {tourStep >= 0 && (
+                <div className="fixed inset-0 z-[50] pointer-events-none">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 pointer-events-auto" />
+
+                    {tourTarget && (
+                        <div
+                            className="absolute bg-obsidian-elevated border border-border-subtle rounded-2xl p-6 shadow-2xl z-[70] shadow-[0_10px_40px_rgba(99,102,241,0.2)] animate-scale-in flex flex-col pointer-events-auto w-72"
+                            style={{
+                                top: tourStep === 0 ? Math.max(20, tourTarget.top) // Sidebar
+                                    : tourStep === 1 ? tourTarget.bottom + 20 // Progress ring
+                                        : tourStep === 2 ? tourTarget.bottom + 20 // First module
+                                            : Math.max(20, tourTarget.bottom + 20), // Mark complete
+                                left: tourStep === 0 ? tourTarget.right + 20 // Sidebar
+                                    : tourStep === 1 || tourStep === 2 ? Math.max(20, tourTarget.left + (tourTarget.width / 2) - 144)
+                                        : Math.min(window.innerWidth - 300, tourTarget.left),
+                                transition: 'top 0.4s ease, left 0.4s ease'
+                            }}
+                        >
+                            <h4 className="font-display text-base font-semibold text-text-primary text-white mb-2 text-indigo-100 drop-shadow-sm">
+                                {tourStep === 0 ? "These are your course modules" :
+                                    tourStep === 1 ? "Your completion is tracked here" :
+                                        tourStep === 2 ? "Click any module to start learning" :
+                                            "Mark modules done as you go"}
+                            </h4>
+                            <p className="font-body text-text-secondary text-sm mb-6">
+                                {tourStep === 0 ? "Navigate between different sections, tools, and materials here." :
+                                    tourStep === 1 ? "Watch this ring fill up as you complete tasks throughout the course." :
+                                        tourStep === 2 ? "Dive into your first generated learning module." :
+                                            "Check this off when you finish all tasks to boost your progress."}
+                            </p>
+                            <div className="flex items-center justify-between mt-auto pt-4 border-t border-border-subtle">
+                                <button onClick={endTour} className="text-xs text-text-secondary hover:text-white transition-colors">End Tour</button>
+                                <button onClick={handleNextTourStep} className="px-5 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs">
+                                    Next →
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Modals */}
+            <ShareEmbedModal 
+                roadmap={roadmap} 
+                isOpen={shareModalOpen} 
+                onClose={() => setShareModalOpen(false)} 
+            />
+            <SettingsModal
+                roadmap={roadmap}
+                isOpen={settingsModalOpen}
+                onClose={() => setSettingsModalOpen(false)}
+                onUpdateBranding={(branding) => onUpdateRoadmap?.({ branding })}
+            />
+
+            {/* Watermark */}
+            {!hideWatermark && (
+                <div className="fixed bottom-3 right-3 z-50 pointer-events-none opacity-40 hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-obsidian-surface backdrop-blur-sm border border-border rounded-md">
+                        <span className="text-[9px] uppercase tracking-tighter text-text-secondary font-bold">Powered by</span>
+                        <span className="text-[9px] uppercase tracking-widest text-white font-black">ZNS <span className="text-indigo-400">NEXUS</span></span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

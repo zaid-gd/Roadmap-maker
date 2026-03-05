@@ -12,7 +12,7 @@ export default function EmptyState({ icon, title, description, action }: EmptySt
     return (
         <div className="flex flex-col items-center justify-center py-12 px-4 text-center animate-fade-in">
             <span className="text-4xl mb-3">{icon}</span>
-            <h3 className="font-display font-bold text-text-primary text-lg mb-1">{title}</h3>
+            <h3 className="font-display font-bold text-text-primary text-text-primary text-lg mb-1">{title}</h3>
             <p className="text-text-secondary text-sm max-w-sm mb-4" style={{ textWrap: "balance" }}>
                 {description}
             </p>

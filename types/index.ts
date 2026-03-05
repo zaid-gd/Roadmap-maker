@@ -29,6 +29,12 @@ export interface Roadmap {
     rawContent: string;
     createdAt: string;
     updatedAt: string;
+    branding?: {
+        customTitle?: string;
+        hideWatermark?: boolean;
+        accentColor?: string;
+        logoUrl?: string;
+    };
 }
 
 // ── Section (discriminated union) ──

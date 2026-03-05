@@ -68,7 +68,7 @@ export default function SubmissionsSection({ section, onUpdate }: Props) {
     return (
         <div className="max-w-3xl">
             <div className="flex items-center justify-between mb-6 animate-fade-in">
-                <h2 className="font-display text-2xl font-bold text-text-primary">📤 {section.title}</h2>
+                <h2 className="font-display text-2xl font-bold text-text-primary text-text-primary">📤 {section.title}</h2>
                 <button type="button" className="btn btn-primary text-xs" onClick={() => setShowSubmit(true)}>
                     Submit Work
                 </button>
@@ -96,10 +96,10 @@ export default function SubmissionsSection({ section, onUpdate }: Props) {
                         style={{ animationDelay: `${i * 0.05}s` }}
                     >
                         <div className="flex items-start justify-between gap-3 mb-2">
-                            <h3 className="font-display font-bold text-sm text-text-primary flex-1">{sub.title}</h3>
+                            <h3 className="font-display font-bold text-text-primary text-sm text-text-primary flex-1">{sub.title}</h3>
                             <StatusBadge status={sub.status} />
                         </div>
-                        <p className="text-text-secondary text-xs mb-2">{sub.description}</p>
+                        <p className="text-text-secondary text-sm mb-2">{sub.description}</p>
                         {sub.attachment ? (
                             <a
                                 href={sub.attachment}
@@ -116,7 +116,7 @@ export default function SubmissionsSection({ section, onUpdate }: Props) {
                             </div>
                         ) : null}
                         <div className="flex items-center justify-between mt-3">
-                            <span className="text-text-muted text-xs tabular-nums">
+                            <span className="text-text-secondary text-[12px] tabular-nums">
                                 {new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(sub.createdAt))}
                             </span>
                             {sub.status === "submitted" ? (

@@ -48,11 +48,11 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = "ma
             >
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-border">
-                    <h3 className="font-display font-bold text-text-primary">{title}</h3>
+                    <h3 className="font-display font-bold text-text-primary text-text-primary">{title}</h3>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="btn btn-ghost p-1.5 text-text-muted hover:text-text-primary"
+                        className="btn btn-ghost p-1.5 text-text-secondary hover:text-text-primary"
                         aria-label="Close modal"
                     >
                         ✕

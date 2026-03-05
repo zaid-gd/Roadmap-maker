@@ -46,10 +46,10 @@ export default function ContentViewer({ url, title, onClose }: ContentViewerProp
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className="flex gap-1.5">
                             <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                            <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                            <div className="w-3 h-3 rounded-full bg-white/20" />
                             <div className="w-3 h-3 rounded-full bg-green-500/80" />
                         </div>
-                        <p className="text-text-secondary text-xs truncate flex-1">
+                        <p className="text-text-secondary text-sm truncate flex-1">
                             {title || url}
                         </p>
                     </div>
