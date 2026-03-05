@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Shield } from "lucide-react";
+import { Providers } from "@/components/shared/Providers";
 
 export const viewport: Viewport = {
     themeColor: "#0a0e1a",
@@ -29,7 +30,9 @@ export default function RootLayout({
                 <meta name="color-scheme" content="dark" />
             </head>
             <body className="noise-overlay min-h-screen flex flex-col">
-                {children}
+                <Providers>
+                    {children}
+                </Providers>
                 <footer className="border-t border-border bg-obsidian py-3 px-6 flex items-center justify-between text-[12px] text-[#5C6378] select-none">
                     <div>Powered by ZNS Nexus · ZNS Enterprises © 2026</div>
                     <div className="flex items-center gap-1.5">

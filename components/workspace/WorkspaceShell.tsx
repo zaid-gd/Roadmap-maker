@@ -10,6 +10,7 @@ import ProgressRing from "@/components/shared/ProgressRing";
 import SectionRenderer from "@/components/workspace/SectionRenderer";
 import ShareEmbedModal from "@/components/workspace/ShareEmbedModal";
 import SettingsModal from "@/components/workspace/SettingsModal";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import Link from "next/link";
 import { SECTION_LABELS } from "@/lib/constants";
 import { Search, Settings, Home, ArrowRight, CheckCircle2, Circle, LayoutDashboard, SearchCode, BookOpen, Video, ListTodo, Trophy, Layers, Calendar, Clock, Lock, Target, Flame, Info, Plus, Share, RefreshCw, HardDrive, BarChart2, HelpCircle, X, FileText, Braces, Printer, History, ChevronDown, Key } from "lucide-react";
@@ -67,7 +68,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                     if (mods.length > 0) setActiveSectionId(mods[0].id);
                     return;
                 }
-                
+
                 if (e.key === '[' && currentIdx > 0) {
                     setActiveSectionId(mods[currentIdx - 1].id);
                 } else if (e.key === ']' && currentIdx < mods.length - 1) {
@@ -411,7 +412,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
     };
 
     return (
-        <div 
+        <div
             className="h-screen flex flex-col overflow-hidden bg-obsidian selection:bg-[var(--workspace-accent)]/30"
             style={{
                 "--color-indigo-500": accentColor,
@@ -616,7 +617,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                                     <HardDrive size={12} />
                                                     <span className="text-[10px] uppercase tracking-wider font-medium">Progress saved in your browser</span>
                                                 </div>
-                                                <button 
+                                                <button
                                                     onClick={() => {
                                                         if (window.confirm("Are you sure you want to reset all progress? This cannot be undone.")) {
                                                             const freshSections = roadmap.sections.map(s => {
@@ -690,6 +691,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                 {/* Potential breadcrumbs or workspace specific title override here */}
                             </div>
                             <div className="flex items-center gap-3">
+                                <ThemeToggle />
                                 <button
                                     onClick={() => setShowShortcuts(!showShortcuts)}
                                     className="flex items-center justify-center w-8 h-8 rounded-lg bg-obsidian-surface text-text-secondary hover:text-white hover:bg-white/5 transition-colors border border-border"
@@ -1071,7 +1073,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                         <button className="flex items-center gap-2 px-4 py-2.5 bg-obsidian-elevated border border-border-subtle rounded-full text-sm font-bold shadow-lg hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-indigo-300 transition-colors">
                             <Plus size={16} /> Add Video
                         </button>
-                        <button 
+                        <button
                             onClick={() => setShareModalOpen(true)}
                             className="flex items-center gap-2 px-4 py-2.5 bg-obsidian-elevated border border-border-subtle rounded-full text-sm font-bold shadow-lg hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-indigo-300 transition-colors"
                         >
@@ -1148,7 +1150,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                     <div key={i} className="bg-obsidian-surface border border-border rounded-xl p-4 flex flex-col gap-3">
                                         <div className="flex items-center justify-between">
                                             <span className="font-bold text-text-primary">{v.label}</span>
-                                            <button 
+                                            <button
                                                 onClick={async () => {
                                                     if (window.confirm("Restore this version? Current progress will be saved as a new version.")) {
                                                         saveVersion(roadmap);
@@ -1176,10 +1178,10 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
             )}
 
             {/* Modals */}
-            <ShareEmbedModal 
-                roadmap={roadmap} 
-                isOpen={shareModalOpen} 
-                onClose={() => setShareModalOpen(false)} 
+            <ShareEmbedModal
+                roadmap={roadmap}
+                isOpen={shareModalOpen}
+                onClose={() => setShareModalOpen(false)}
             />
             <SettingsModal
                 roadmap={roadmap}
