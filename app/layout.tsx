@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Shield } from "lucide-react";
 import { Providers } from "@/components/shared/Providers";
+import { Analytics } from "@vercel/analytics/next";
 
 export const viewport: Viewport = {
     themeColor: "#0a0e1a",
@@ -40,6 +41,7 @@ export default function RootLayout({
                         <span>Your content is never stored or used for training</span>
                     </div>
                 </footer>
+                <Analytics />
             </body>
         </html>
     );
