@@ -10,12 +10,12 @@
 
 /* ── Theme / Custom Properties ── */
 @theme {
-    /* Backgrounds — near-black with subtle blue tint */
-    --color-obsidian: #0A0A0F;
-    --color-obsidian-light: #0D0D14;
-    --color-obsidian-surface: #111118;
-    --color-obsidian-elevated: #18182B;
-    --color-obsidian-hover: #1C1C28;
+    /* Backgrounds — dark slate */
+    --color-obsidian: #0F1117;
+    --color-obsidian-light: #13151F;
+    --color-obsidian-surface: #1A1D27;
+    --color-obsidian-elevated: #1A1D27;
+    --color-obsidian-hover: #21253A;
 
     /* Primary accent — Electric indigo/violet */
     --color-indigo-50: #EEF2FF;
@@ -52,14 +52,14 @@
     --color-violet-accent: #8B5CF6;
 
     /* Text — clean, slate-based */
-    --color-text-primary: #F1F5F9;
-    --color-text-secondary: #94A3B8;
-    --color-text-muted: #475569;
-    --color-text-inverse: #0A0A0F;
+    --color-text-primary: #E8EAF0;
+    --color-text-secondary: #9DA3B4;
+    --color-text-muted: #5C6378;
+    --color-text-inverse: #0F1117;
 
     /* Borders */
-    --color-border: #1C1C28;
-    --color-border-subtle: #14141F;
+    --color-border: #2A2D3A;
+    --color-border-subtle: #21253A;
     --color-border-active: #6366F1;
 
     /* Typography */
@@ -197,6 +197,10 @@ html {
 
 body {
     font-family: var(--font-body);
+    font-size: 14px;
+    min-font-size: 14px;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
     background-color: var(--color-obsidian);
     color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
@@ -419,7 +423,7 @@ h6 {
 
 .input:focus {
     border-color: var(--color-indigo-accent);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 0 0 3px var(--color-indigo-glow);
     outline: none;
 }
 

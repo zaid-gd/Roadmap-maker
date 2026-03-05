@@ -74,11 +74,11 @@ function WorkspaceMockup() {
             {/* Window chrome */}
             <div className="absolute inset-0 rounded-lg border border-white/[0.08] bg-obsidian-surface/80 backdrop-blur-md overflow-hidden shadow-2xl shadow-black/40">
                 {/* Title bar */}
-                <div className="flex items-center gap-1.5 px-3 py-2 border-b border-white/5">
+                <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border">
                     <div className="w-2 h-2 rounded-full bg-red-500/60" />
                     <div className="w-2 h-2 rounded-full bg-yellow-500/60" />
                     <div className="w-2 h-2 rounded-full bg-green-500/60" />
-                    <span className="ml-2 text-[9px] font-sans-display text-text-muted tracking-wider">WORKSPACE</span>
+                    <span className="ml-2 text-[9px] font-sans-display text-text-secondary tracking-wider">WORKSPACE</span>
                 </div>
 
                 {/* Content area */}
@@ -102,7 +102,7 @@ function WorkspaceMockup() {
                         </svg>
                         <div className="flex-1 min-w-0">
                             <div className="text-[9px] font-sans-display text-text-secondary uppercase tracking-wider">Progress</div>
-                            <div className="text-[8px] text-text-muted mt-0.5">12 of 18 tasks</div>
+                            <div className="text-[8px] text-text-secondary mt-0.5">12 of 18 tasks</div>
                         </div>
                     </div>
 
@@ -124,14 +124,14 @@ function WorkspaceMockup() {
                                     <div className={`h-full ${m.color} rounded-full transition-all duration-1000`} style={{ width: m.w === "w-3/4" ? "75%" : m.w === "w-1/2" ? "50%" : "25%" }} />
                                 </div>
                             </div>
-                            <CheckSquare size={10} className="text-text-muted/40 shrink-0" />
+                            <CheckSquare size={10} className="text-text-secondary/40 shrink-0" />
                         </div>
                     ))}
 
                     {/* Resource row */}
                     <div className="flex gap-1.5">
                         {["📹", "📄", "🔗"].map((e, i) => (
-                            <div key={i} className="flex-1 text-center py-1.5 rounded bg-white/[0.02] border border-white/[0.04] text-[10px]">
+                            <div key={i} className="flex-1 text-center py-1.5 rounded bg-white/[0.02] border border-white/[0.04] text-xs">
                                 {e}
                             </div>
                         ))}
@@ -194,14 +194,14 @@ function CardMenu({
             <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(!open); }}
-                className="p-1.5 rounded text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors"
+                className="p-1.5 rounded text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors"
                 aria-label="Course menu"
             >
                 <MoreHorizontal size={16} />
             </button>
 
             {open && (
-                <div className="absolute right-0 top-full mt-1 w-40 py-1 bg-obsidian-elevated border border-white/10 shadow-xl shadow-black/50 z-50 animate-scale-in origin-top-right">
+                <div className="absolute right-0 top-full mt-1 w-40 py-1 bg-obsidian-elevated border border-border-subtle shadow-xl shadow-black/50 z-50 animate-scale-in origin-top-right">
                     <button
                         type="button"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRename(); }}
@@ -254,7 +254,7 @@ function CourseCard({
                 {/* Top row: badge + menu */}
                 <div className="flex items-center justify-between mb-4">
                     <span
-                        className={`font-sans-display text-[10px] uppercase tracking-widest px-2 py-0.5 border ${roadmap.mode === "intern"
+                        className={`font-sans-display text-xs uppercase tracking-widest px-2 py-0.5 border ${roadmap.mode === "intern"
                             ? "text-emerald-400 border-emerald-500/20 bg-emerald-500/5"
                             : "text-indigo-400 border-indigo-500/20 bg-indigo-500/5"
                             }`}
@@ -275,7 +275,7 @@ function CourseCard({
                 </h3>
 
                 {/* Inline stats */}
-                <div className="flex items-center gap-4 mb-5 text-text-muted">
+                <div className="flex items-center gap-4 mb-5 text-text-secondary">
                     <span className="flex items-center gap-1 text-[11px] font-sans-display">
                         <Layers size={11} className="text-indigo-500/50" />
                         {moduleCount} modules
@@ -289,7 +289,7 @@ function CourseCard({
                 {/* Progress bar */}
                 <div className="mb-4">
                     <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] font-sans-display text-text-muted uppercase tracking-wider">Progress</span>
+                        <span className="text-[12px] font-sans-display text-text-secondary uppercase tracking-wider">Progress</span>
                         <span className="text-[11px] font-sans-display text-text-primary font-bold tabular-nums">{percent}%</span>
                     </div>
                     <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
@@ -304,8 +304,8 @@ function CourseCard({
                 </div>
 
                 {/* Bottom row: time + continue button */}
-                <div className="mt-auto flex items-center justify-between pt-4 border-t border-white/5">
-                    <span className="flex items-center gap-1 text-[10px] font-sans-display text-text-muted/60">
+                <div className="mt-auto flex items-center justify-between pt-4 border-t border-border">
+                    <span className="flex items-center gap-1 text-[12px] font-sans-display text-text-secondary/60">
                         <Clock size={10} />
                         {relativeTime(roadmap.updatedAt)}
                     </span>
@@ -334,11 +334,20 @@ export default function HomePage() {
     const [roadmaps, setRoadmaps] = useState<Roadmap[]>([]);
     const [mounted, setMounted] = useState(false);
     const [filter, setFilter] = useState<FilterKey>("all");
+    const [showOnboarding, setShowOnboarding] = useState(false);
 
     useEffect(() => {
         setMounted(true);
         setRoadmaps(getStorage().getRoadmaps());
+        if (!localStorage.getItem("zns_onboarded")) {
+            setShowOnboarding(true);
+        }
     }, []);
+
+    const dismissOnboarding = () => {
+        localStorage.setItem("zns_onboarded", "true");
+        setShowOnboarding(false);
+    };
 
     const handleDelete = useCallback((id: string) => {
         getStorage().deleteRoadmap(id);
@@ -384,7 +393,7 @@ export default function HomePage() {
                             <div className="w-2 h-2 bg-obsidian rounded-sm" />
                         </div>
                         <span className="font-sans-display font-black text-sm tracking-[0.15em] text-text-primary">
-                            ZNS <span className="text-text-muted font-medium">RoadMap Studio</span>
+                            ZNS <span className="text-text-secondary font-medium">RoadMap Studio</span>
                         </span>
                     </Link>
 
@@ -416,7 +425,7 @@ export default function HomePage() {
                                 <span className="text-gradient italic">interactive course</span>
                             </h1>
                             <p className="font-body text-sm text-text-secondary max-w-lg leading-relaxed mb-5">
-                                Paste any text or <code className="text-[12px] px-1.5 py-0.5 bg-white/5 border border-white/10 text-text-muted">.md</code> file — AI builds your complete learning workspace with modules, tasks, progress tracking, and more.
+                                Paste any text or <code className="text-[12px] px-1.5 py-0.5 bg-white/5 border border-border-subtle text-text-secondary">.md</code> file — AI builds your complete learning workspace with modules, tasks, progress tracking, and more.
                             </p>
                             <Link
                                 href="/create"
@@ -442,7 +451,7 @@ export default function HomePage() {
                     {/* Header row: title + count + filters */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                         <div className="flex items-center gap-3">
-                            <h2 className="font-sans-display text-lg font-bold text-text-primary tracking-tight">
+                            <h2 className="font-sans-display text-lg font-bold text-text-primary text-text-primary tracking-tight">
                                 Your Courses
                             </h2>
                             {mounted && roadmaps.length > 0 && (
@@ -462,7 +471,7 @@ export default function HomePage() {
                                         onClick={() => setFilter(f.key)}
                                         className={`font-sans-display text-[11px] uppercase tracking-wider px-3 py-1.5 border transition-all duration-200 ${filter === f.key
                                             ? "bg-indigo-500/15 text-indigo-400 border-indigo-500/30"
-                                            : "bg-transparent text-text-muted border-white/[0.06] hover:text-text-secondary hover:border-white/10"
+                                            : "bg-transparent text-text-secondary border-white/[0.06] hover:text-text-secondary hover:border-border-subtle"
                                             }`}
                                     >
                                         {f.label}
@@ -488,8 +497,8 @@ export default function HomePage() {
                         /* Filtered to nothing */
                         <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
                             <div className="text-3xl mb-3">🔍</div>
-                            <h3 className="font-sans-display text-sm font-bold text-text-secondary mb-1">No matching courses</h3>
-                            <p className="font-body text-xs text-text-muted">Try a different filter.</p>
+                            <h3 className="font-sans-display text-sm font-bold text-text-primary text-text-secondary mb-1">No matching courses</h3>
+                            <p className="font-body text-sm text-text-secondary">Try a different filter.</p>
                         </div>
                     ) : mounted ? (
                         /* Empty state */
@@ -500,7 +509,7 @@ export default function HomePage() {
                             <h3 className="font-display text-2xl font-light text-text-primary italic mb-2">
                                 No courses yet
                             </h3>
-                            <p className="font-body text-sm text-text-muted max-w-sm mb-8">
+                            <p className="font-body text-sm text-text-secondary max-w-sm mb-8">
                                 Paste any guide and turn it into an interactive course
                                 with AI-generated modules, tasks, and progress tracking.
                             </p>
@@ -527,10 +536,72 @@ export default function HomePage() {
                 FOOTER
                ═══════════════════════════════════════════════ */}
             <footer className="border-t border-white/[0.04] py-5 mt-auto">
-                <div className="max-w-7xl mx-auto px-5 lg:px-10 text-center font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted/60">
-                    Powered by <span className="text-text-muted">ZNS Nexus</span> · ZNS Enterprises © {new Date().getFullYear()} · All rights reserved
+                <div className="max-w-7xl mx-auto px-5 lg:px-10 text-center font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary/60">
+                    Powered by <span className="text-text-secondary">ZNS Nexus</span> · ZNS Enterprises © {new Date().getFullYear()} · All rights reserved
                 </div>
             </footer>
+
+            {/* ═══════════════════════════════════════════════
+                ONBOARDING MODAL
+               ═══════════════════════════════════════════════ */}
+            {mounted && showOnboarding && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-obsidian/80 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className="bg-obsidian-elevated border border-border-subtle rounded-2xl w-full max-w-lg p-8 shadow-2xl animate-scale-in">
+                        <div className="text-center mb-8">
+                            <h2 className="font-display text-2xl mb-2 text-white">Welcome to ZNS RoadMap Studio</h2>
+                            <p className="text-text-secondary text-sm">Turn any knowledge into an interactive learning experience in seconds.</p>
+                        </div>
+
+                        <div className="space-y-6 mb-10">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex flex-col items-center justify-center shrink-0">
+                                    <span className="text-xl">📄</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-text-primary text-white text-sm">Paste any guide, roadmap, or .md file</h3>
+                                    <p className="text-sm text-text-secondary">Simply copy and paste your content.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex flex-col items-center justify-center shrink-0">
+                                    <span className="text-xl">🤖</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-text-primary text-white text-sm">AI reads it and builds your workspace</h3>
+                                    <p className="text-sm text-text-secondary">Automatic modules, tasks, and resources.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex flex-col items-center justify-center shrink-0">
+                                    <span className="text-xl">📈</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-text-primary text-white text-sm">Learn, track progress, and never leave the app</h3>
+                                    <p className="text-sm text-text-secondary">Everything you need in one place.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-4">
+                            <Link
+                                href="/create"
+                                onClick={dismissOnboarding}
+                                className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-obsidian font-sans-display font-bold text-xs uppercase tracking-wider px-6 py-4 rounded-lg transition-all duration-300"
+                            >
+                                <Sparkles size={14} />
+                                Create My First Course <ArrowRight size={14} />
+                            </Link>
+                            <button
+                                type="button"
+                                onClick={dismissOnboarding}
+                                className="text-xs text-text-secondary hover:text-white transition-colors uppercase tracking-widest font-sans-display"
+                            >
+                                Skip
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

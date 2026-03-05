@@ -149,23 +149,23 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
     };
 
     return (
-        <div className="flex flex-col h-full bg-obsidian rounded-2xl border border-white/5 overflow-hidden animate-fade-in relative">
+        <div className="flex flex-col h-full bg-obsidian rounded-2xl border border-border overflow-hidden animate-fade-in relative">
             {/* Module Top Header */}
-            <div className="px-8 pt-8 pb-6 border-b border-white/5 bg-obsidian-surface/30">
+            <div className="px-8 pt-8 pb-6 border-b border-border bg-obsidian-surface/30">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                     <div className="flex items-center gap-4">
                         <div className="w-16 h-16 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex flex-col items-center justify-center shrink-0">
-                            <span className="font-sans-display text-[10px] uppercase tracking-widest text-indigo-400 font-bold">Mod</span>
+                            <span className="font-sans-display text-[12px] uppercase tracking-widest text-indigo-400 font-bold">Mod</span>
                             <span className="font-display text-2xl text-indigo-300">{String(currentIndex + 1).padStart(2, "0")}</span>
                         </div>
                         <div>
                             <div className="flex items-center gap-3 mb-1">
                                 {data.estimatedTime && (
-                                    <span className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted">
+                                    <span className="font-sans-display text-[12px] uppercase tracking-[0.2em] text-text-secondary">
                                         ⏱ {data.estimatedTime}
                                     </span>
                                 )}
-                                <span className="font-sans-display text-[10px] uppercase tracking-widest text-indigo-400 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+                                <span className="font-sans-display text-[12px] uppercase tracking-widest text-indigo-400 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20">
                                     {taskPercent}% Complete
                                 </span>
                             </div>
@@ -177,9 +177,9 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
 
                     <button
                         onClick={toggleModuleComplete}
-                        className={`shrink-0 flex items-center gap-2 px-5 py-3 rounded-lg font-sans-display text-[10px] uppercase tracking-widest font-bold transition-all ${data.completed
+                        className={`shrink-0 flex items-center gap-2 px-5 py-3 rounded-lg font-sans-display text-xs uppercase tracking-widest font-bold transition-all ${data.completed
                             ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20"
-                            : "bg-obsidian-elevated text-text-muted border border-white/10 hover:border-indigo-500/50 hover:text-indigo-300"
+                            : "bg-obsidian-elevated text-text-secondary border border-border-subtle hover:border-indigo-500/50 hover:text-indigo-300"
                             }`}
                     >
                         {data.completed ? <><CheckCircle2 size={16} /> Mark Incomplete</> : <><Circle size={16} /> Mark Complete</>}
@@ -187,14 +187,14 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                 </div>
 
                 {/* Tab Bar */}
-                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar mt-8 border-b border-white/5 pb-px">
+                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar mt-8 border-b border-border pb-px">
                     {availableTabs.map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => { setActiveTab(tab.id); setSidePanelResource(null); }}
-                            className={`flex items-center gap-2 px-5 py-3 font-sans-display text-[10px] uppercase tracking-[0.15em] border-b-2 transition-all whitespace-nowrap ${activeTab === tab.id
+                            className={`flex items-center gap-2 px-5 py-3 font-sans-display text-xs uppercase tracking-[0.15em] border-b-2 transition-all whitespace-nowrap ${activeTab === tab.id
                                 ? "border-indigo-500 text-indigo-400 bg-indigo-500/5"
-                                : "border-transparent text-text-muted hover:text-text-primary hover:bg-white/5"
+                                : "border-transparent text-text-secondary hover:text-text-primary hover:bg-white/5"
                                 }`}
                         >
                             {tab.icon}
@@ -211,7 +211,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                     <div className="p-8 max-w-4xl animate-fade-in space-y-10">
                         {data.description && (
                             <section>
-                                <h3 className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted mb-4 border-b border-white/5 pb-2">Description</h3>
+                                <h3 className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary mb-4 border-b border-border pb-2">Description</h3>
                                 <p className="font-body text-text-secondary text-lg leading-relaxed">
                                     {data.description}
                                 </p>
@@ -220,7 +220,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
 
                         {objectives.length > 0 && (
                             <section>
-                                <h3 className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted mb-4 border-b border-white/5 pb-2">Learning Objectives</h3>
+                                <h3 className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary mb-4 border-b border-border pb-2">Learning Objectives</h3>
                                 <div className="space-y-3">
                                     {objectives.map((obj, i) => (
                                         <div key={i} className="flex items-start gap-4">
@@ -236,8 +236,8 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
 
                         {data.concepts && (
                             <section>
-                                <h3 className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted mb-4 border-b border-white/5 pb-2">Key Concepts</h3>
-                                <div className="p-6 border border-white/5 bg-obsidian-elevated/40 rounded-xl">
+                                <h3 className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary mb-4 border-b border-border pb-2">Key Concepts</h3>
+                                <div className="p-6 border border-border bg-obsidian-elevated/40 rounded-xl">
                                     <p className="font-body text-text-secondary leading-relaxed whitespace-pre-wrap">
                                         {data.concepts}
                                     </p>
@@ -251,8 +251,8 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                 {activeTab === 'tasks' && (
                     <div className="p-8 max-w-3xl animate-fade-in">
                         <div className="flex items-center justify-between mb-8">
-                            <h3 className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted">Action Items</h3>
-                            <span className="font-sans-display text-[10px] uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
+                            <h3 className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary">Action Items</h3>
+                            <span className="font-sans-display text-[12px] uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
                                 {completedCount} / {totalCount} Completed
                             </span>
                         </div>
@@ -264,7 +264,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
 
                         <div className="space-y-3">
                             {tasks.map((task: Task) => (
-                                <div key={task.id} className="group border border-white/5 bg-obsidian-surface/40 hover:bg-obsidian-surface/80 hover:border-white/10 rounded-xl transition-all overflow-hidden">
+                                <div key={task.id} className="group border border-border bg-obsidian-surface/40 hover:bg-obsidian-surface/80 hover:border-border-subtle rounded-xl transition-all overflow-hidden">
                                     <button
                                         type="button"
                                         className="w-full flex items-start gap-4 p-5 text-left"
@@ -276,7 +276,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                                             }`}>
                                             {task.completed && <CheckCircle2 size={16} />}
                                         </div>
-                                        <span className={`font-body text-base leading-snug transition-colors ${task.completed ? "text-text-muted line-through" : "text-text-primary"
+                                        <span className={`font-body text-base leading-snug transition-colors ${task.completed ? "text-text-secondary line-through" : "text-text-primary"
                                             }`}>
                                             {task.title}
                                         </span>
@@ -284,7 +284,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
 
                                     {/* Subtasks */}
                                     {(task.subtasks || []).length > 0 && (
-                                        <div className="ml-10 mb-4 mr-5 border-l-2 border-white/5 pl-4 space-y-1">
+                                        <div className="ml-10 mb-4 mr-5 border-l-2 border-border pl-4 space-y-1">
                                             {(task.subtasks || []).map((sub) => (
                                                 <button
                                                     key={sub.id}
@@ -298,7 +298,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                                                         }`}>
                                                         {sub.completed && <CheckCircle2 size={10} />}
                                                     </div>
-                                                    <span className={`text-sm font-body leading-snug ${sub.completed ? "text-text-muted line-through" : "text-text-secondary group-hover/sub:text-text-primary"
+                                                    <span className={`text-sm font-body leading-snug ${sub.completed ? "text-text-secondary line-through" : "text-text-secondary group-hover/sub:text-text-primary"
                                                         }`}>
                                                         {sub.title}
                                                     </span>
@@ -316,7 +316,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                 {activeTab === 'resources' && (
                     <div className="flex h-full animate-fade-in relative overflow-hidden">
                         <div className={`p-8 flex-1 overflow-y-auto transition-all duration-300 ${sidePanelResource ? "pr-[400px]" : "pr-8"}`}>
-                            <h3 className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted mb-8 border-b border-white/5 pb-2">Course Materials</h3>
+                            <h3 className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary mb-8 border-b border-border pb-2">Course Materials</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {resources.map((res) => (
                                     <button
@@ -324,15 +324,15 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                                         onClick={() => setSidePanelResource(res)}
                                         className={`flex items-start gap-4 p-5 text-left border rounded-xl transition-all duration-200 hover:-translate-y-1 ${sidePanelResource?.id === res.id
                                             ? "border-indigo-500 bg-indigo-500/10 shadow-[0_4px_20px_rgba(99,102,241,0.2)]"
-                                            : "border-white/10 bg-obsidian-surface/40 hover:border-white/20 hover:bg-obsidian-surface/80"
+                                            : "border-border-subtle bg-obsidian-surface/40 hover:border-white/20 hover:bg-obsidian-surface/80"
                                             }`}
                                     >
-                                        <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-xl shrink-0">
+                                        <div className="w-10 h-10 rounded-lg bg-white/5 border border-border-subtle flex items-center justify-center text-xl shrink-0">
                                             {resourceTypeIcon(res.type)}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <h4 className="font-display text-white text-lg truncate mb-1">{res.title}</h4>
-                                            {res.description && <p className="text-text-muted font-body text-xs line-clamp-2">{res.description}</p>}
+                                            {res.description && <p className="text-text-secondary font-body text-sm line-clamp-2">{res.description}</p>}
                                         </div>
                                     </button>
                                 ))}
@@ -340,20 +340,20 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                         </div>
 
                         {/* Resource Side Panel */}
-                        <div className={`absolute top-0 right-0 h-full w-[400px] border-l border-white/10 bg-obsidian-elevated/95 backdrop-blur-xl transition-transform duration-300 transform shadow-[-20px_0_50px_rgba(0,0,0,0.5)] flex flex-col ${sidePanelResource ? "translate-x-0" : "translate-x-full"
+                        <div className={`absolute top-0 right-0 h-full w-[400px] border-l border-border-subtle bg-obsidian-elevated/95 backdrop-blur-xl transition-transform duration-300 transform shadow-[-20px_0_50px_rgba(0,0,0,0.5)] flex flex-col ${sidePanelResource ? "translate-x-0" : "translate-x-full"
                             }`}>
                             {sidePanelResource && (
                                 <>
-                                    <div className="p-4 border-b border-white/5 flex items-center justify-between bg-obsidian-surface">
+                                    <div className="p-4 border-b border-border flex items-center justify-between bg-obsidian-surface">
                                         <div className="flex items-center gap-3">
                                             <span className="text-xl">{resourceTypeIcon(sidePanelResource.type)}</span>
-                                            <h4 className="font-sans-display text-[10px] uppercase tracking-widest text-white truncate max-w-[250px] font-bold">
+                                            <h4 className="font-sans-display text-xs uppercase tracking-widest text-white truncate max-w-[250px] font-bold">
                                                 {sidePanelResource.title}
                                             </h4>
                                         </div>
                                         <button
                                             onClick={() => setSidePanelResource(null)}
-                                            className="p-1.5 hover:bg-white/10 rounded text-text-muted hover:text-white"
+                                            className="p-1.5 hover:bg-white/10 rounded text-text-secondary hover:text-white"
                                         >
                                             <X size={16} />
                                         </button>
@@ -365,12 +365,12 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                                                 href={sidePanelResource.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-2 font-sans-display text-[10px] uppercase tracking-widest text-indigo-400 hover:text-white transition-colors"
+                                                className="inline-flex items-center gap-2 font-sans-display text-xs uppercase tracking-widest text-indigo-400 hover:text-white transition-colors"
                                             >
                                                 Open in New Tab <Navigation size={12} />
                                             </a>
                                         </div>
-                                        <div className="flex-1 rounded-xl overflow-hidden border border-white/10 bg-black min-h-[300px]">
+                                        <div className="flex-1 rounded-xl overflow-hidden border border-border-subtle bg-black min-h-[300px]">
                                             <SmartEmbed url={sidePanelResource.url} title={sidePanelResource.title} />
                                         </div>
                                     </div>
@@ -387,7 +387,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                         <div className="flex-1 p-6 lg:p-8 overflow-y-auto">
                             {activeVideoId && (
                                 <div className="max-w-4xl mx-auto space-y-6">
-                                    <div className="aspect-video w-full rounded-2xl overflow-hidden border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-black">
+                                    <div className="aspect-video w-full rounded-2xl overflow-hidden border border-border-subtle shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-black">
                                         <SmartEmbed
                                             url={videos.find(v => v.id === activeVideoId)?.url || ""}
                                             title={videos.find(v => v.id === activeVideoId)?.title || "Video"}
@@ -395,7 +395,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                                     </div>
                                     <div>
                                         <h3 className="font-display text-2xl text-white mb-2">{videos.find(v => v.id === activeVideoId)?.title}</h3>
-                                        <p className="font-body text-text-secondary leading-relaxed bg-obsidian-surface/50 p-6 rounded-xl border border-white/5">
+                                        <p className="font-body text-text-secondary leading-relaxed bg-obsidian-surface/50 p-6 rounded-xl border border-border">
                                             {videos.find(v => v.id === activeVideoId)?.description}
                                         </p>
                                     </div>
@@ -403,8 +403,8 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                             )}
                         </div>
                         {/* Playlist Sidebar */}
-                        <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-white/5 bg-obsidian-surface/20 flex flex-col shrink-0 overflow-y-auto">
-                            <div className="p-4 border-b border-white/5 font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted sticky top-0 bg-obsidian-surface/90 backdrop-blur-md z-10">
+                        <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-border bg-obsidian-surface/20 flex flex-col shrink-0 overflow-y-auto">
+                            <div className="p-4 border-b border-border font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary sticky top-0 bg-obsidian-surface/90 backdrop-blur-md z-10">
                                 Playlist
                             </div>
                             <div className="flex flex-col p-2 gap-1">
@@ -421,7 +421,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                                             {v.title}
                                         </span>
                                         {v.duration && (
-                                            <span className="font-sans-display text-[9px] uppercase tracking-widest text-text-muted tabular-nums mt-1">
+                                            <span className="font-sans-display text-[9px] uppercase tracking-widest text-text-secondary tabular-nums mt-1">
                                                 ⏱ {v.duration}
                                             </span>
                                         )}
@@ -436,8 +436,8 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                 {activeTab === 'notes' && (
                     <div className="p-8 max-w-4xl h-full flex flex-col animate-fade-in">
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="font-sans-display text-[10px] uppercase tracking-[0.2em] text-text-muted">Module Notes</h3>
-                            <span className="font-sans-display text-[10px] uppercase tracking-widest text-indigo-400 font-bold min-w-[80px] text-right">
+                            <h3 className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary">Module Notes</h3>
+                            <span className="font-sans-display text-[12px] uppercase tracking-widest text-indigo-400 font-bold min-w-[80px] text-right">
                                 {saveStatus}
                             </span>
                         </div>
@@ -445,20 +445,20 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                             value={notesText}
                             onChange={(e) => setNotesText(e.target.value)}
                             placeholder="Type your notes for this module here... Autosaves as you type."
-                            className="flex-1 w-full bg-obsidian-surface/30 border border-white/10 rounded-xl p-6 font-body text-text-primary text-base leading-relaxed placeholder:text-text-muted/30 focus:outline-none focus:border-indigo-500/50 resize-none transition-colors"
+                            className="flex-1 w-full bg-obsidian-surface/30 border border-border-subtle rounded-xl p-6 font-body text-text-primary text-base leading-relaxed placeholder:text-text-secondary/30 focus:outline-none focus:border-indigo-500/50 resize-none transition-colors"
                         />
                     </div>
                 )}
             </div>
 
             {/* Bottom Nav */}
-            <div className="p-4 border-t border-white/5 flex items-center justify-between bg-obsidian-surface/50 shrink-0">
+            <div className="p-4 border-t border-border flex items-center justify-between bg-obsidian-surface/50 shrink-0">
                 <button
                     onClick={() => prevModule && onNavigate?.(prevModule.id)}
                     disabled={!prevModule}
-                    className={`px-5 py-2.5 flex items-center gap-3 font-sans-display text-[10px] uppercase tracking-[0.15em] font-bold rounded-lg transition-all ${prevModule
+                    className={`px-5 py-2.5 flex items-center gap-3 font-sans-display text-xs uppercase tracking-[0.15em] font-bold rounded-lg transition-all ${prevModule
                         ? "hover:bg-white/10 text-white"
-                        : "opacity-30 cursor-not-allowed text-text-muted"
+                        : "opacity-30 cursor-not-allowed text-text-secondary"
                         }`}
                 >
                     ← Previous
@@ -471,9 +471,9 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate }
                 <button
                     onClick={() => nextModule && onNavigate?.(nextModule.id)}
                     disabled={!nextModule}
-                    className={`px-5 py-2.5 flex items-center gap-3 font-sans-display text-[10px] uppercase tracking-[0.15em] font-bold rounded-lg transition-all ${nextModule
+                    className={`px-5 py-2.5 flex items-center gap-3 font-sans-display text-xs uppercase tracking-[0.15em] font-bold rounded-lg transition-all ${nextModule
                         ? "hover:bg-indigo-500/10 text-indigo-400 border border-transparent hover:border-indigo-500/30"
-                        : "opacity-30 cursor-not-allowed text-text-muted"
+                        : "opacity-30 cursor-not-allowed text-text-secondary"
                         }`}
                 >
                     Next module →

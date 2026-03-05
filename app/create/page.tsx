@@ -211,7 +211,7 @@ export default function CreatePage() {
                             {title || "Untitled Course"}
                         </p>
                     )}
-                    <h2 className="font-display text-3xl sm:text-4xl font-bold text-text-primary mb-10 tracking-tight animate-fade-in">
+                    <h2 className="font-display text-3xl sm:text-4xl font-bold text-text-primary text-text-primary mb-10 tracking-tight animate-fade-in">
                         Creating your workspace…
                     </h2>
 
@@ -238,7 +238,7 @@ export default function CreatePage() {
                                             <div className="w-2 h-2 rounded-full bg-white/10" />
                                         )}
                                     </div>
-                                    <span className={`font-body text-[15px] transition-colors duration-300 ${done ? "text-text-muted line-through" : isCurrent ? "text-text-primary font-medium" : "text-text-muted"}`}>
+                                    <span className={`font-body text-[15px] transition-colors duration-300 ${done ? "text-text-secondary line-through" : isCurrent ? "text-text-primary font-medium" : "text-text-secondary"}`}>
                                         {step.text}
                                     </span>
                                 </div>
@@ -248,7 +248,7 @@ export default function CreatePage() {
 
                     {/* Slow message */}
                     {showSlowMsg && (
-                        <p className="text-text-muted text-sm font-body animate-fade-in mt-4">
+                        <p className="text-text-secondary text-sm font-body animate-fade-in mt-4">
                             This is a detailed course — taking a little longer than usual…
                         </p>
                     )}
@@ -270,8 +270,8 @@ export default function CreatePage() {
                     {/* ── Breadcrumb / context ── */}
                     <div className="animate-fade-in mb-16 pt-8">
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="font-body text-sm text-text-muted">ZNS Studio</span>
-                            <span className="text-text-muted/40">/</span>
+                            <span className="font-body text-sm text-text-secondary">ZNS Studio</span>
+                            <span className="text-text-secondary/40">/</span>
                             <span className="font-body text-sm text-text-secondary">New Course</span>
                         </div>
                     </div>
@@ -283,14 +283,14 @@ export default function CreatePage() {
                         <input
                             id="course-title"
                             type="text"
-                            className="w-full bg-transparent border-none outline-none font-display text-4xl sm:text-5xl font-bold text-text-primary placeholder:text-text-muted/25 leading-tight tracking-tight"
+                            className="w-full bg-transparent border-none outline-none font-display text-4xl sm:text-5xl font-bold text-text-primary placeholder:text-text-secondary/25 leading-tight tracking-tight"
                             placeholder="Name your course…"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             autoComplete="off"
                             spellCheck={false}
                         />
-                        <p className="font-body text-sm text-text-muted/60 mt-3 ml-0.5">
+                        <p className="font-body text-sm text-text-secondary/60 mt-3 ml-0.5">
                             Leave blank and AI will generate a title from your content
                         </p>
                     </div>
@@ -303,7 +303,7 @@ export default function CreatePage() {
                         <div
                             className={`relative border-2 border-dashed rounded-lg p-10 text-center transition-all duration-300 cursor-pointer group/drop ${isDragging
                                 ? "border-indigo-400 bg-indigo-500/8 scale-[1.01]"
-                                : "border-white/10 hover:border-white/20 bg-obsidian-surface/30 hover:bg-obsidian-surface/50"
+                                : "border-border-subtle hover:border-white/20 bg-obsidian-surface/30 hover:bg-obsidian-surface/50"
                                 }`}
                             onDragOver={handleDragOver}
                             onDragLeave={handleDragLeave}
@@ -325,7 +325,7 @@ export default function CreatePage() {
 
                             {/* Icon */}
                             <div className={`mx-auto w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-colors ${isDragging ? "bg-indigo-500/15" : "bg-white/5 group-hover/drop:bg-white/8"}`}>
-                                <svg className={`w-7 h-7 transition-colors ${isDragging ? "text-indigo-400" : "text-text-muted/50 group-hover/drop:text-text-muted"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                                <svg className={`w-7 h-7 transition-colors ${isDragging ? "text-indigo-400" : "text-text-secondary/50 group-hover/drop:text-text-secondary"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                                 </svg>
                             </div>
@@ -333,7 +333,7 @@ export default function CreatePage() {
                             <p className={`font-body text-sm font-medium mb-1 transition-colors ${isDragging ? "text-indigo-300" : "text-text-secondary"}`}>
                                 {isDragging ? "Drop your file here" : "Drop your .md or .txt file here"}
                             </p>
-                            <p className="font-body text-xs text-text-muted/50">
+                            <p className="font-body text-sm text-text-secondary/50">
                                 or click to browse
                             </p>
                         </div>
@@ -341,7 +341,7 @@ export default function CreatePage() {
                         {/* Divider */}
                         <div className="flex items-center gap-4 my-6">
                             <div className="flex-1 h-px bg-white/8" />
-                            <span className="font-body text-xs text-text-muted/40 uppercase tracking-wider shrink-0">
+                            <span className="font-body text-[12px] text-text-secondary/40 uppercase tracking-wider shrink-0">
                                 or paste your content below
                             </span>
                             <div className="flex-1 h-px bg-white/8" />
@@ -352,7 +352,7 @@ export default function CreatePage() {
                             <textarea
                                 ref={textareaRef}
                                 id="course-content"
-                                className="w-full bg-transparent border-none outline-none resize-none font-body text-[15px] text-text-primary/90 leading-relaxed placeholder:text-text-muted/25 min-h-[200px] max-h-[280px] overflow-y-auto"
+                                className="w-full bg-transparent border-none outline-none resize-none font-body text-[15px] text-text-primary/90 leading-relaxed placeholder:text-text-secondary/25 min-h-[200px] max-h-[280px] overflow-y-auto"
                                 placeholder="Paste any AI-generated guide, roadmap, curriculum, or research notes here…"
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
@@ -361,7 +361,7 @@ export default function CreatePage() {
                             {/* Scroll-to-read fade indicator */}
                             {textareaOverflow && (
                                 <div className="absolute bottom-0 left-0 right-2 h-10 bg-gradient-to-t from-obsidian to-transparent pointer-events-none flex items-end justify-center pb-1">
-                                    <span className="font-body text-[10px] text-text-muted/50 uppercase tracking-wider pointer-events-none select-none">
+                                    <span className="font-body text-[12px] text-text-secondary/50 uppercase tracking-wider pointer-events-none select-none">
                                         ↓ Scroll to read more
                                     </span>
                                 </div>
@@ -370,10 +370,10 @@ export default function CreatePage() {
 
                         {/* Word / char counter */}
                         <div className="flex justify-end gap-4 mt-2">
-                            <span className="font-body text-xs text-text-muted/40 tabular-nums">
+                            <span className="font-body text-[12px] text-text-secondary/40 tabular-nums">
                                 {wordCount.toLocaleString()} word{wordCount !== 1 ? "s" : ""}
                             </span>
-                            <span className="font-body text-xs text-text-muted/40 tabular-nums">
+                            <span className="font-body text-[12px] text-text-secondary/40 tabular-nums">
                                 {charCount.toLocaleString()} character{charCount !== 1 ? "s" : ""}
                             </span>
                         </div>
@@ -383,7 +383,7 @@ export default function CreatePage() {
                        STEP 3 — Mode Selector (two illustrated cards)
                        ════════════════════════════════════════ */}
                     <div className="mb-14 animate-slide-up stagger-3">
-                        <p className="font-body text-sm text-text-muted/60 mb-4 ml-0.5">
+                        <p className="font-body text-sm text-text-secondary/60 mb-4 ml-0.5">
                             Choose a mode
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -402,7 +402,7 @@ export default function CreatePage() {
                                     ? "bg-indigo-500/15 shadow-[0_0_12px_rgba(245,158,11,0.1)]"
                                     : "bg-white/5 group-hover/card:bg-white/8"
                                     }`}>
-                                    <svg className={`w-6 h-6 transition-colors duration-300 ${mode === "general" ? "text-indigo-400" : "text-text-muted/60"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                                    <svg className={`w-6 h-6 transition-colors duration-300 ${mode === "general" ? "text-indigo-400" : "text-text-secondary/60"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                                     </svg>
                                 </div>
@@ -410,7 +410,7 @@ export default function CreatePage() {
                                 <h3 className={`font-sans-display text-base font-bold mb-1 transition-colors ${mode === "general" ? "text-text-primary" : "text-text-secondary"}`}>
                                     General
                                 </h3>
-                                <p className={`font-body text-sm leading-relaxed transition-colors ${mode === "general" ? "text-text-secondary" : "text-text-muted/60"}`}>
+                                <p className={`font-body text-sm leading-relaxed transition-colors ${mode === "general" ? "text-text-secondary" : "text-text-secondary/60"}`}>
                                     Self-paced learning for anyone studying independently on their own schedule.
                                 </p>
 
@@ -437,7 +437,7 @@ export default function CreatePage() {
                                     ? "bg-indigo-500/15 shadow-[0_0_12px_rgba(245,158,11,0.1)]"
                                     : "bg-white/5 group-hover/card:bg-white/8"
                                     }`}>
-                                    <svg className={`w-6 h-6 transition-colors duration-300 ${mode === "intern" ? "text-indigo-400" : "text-text-muted/60"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                                    <svg className={`w-6 h-6 transition-colors duration-300 ${mode === "intern" ? "text-indigo-400" : "text-text-secondary/60"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
                                     </svg>
                                 </div>
@@ -445,7 +445,7 @@ export default function CreatePage() {
                                 <h3 className={`font-sans-display text-base font-bold mb-1 transition-colors ${mode === "intern" ? "text-text-primary" : "text-text-secondary"}`}>
                                     Intern
                                 </h3>
-                                <p className={`font-body text-sm leading-relaxed transition-colors ${mode === "intern" ? "text-text-secondary" : "text-text-muted/60"}`}>
+                                <p className={`font-body text-sm leading-relaxed transition-colors ${mode === "intern" ? "text-text-secondary" : "text-text-secondary/60"}`}>
                                     Structured training with deliverables and strict curriculum tracking.
                                 </p>
 
@@ -471,7 +471,7 @@ export default function CreatePage() {
                         >
                             {/* Toggle triangle */}
                             <svg
-                                className={`w-3.5 h-3.5 text-text-muted/50 transition-transform duration-200 ${tipsOpen ? "rotate-90" : ""}`}
+                                className={`w-3.5 h-3.5 text-text-secondary/50 transition-transform duration-200 ${tipsOpen ? "rotate-90" : ""}`}
                                 fill="currentColor"
                                 viewBox="0 0 20 20"
                             >
@@ -487,7 +487,7 @@ export default function CreatePage() {
                                 {TIPS.map((tip, i) => (
                                     <div key={i} className="flex items-start gap-3 py-1.5">
                                         <span className="text-base shrink-0 mt-0.5">{tip.icon}</span>
-                                        <p className="font-body text-sm text-text-muted leading-relaxed">
+                                        <p className="font-body text-sm text-text-secondary leading-relaxed">
                                             {tip.text}
                                         </p>
                                     </div>
@@ -514,7 +514,7 @@ export default function CreatePage() {
                             onClick={handleGenerate}
                             className={`relative w-full py-5 rounded-xl font-body text-base font-semibold tracking-wide transition-all duration-500 overflow-hidden ${hasContent
                                 ? "bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-400 text-obsidian hover:brightness-110 cursor-pointer create-btn-glow"
-                                : "bg-white/5 text-text-muted/30 cursor-not-allowed"
+                                : "bg-white/5 text-text-secondary/30 cursor-not-allowed"
                                 }`}
                         >
                             {/* Shimmer overlay when active */}

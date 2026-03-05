@@ -37,7 +37,7 @@ export default function LoadingExperience() {
                     <span className="text-5xl">🗺️</span>
                 </div>
 
-                <h2 className="font-display text-2xl font-bold text-text-primary mb-2">
+                <h2 className="font-display text-2xl font-bold text-text-primary text-text-primary mb-2">
                     Generating Your Workspace
                 </h2>
                 <p className="text-text-secondary text-sm mb-10">
@@ -62,7 +62,7 @@ export default function LoadingExperience() {
                                 {step.text}
                             </span>
                             {i < activeStep ? (
-                                <span className="ml-auto text-success text-xs">✓</span>
+                                <span className="ml-auto text-success text-[12px]">✓</span>
                             ) : i === activeStep ? (
                                 <div className="ml-auto w-4 h-4 rounded-full border-2 border-indigo-accent border-t-transparent animate-spin" />
                             ) : null}

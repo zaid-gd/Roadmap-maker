@@ -8,7 +8,7 @@ import Link from "next/link";
 
 export default function WorkspacePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
-    const { roadmap, updateSection } = useRoadmap(id);
+    const { roadmap, updateSection, saveRoadmap } = useRoadmap(id);
 
     if (!roadmap) {
         return (
@@ -17,7 +17,7 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
                 <main className="flex-1 pt-14 flex items-center justify-center">
                     <div className="text-center animate-fade-in">
                         <span className="text-5xl mb-4 block">🔍</span>
-                        <h2 className="font-display text-xl font-bold text-text-primary mb-2">
+                        <h2 className="font-display text-xl font-bold text-text-primary text-text-primary mb-2">
                             Roadmap not found
                         </h2>
                         <p className="text-text-secondary mb-6">
@@ -33,6 +33,10 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
     }
 
     return (
-        <WorkspaceShell roadmap={roadmap} onUpdateSection={updateSection} />
+        <WorkspaceShell 
+            roadmap={roadmap} 
+            onUpdateSection={updateSection} 
+            onUpdateRoadmap={(updates) => saveRoadmap({ ...roadmap, ...updates })}
+        />
     );
 }

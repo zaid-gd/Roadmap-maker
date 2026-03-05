@@ -28,7 +28,7 @@ export default function Videos({ section, onUpdate }: Props) {
             <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6">
                 {/* Main Player Area */}
                 {activeVideo ? (
-                    <div className="flex-1 flex flex-col min-h-0 group animate-slide-up rounded-2xl overflow-hidden shadow-[0_20px_50px_-15px_rgba(0,0,0,0.5)] border border-white/10 bg-obsidian">
+                    <div className="flex-1 flex flex-col min-h-0 group animate-slide-up rounded-2xl overflow-hidden shadow-[0_20px_50px_-15px_rgba(0,0,0,0.5)] border border-border-subtle bg-obsidian">
                         <div className="relative w-full aspect-video bg-black flex-shrink-0">
                             <VideoPlayer
                                 url={activeVideo.url}
@@ -38,30 +38,30 @@ export default function Videos({ section, onUpdate }: Props) {
                         </div>
                         <div className="flex-1 overflow-y-auto p-6 lg:p-8 bg-gradient-to-b from-obsidian-surface to-obsidian">
                             <div className="flex items-center gap-3 mb-4">
-                                <span className="bg-indigo-500/20 text-indigo-300 text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded shadow-[0_0_10px_rgba(99,102,241,0.2)]">Now Playing</span>
-                                {activeVideo.duration && <span className="text-text-muted text-sm tabular-nums">⏱ {activeVideo.duration}</span>}
+                                <span className="bg-indigo-500/20 text-indigo-300 text-[12px] font-bold uppercase tracking-widest px-2.5 py-1 rounded shadow-[0_0_10px_rgba(99,102,241,0.2)]">Now Playing</span>
+                                {activeVideo.duration && <span className="text-text-secondary text-sm tabular-nums">⏱ {activeVideo.duration}</span>}
                             </div>
-                            <h3 className="font-display text-2xl font-bold text-text-primary mb-4">{activeVideo.title}</h3>
-                            <p className="text-text-secondary leading-relaxed bg-obsidian-elevated/30 p-4 rounded-xl border border-white/5">
+                            <h3 className="font-display text-2xl font-bold text-text-primary text-text-primary mb-4">{activeVideo.title}</h3>
+                            <p className="text-text-secondary leading-relaxed bg-obsidian-elevated/30 p-4 rounded-xl border border-border">
                                 {activeVideo.description || "No description provided."}
                             </p>
                         </div>
                     </div>
                 ) : (
-                    <div className="flex-1 flex items-center justify-center surface rounded-2xl border-white/5 border-dashed border">
+                    <div className="flex-1 flex items-center justify-center surface rounded-2xl border-border border-dashed border">
                         <div className="text-center">
                             <div className="text-4xl mb-4">🎥</div>
-                            <h3 className="text-lg font-bold text-text-primary">No videos available</h3>
+                            <h3 className="text-lg font-bold text-text-primary text-text-primary">No videos available</h3>
                             <p className="text-sm text-text-secondary mt-2">Add videos to this playlist to watch them here.</p>
                         </div>
                     </div>
                 )}
 
                 {/* Playlist Sidebar */}
-                <div className="w-full lg:w-96 shrink-0 flex flex-col min-h-0 surface rounded-2xl border border-white/5 overflow-hidden shadow-xl animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                <div className="w-full lg:w-96 shrink-0 flex flex-col min-h-0 surface rounded-2xl border border-border overflow-hidden shadow-xl animate-slide-up" style={{ animationDelay: '0.1s' }}>
                     <div className="p-4 border-b border-border/50 bg-obsidian-surface/80 backdrop-blur-sm shrink-0 flex items-center justify-between">
-                        <h3 className="font-display font-bold text-sm text-text-secondary uppercase tracking-widest">Playlist</h3>
-                        <span className="text-xs bg-white/5 px-2 py-0.5 rounded text-text-muted">{section.data.length} items</span>
+                        <h3 className="font-display font-bold text-text-primary text-sm text-text-secondary uppercase tracking-widest">Playlist</h3>
+                        <span className="text-[12px] bg-white/5 px-2 py-0.5 rounded text-text-secondary">{section.data.length} items</span>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-obsidian/30">
@@ -79,7 +79,7 @@ export default function Videos({ section, onUpdate }: Props) {
                                     type="button"
                                     className={`w-full flex gap-3 p-3 rounded-xl text-left transition-all duration-300 relative group overflow-hidden ${isActive
                                         ? "bg-indigo-500/10 border border-indigo-500/20 shadow-[inset_0_0_20px_rgba(99,102,241,0.05)]"
-                                        : "hover:bg-obsidian-surface border border-transparent hover:border-white/5"
+                                        : "hover:bg-obsidian-surface border border-transparent hover:border-border"
                                         }`}
                                     onClick={() => setActiveVideoId(video.id)}
                                 >
@@ -91,7 +91,7 @@ export default function Videos({ section, onUpdate }: Props) {
                                         )}
                                         {/* Duration Tag */}
                                         {video.duration && (
-                                            <div className="absolute bottom-1 right-1 bg-black/80 font-mono text-[10px] text-white px-1 rounded backdrop-blur">
+                                            <div className="absolute bottom-1 right-1 bg-black/80 font-mono text-xs text-white px-1 rounded backdrop-blur">
                                                 {video.duration}
                                             </div>
                                         )}
@@ -99,7 +99,7 @@ export default function Videos({ section, onUpdate }: Props) {
                                         {isActive && (
                                             <div className="absolute inset-0 bg-indigo-500/20 flex items-center justify-center backdrop-blur-[2px]">
                                                 <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center drop-shadow-md">
-                                                    <span className="text-white text-xs ml-0.5">▶</span>
+                                                    <span className="text-white text-[12px] ml-0.5">▶</span>
                                                 </div>
                                             </div>
                                         )}
@@ -110,7 +110,7 @@ export default function Videos({ section, onUpdate }: Props) {
                                             <span className={`text-sm font-bold line-clamp-2 leading-snug transition-colors ${isActive ? 'text-indigo-300' : 'text-text-primary group-hover:text-indigo-100'}`}>
                                                 {video.title}
                                             </span>
-                                            <span className="text-[10px] uppercase tracking-wider text-text-muted mt-1 block">
+                                            <span className="text-[12px] uppercase tracking-wider text-text-secondary mt-1 block">
                                                 {video.platform}
                                             </span>
                                         </div>
