@@ -36,5 +36,9 @@ export async function startCheckoutSession(productId: string) {
         mode: 'payment',
     })
 
+    if (!session.client_secret) {
+        throw new Error('Failed to create checkout session: client secret is missing.')
+    }
+
     return session.client_secret
 }
