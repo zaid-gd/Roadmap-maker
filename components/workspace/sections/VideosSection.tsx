@@ -85,7 +85,11 @@ export default function Videos({ section, onUpdate }: Props) {
                                 >
                                     <div className={`relative w-28 aspect-video rounded-lg shrink-0 overflow-hidden bg-obsidian-elevated flex items-center justify-center transition-transform duration-500 ${isActive ? 'ring-1 ring-indigo-400' : 'group-hover:scale-105'}`}>
                                         {imgUrl ? (
-                                            <img src={imgUrl} alt={video.title} className="absolute inset-0 w-full h-full object-cover" />
+                                            <>
+                                                {/* next/image is not practical here because thumbnail hosts are provider-controlled. */}
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={imgUrl} alt={video.title} className="absolute inset-0 w-full h-full object-cover" />
+                                            </>
                                         ) : (
                                             <span className="text-xl">🎥</span>
                                         )}

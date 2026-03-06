@@ -109,7 +109,7 @@ export default function SettingsModal({ roadmap, isOpen, onClose, onUpdateBrandi
                                     </div>
                                     <div>
                                         <div className="text-sm text-white font-medium flex items-center gap-2">
-                                            Hide "Powered by ZNS Nexus" Watermark
+                                            Hide &quot;Powered by ZNS Nexus&quot; Watermark
                                             <span className="px-1.5 py-0.5 rounded text-[8px] uppercase tracking-widest font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
                                                 <Lock size={8} /> Pro Feature
                                             </span>

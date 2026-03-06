@@ -5,10 +5,12 @@ import type { Roadmap, Section } from "@/types";
 import { getStorage } from "@/lib/storage";
 
 export function useRoadmap(id?: string, isSession: boolean = false) {
+    const storage = getStorage();
+
     // Lazy state initialization (vercel best practice: 5.10)
     const [roadmap, setRoadmap] = useState<Roadmap | null>(() => {
         if (typeof window === "undefined" || !id) return null;
-        const base = getStorage().getRoadmap(id);
+        const base = storage.getRoadmap(id);
         
         if (base && isSession) {
             // Merge session data (progress tracking only)
@@ -33,34 +35,34 @@ export function useRoadmap(id?: string, isSession: boolean = false) {
 
     const [roadmaps, setRoadmaps] = useState<Roadmap[]>(() => {
         if (typeof window === "undefined") return [];
-        return getStorage().getRoadmaps();
+        return storage.getRoadmaps();
     });
 
     // Refresh roadmaps list from storage
     const refreshList = useCallback(() => {
-        setRoadmaps(getStorage().getRoadmaps());
-    }, []);
+        setRoadmaps(storage.getRoadmaps());
+    }, [storage]);
 
     // Load a specific roadmap
     const loadRoadmap = useCallback((roadmapId: string) => {
-        const r = getStorage().getRoadmap(roadmapId);
+        const r = storage.getRoadmap(roadmapId);
         setRoadmap(r);
         return r;
-    }, []);
+    }, [storage]);
 
     // Save a new or updated roadmap
     const saveRoadmap = useCallback((r: Roadmap) => {
-        getStorage().saveRoadmap(r);
+        storage.saveRoadmap(r);
         setRoadmap(r);
-        setRoadmaps(getStorage().getRoadmaps());
-    }, []);
+        setRoadmaps(storage.getRoadmaps());
+    }, [storage]);
 
     // Delete a roadmap
     const deleteRoadmap = useCallback((roadmapId: string) => {
-        getStorage().deleteRoadmap(roadmapId);
+        storage.deleteRoadmap(roadmapId);
         if (roadmap?.id === roadmapId) setRoadmap(null);
-        setRoadmaps(getStorage().getRoadmaps());
-    }, [roadmap?.id]);
+        setRoadmaps(storage.getRoadmaps());
+    }, [roadmap?.id, storage]);
 
     // Update a specific section within the roadmap (functional setState: 5.9)
     const updateSection = useCallback(
@@ -79,18 +81,18 @@ export function useRoadmap(id?: string, isSession: boolean = false) {
                     // Only save progress to session store
                     localStorage.setItem(`zns:v1:session:${id}`, JSON.stringify(updated.sections));
                 } else {
-                    getStorage().saveRoadmap(updated);
+                    storage.saveRoadmap(updated);
                 }
                 return updated;
             });
         },
-        [id, isSession]
+        [id, isSession, storage]
     );
 
     // Sync on mount if id changes
     useEffect(() => {
         if (id) {
-            const base = getStorage().getRoadmap(id);
+            const base = storage.getRoadmap(id);
             if (base && isSession) {
                 const sessionData = localStorage.getItem(`zns:v1:session:${id}`);
                 if (sessionData) {
@@ -109,7 +111,22 @@ export function useRoadmap(id?: string, isSession: boolean = false) {
             }
             setRoadmap(base);
         }
-    }, [id, isSession]);
+    }, [id, isSession, storage]);
+
+    useEffect(() => {
+        if (!storage.syncFromCloud) return;
+
+        let active = true;
+        void storage.syncFromCloud().then(() => {
+            if (!active) return;
+            setRoadmaps(storage.getRoadmaps());
+            if (id) setRoadmap(storage.getRoadmap(id));
+        });
+
+        return () => {
+            active = false;
+        };
+    }, [id, storage]);
 
     return {
         roadmap,

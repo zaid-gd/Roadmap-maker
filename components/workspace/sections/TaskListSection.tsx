@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Clock } from "lucide-react";
 import type { TaskSection, Section, TaskGroup, Task } from "@/types";
 
@@ -16,6 +16,33 @@ export default function TaskListSection({ section, onUpdate }: Props) {
     const allTasks = (section.data || []).flatMap((g, gIdx) => 
         (g.tasks || []).map((t, tIdx) => ({ groupId: g.id, taskId: t.id, gIdx, tIdx, original: t }))
     );
+
+    const toggleComplete = useCallback((groupId: string, taskId: string, subtaskId?: string) => {
+        onUpdate((s) => {
+            const ts = s as TaskSection;
+            return {
+                ...ts,
+                data: (ts.data || []).map((g: TaskGroup) => {
+                    if (g.id !== groupId) return g;
+                    return {
+                        ...g,
+                        tasks: (g.tasks || []).map((t: Task) => {
+                            if (t.id !== taskId) return t;
+                            if (subtaskId) {
+                                return {
+                                    ...t,
+                                    subtasks: (t.subtasks || []).map((st) =>
+                                        st.id === subtaskId ? { ...st, completed: !st.completed } : st
+                                    ),
+                                };
+                            }
+                            return { ...t, completed: !t.completed };
+                        }),
+                    };
+                }),
+            };
+        });
+    }, [onUpdate]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -56,34 +83,7 @@ export default function TaskListSection({ section, onUpdate }: Props) {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [allTasks, focusedTaskPath]);
-
-    const toggleComplete = (groupId: string, taskId: string, subtaskId?: string) => {
-        onUpdate((s) => {
-            const ts = s as TaskSection;
-            return {
-                ...ts,
-                data: (ts.data || []).map((g: TaskGroup) => {
-                    if (g.id !== groupId) return g;
-                    return {
-                        ...g,
-                        tasks: (g.tasks || []).map((t: Task) => {
-                            if (t.id !== taskId) return t;
-                            if (subtaskId) {
-                                return {
-                                    ...t,
-                                    subtasks: (t.subtasks || []).map((st) =>
-                                        st.id === subtaskId ? { ...st, completed: !st.completed } : st
-                                    ),
-                                };
-                            }
-                            return { ...t, completed: !t.completed };
-                        }),
-                    };
-                }),
-            };
-        });
-    };
+    }, [allTasks, focusedTaskPath, toggleComplete]);
 
     const clearCompleted = (groupId: string) => {
         onUpdate((s) => {

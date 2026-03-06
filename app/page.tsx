@@ -556,11 +556,25 @@ export default function HomePage() {
     const [showOnboarding, setShowOnboarding] = useState(false);
 
     useEffect(() => {
+        const storage = getStorage();
+        let active = true;
+
         setMounted(true);
-        setRoadmaps(getStorage().getRoadmaps());
+        setRoadmaps(storage.getRoadmaps());
+
+        if (storage.syncFromCloud) {
+            void storage.syncFromCloud().then((synced) => {
+                if (active) setRoadmaps(synced);
+            });
+        }
+
         if (!localStorage.getItem("zns_onboarded")) {
             setShowOnboarding(true);
         }
+
+        return () => {
+            active = false;
+        };
     }, []);
 
     const dismissOnboarding = () => {

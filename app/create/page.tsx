@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, Brain, Sparkles } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { getStorage } from "@/lib/storage";
+import { getUserConfig } from "@/lib/userConfig";
 import type { Roadmap } from "@/types";
 
 /* ═══════════════════════════════════════════════════════════
@@ -185,6 +186,9 @@ function CreatePageContent() {
         }, 100);
 
         try {
+            const userConfig = getUserConfig();
+            const useCustomKey = Boolean(userConfig.useCustomKey && userConfig.apiKey);
+
             const res = await fetch("/api/parse-roadmap", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -194,13 +198,16 @@ function CreatePageContent() {
                     title: title.trim() || undefined,
                     goal: goal || undefined,
                     difficulty: difficulty || undefined,
-                    estimatedDuration: estimatedDuration || undefined
+                    estimatedDuration: estimatedDuration || undefined,
+                    userApiKey: useCustomKey ? userConfig.apiKey : undefined,
+                    userProvider: useCustomKey ? userConfig.provider : undefined,
+                    userModel: useCustomKey ? userConfig.model : undefined,
                 }),
             });
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: "Failed to parse roadmap" }));
-                throw new Error(err.error ?? "Something went wrong");
+                throw new Error(err.message ?? err.error ?? "Something went wrong");
             }
 
             const data = await res.json();

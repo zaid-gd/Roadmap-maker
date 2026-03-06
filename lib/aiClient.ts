@@ -1,7 +1,8 @@
 export async function generateStructuredContent(
     prompt: string,
     userKey?: string,
-    userProvider?: string
+    userProvider?: string,
+    userModel?: string
 ): Promise<string> {
     const provider = (userProvider || process.env.AI_PROVIDER || "gemini").toLowerCase();
 
@@ -20,7 +21,7 @@ export async function generateStructuredContent(
     }
 
     if (provider === "gemini") {
-        const model = "gemini-2.5-flash";
+        const model = userModel || process.env.GEMINI_MODEL || "gemini-2.5-flash";
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
         const response = await fetch(url, {
@@ -55,26 +56,32 @@ export async function generateStructuredContent(
     switch (provider) {
         case "openai":
             url = "https://api.openai.com/v1/chat/completions";
-            model = "gpt-4o";
+            model = userModel || process.env.OPENAI_MODEL || "gpt-4o";
             break;
         case "groq":
             url = "https://api.groq.com/openai/v1/chat/completions";
-            model = "llama3-70b-8192";
+            model = userModel || process.env.GROQ_MODEL || "llama3-70b-8192";
             break;
         case "openrouter":
             url = "https://openrouter.ai/api/v1/chat/completions";
-            model = "anthropic/claude-3.5-sonnet"; // Default fallback
+            model = userModel || process.env.OPENROUTER_MODEL || "anthropic/claude-3.5-sonnet";
             break;
         default:
             throw new Error(`Unsupported provider: ${provider}`);
     }
 
+    const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+    };
+    if (provider === "openrouter") {
+        headers["HTTP-Referer"] = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        headers["X-Title"] = "ZNS RoadMap Studio";
+    }
+
     const response = await fetch(url, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`
-        },
+        headers,
         body: JSON.stringify({
             model,
             messages: [{ role: "user", content: prompt }],

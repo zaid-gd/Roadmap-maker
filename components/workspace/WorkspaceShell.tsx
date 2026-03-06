@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { exportAsMarkdown, exportAsJSON, exportAsPDF } from "@/lib/export";
 import { saveVersion, getVersions } from "@/lib/versioning";
 import { getUserConfig } from "@/lib/userConfig";
+import { getStorage } from "@/lib/storage";
 
 interface WorkspaceShellProps {
     roadmap: Roadmap;
@@ -204,14 +205,11 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
     useEffect(() => {
         // Daily Activity Check & Explorer
         try {
-            const workspacesStr = localStorage.getItem("zns:v1:roadmaps");
-            if (workspacesStr) {
-                const workspaces = JSON.parse(workspacesStr);
-                if (Array.isArray(workspaces) && workspaces.length >= 3) {
-                    unlockBadge("explorer");
-                }
+            const workspaces = getStorage().getRoadmaps();
+            if (Array.isArray(workspaces) && workspaces.length >= 3) {
+                unlockBadge("explorer");
             }
-        } catch (e) {
+        } catch {
             // Ignore parse errors
         }
 
@@ -448,12 +446,16 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 transition-colors text-text-secondary hover:text-white shrink-0"
                             title="Toggle Sidebar (Ctrl+\)"
                         >
-                            ☰
+                            |||
                         </button>
                         {sidebarOpen && (
                             <div className="ml-3 flex items-center gap-2 truncate">
                                 {logoUrl && (
-                                    <img src={logoUrl} alt="Logo" className="w-5 h-5 object-contain" />
+                                    <>
+                                        {/* next/image is not practical here because the logo URL is fully user-defined. */}
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={logoUrl} alt="Logo" className="w-5 h-5 object-contain" />
+                                    </>
                                 )}
                                 <div className="font-sans-display text-xs uppercase tracking-widest text-text-primary truncate font-bold">
                                     {workspaceTitle}

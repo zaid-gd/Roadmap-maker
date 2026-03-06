@@ -107,7 +107,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, 
 
     useEffect(() => {
         setNotesText(section.data.notes || "");
-    }, [section.id]); // only on section ID change
+    }, [section.id, section.data.notes]);
 
     let completedCount = 0;
     let totalCount = 0;
@@ -263,7 +263,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, 
                             </button>
                             {showRegenConfirm && (
                                 <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-obsidian-elevated border border-border rounded-lg shadow-xl z-50 animate-in fade-in zoom-in duration-200">
-                                    <p className="text-sm text-text-primary mb-3">Regenerate just this module? Your other modules won't change.</p>
+                                    <p className="text-sm text-text-primary mb-3">Regenerate just this module? Your other modules will not change.</p>
                                     <div className="flex justify-end gap-2">
                                         <button onClick={() => setShowRegenConfirm(false)} className="px-3 py-1.5 text-xs text-text-secondary hover:text-white transition-colors">Cancel</button>
                                         <button onClick={handleRegenerate} className="px-3 py-1.5 text-xs bg-indigo-500 hover:bg-indigo-600 text-white rounded font-medium transition-colors">Confirm</button>

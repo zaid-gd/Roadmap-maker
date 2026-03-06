@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { getUserConfig, saveUserConfig, clearUserConfig, DEFAULT_CONFIG, AIProvider } from "@/lib/userConfig";
+import { getRoadmapsBackupJson, getStorage } from "@/lib/storage";
 import { 
     Settings as SettingsIcon, 
     Cpu, 
@@ -97,7 +98,8 @@ function SettingsContent() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    content: "test",
+                    content: "connection-test",
+                    testOnly: true,
                     userApiKey: config.apiKey,
                     userProvider: config.provider,
                     userModel: config.model,
@@ -106,17 +108,16 @@ function SettingsContent() {
             const json = await res.json();
             if (json.error === "invalid_key") {
                 setTestStatus("error");
-                setTestMessage("Connection failed · Check your API key and try again");
-            } else if (json.success || json.error?.includes("Content is required")) {
-                // Success if it returns anything valid JSON (even error about content required means it connected)
+                setTestMessage("Connection failed. Check your API key and try again.");
+            } else if (json.success) {
                 setTestStatus("success");
-                setTestMessage(`Connected successfully · ${config.model} is ready`);
+                setTestMessage(`Connected successfully. ${config.model} is ready.`);
             } else {
                 throw new Error("Unknown error");
             }
-        } catch (e) {
+        } catch {
             setTestStatus("error");
-            setTestMessage("Connection failed · Check your API key and try again");
+            setTestMessage("Connection failed. Check your API key and try again.");
         }
     };
 
@@ -127,17 +128,19 @@ function SettingsContent() {
     };
 
     const handleExportData = () => {
-        const data = localStorage.getItem("zns:v1:roadmaps") || "[]";
+        const data = getRoadmapsBackupJson();
         const blob = new Blob([data], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
         a.download = "zns_backup.json";
         a.click();
+        URL.revokeObjectURL(url);
     };
 
     const handleClearData = () => {
-        localStorage.clear();
+        getStorage().clearRoadmaps();
+        localStorage.removeItem("zns_workspaces");
         setClearConfirm(false);
         window.location.reload();
     };
@@ -326,7 +329,7 @@ function SettingsContent() {
                             <div className="flex items-center justify-between p-4 bg-obsidian-surface border border-border rounded-xl">
                                 <div>
                                     <h4 className="font-bold text-white mb-1">Show Progress Notice</h4>
-                                    <p className="text-sm text-text-secondary">Display "Progress saved in your browser" in the sidebar</p>
+                                    <p className="text-sm text-text-secondary">Display &quot;Progress saved in your browser&quot; in the sidebar</p>
                                 </div>
                                 <button
                                     onClick={() => {
@@ -373,7 +376,7 @@ function SettingsContent() {
                             <div className="p-4 bg-obsidian-surface/50 border border-border rounded-xl">
                                 <h4 className="font-bold text-white mb-2">Privacy Policy</h4>
                                 <p className="text-sm text-text-secondary">
-                                    Your content is processed by AI providers you choose. We do not store your inputs or outputs on our servers. API keys stay on your device. Progress is stored in your browser's local storage.
+                                    Your content is processed by AI providers you choose. API keys stay on your device. Workspace data is stored locally and can sync to Supabase when configured.
                                 </p>
                             </div>
                         </div>

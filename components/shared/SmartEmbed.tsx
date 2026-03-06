@@ -65,7 +65,7 @@ export default function SmartEmbed({ url, title, description }: SmartEmbedProps)
     useEffect(() => {
         if (isKnownEmbed) return;
 
-        // For unknown URLs, set a timeout — if the iframe doesn't load in 4s, show fallback
+        // For unknown URLs, show a fallback if the iframe does not load quickly.
         timeoutRef.current = setTimeout(() => {
             if (loading) {
                 setIframeBlocked(true);
@@ -108,6 +108,8 @@ export default function SmartEmbed({ url, title, description }: SmartEmbedProps)
     if (iframeBlocked) {
         return (
             <div className="w-full border border-border-subtle bg-obsidian-elevated/60 p-6 flex items-center gap-5 transition-all hover:border-indigo-500/30 hover:bg-obsidian-elevated/80 group">
+                {/* next/image is not practical here because favicon domains are fully dynamic. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                     src={getFaviconUrl(url)}
                     alt=""
@@ -127,7 +129,7 @@ export default function SmartEmbed({ url, title, description }: SmartEmbedProps)
                     rel="noopener noreferrer"
                     className="shrink-0 font-sans-display text-xs uppercase tracking-widest text-indigo-400 hover:text-white border border-indigo-500/30 hover:border-indigo-500 px-4 py-2.5 transition-all bg-indigo-500/5 hover:bg-indigo-500 whitespace-nowrap"
                 >
-                    Open Resource →
+                    Open Resource
                 </a>
             </div>
         );

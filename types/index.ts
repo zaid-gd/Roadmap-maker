@@ -260,6 +260,9 @@ export interface StorageProvider {
     saveRoadmap(roadmap: Roadmap): void;
     deleteRoadmap(id: string): void;
     updateRoadmap(id: string, updates: Partial<Roadmap>): void;
+    clearRoadmaps(): void;
+    syncFromCloud?(): Promise<Roadmap[]>;
+    isCloudEnabled?(): boolean;
 }
 
 // ── API Types ──

@@ -78,10 +78,306 @@ CRITICAL RULES FOR EXTRACTION:
 - Ensure the API response is ONLY a single parseable JSON object.
 `;
 
+const VALID_SECTION_TYPES = new Set([
+    "module",
+    "milestones",
+    "tasks",
+    "progress",
+    "resources",
+    "videos",
+    "calendar",
+    "notes",
+    "glossary",
+    "submissions",
+    "custom",
+]);
+
+const VALID_RESOURCE_TYPES = new Set(["video", "doc", "pdf", "link", "code", "tool", "course", "book"]);
+const VALID_VIDEO_PLATFORMS = new Set(["youtube", "vimeo", "other"]);
+const VALID_DIFFICULTIES = new Set(["beginner", "intermediate", "advanced"]);
+const VALID_LAYOUTS = new Set(["checklist", "cards", "table", "list"]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function asString(value: unknown, fallback = ""): string {
+    return typeof value === "string" ? value : fallback;
+}
+
+function asBoolean(value: unknown, fallback = false): boolean {
+    return typeof value === "boolean" ? value : fallback;
+}
+
+function toId(value: unknown): string {
+    if (typeof value === "string" && value.trim().length > 0) return value;
+    return `id-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function toDifficulty(value: unknown): "beginner" | "intermediate" | "advanced" {
+    return VALID_DIFFICULTIES.has(value as string) ? (value as "beginner" | "intermediate" | "advanced") : "beginner";
+}
+
+function normalizeSubtasks(value: unknown): Array<{ id: string; title: string; completed: boolean }> {
+    if (!Array.isArray(value)) return [];
+
+    return value
+        .filter(isRecord)
+        .map((subtask) => ({
+            id: toId(subtask.id),
+            title: asString(subtask.title, "Untitled subtask"),
+            completed: asBoolean(subtask.completed, false),
+        }));
+}
+
+function normalizeTask(value: unknown): Record<string, unknown> {
+    if (!isRecord(value)) {
+        return {
+            id: toId(undefined),
+            title: "Untitled task",
+            completed: false,
+            notes: "",
+            subtasks: [],
+            attachments: [],
+        };
+    }
+
+    const title = asString(value.title) || asString(value.text) || "Untitled task";
+    const completed = typeof value.completed === "boolean" ? value.completed : asBoolean(value.done, false);
+    const attachments = Array.isArray(value.attachments) ? value.attachments.filter(isRecord) : [];
+
+    return {
+        ...value,
+        id: toId(value.id),
+        title,
+        text: asString(value.text, title),
+        completed,
+        done: completed,
+        notes: asString(value.notes),
+        subtasks: normalizeSubtasks(value.subtasks),
+        attachments,
+    };
+}
+
+function normalizeResource(value: unknown): Record<string, unknown> {
+    if (!isRecord(value)) {
+        return {
+            id: toId(undefined),
+            title: "Untitled resource",
+            url: "",
+            type: "link",
+            description: "",
+        };
+    }
+
+    const type = VALID_RESOURCE_TYPES.has(value.type as string) ? value.type : "link";
+    return {
+        ...value,
+        id: toId(value.id),
+        title: asString(value.title, "Untitled resource"),
+        url: asString(value.url),
+        type,
+        description: asString(value.description),
+    };
+}
+
+function normalizeVideo(value: unknown): Record<string, unknown> {
+    if (!isRecord(value)) {
+        return {
+            id: toId(undefined),
+            title: "Untitled video",
+            url: "",
+            videoId: "",
+            platform: "other",
+            description: "",
+        };
+    }
+
+    const platform = VALID_VIDEO_PLATFORMS.has(value.platform as string) ? value.platform : "other";
+    const timestamps = Array.isArray(value.timestamps)
+        ? value.timestamps.filter(isRecord).map((ts) => ({
+            time: asString(ts.time),
+            label: asString(ts.label),
+        }))
+        : [];
+
+    return {
+        ...value,
+        id: toId(value.id),
+        title: asString(value.title, "Untitled video"),
+        url: asString(value.url),
+        videoId: asString(value.videoId),
+        platform,
+        description: asString(value.description),
+        duration: asString(value.duration),
+        timestamps,
+    };
+}
+
+function normalizeModuleData(value: unknown): Record<string, unknown> {
+    if (!isRecord(value)) {
+        return {
+            description: "",
+            estimatedTime: "",
+            concepts: "",
+            objectives: [],
+            tasks: [],
+            resources: [],
+            videos: [],
+            completed: false,
+        };
+    }
+
+    return {
+        description: asString(value.description),
+        estimatedTime: asString(value.estimatedTime),
+        concepts: asString(value.concepts),
+        objectives: Array.isArray(value.objectives) ? value.objectives.filter((v): v is string => typeof v === "string") : [],
+        tasks: Array.isArray(value.tasks) ? value.tasks.map(normalizeTask) : [],
+        resources: Array.isArray(value.resources) ? value.resources.map(normalizeResource) : [],
+        videos: Array.isArray(value.videos) ? value.videos.map(normalizeVideo) : [],
+        completed: asBoolean(value.completed, false),
+    };
+}
+
+function normalizeSection(section: unknown, index: number): Record<string, unknown> | null {
+    if (!isRecord(section)) return null;
+    if (!VALID_SECTION_TYPES.has(section.type as string)) return null;
+
+    const type = section.type as string;
+    const metadata = isRecord(section.metadata)
+        ? {
+            estimatedDuration: asString(section.metadata.estimatedDuration),
+            difficulty: asString(section.metadata.difficulty),
+            taskCount: typeof section.metadata.taskCount === "number" ? section.metadata.taskCount : undefined,
+            keyOutcome: asString(section.metadata.keyOutcome),
+        }
+        : undefined;
+
+    const normalized: Record<string, unknown> = {
+        id: toId(section.id),
+        type,
+        title: asString(section.title, `Section ${index + 1}`),
+        order: typeof section.order === "number" ? section.order : index,
+    };
+    if (metadata) normalized.metadata = metadata;
+
+    if (type === "module") {
+        normalized.data = normalizeModuleData(section.data);
+        return normalized;
+    }
+
+    if (type === "milestones") {
+        const milestones = Array.isArray(section.data) ? section.data : [];
+        normalized.data = milestones.filter(isRecord).map((milestone, milestoneIndex) => ({
+            id: toId(milestone.id),
+            title: asString(milestone.title, `Milestone ${milestoneIndex + 1}`),
+            description: asString(milestone.description),
+            tasks: Array.isArray(milestone.tasks) ? milestone.tasks.map(normalizeTask) : [],
+            resources: Array.isArray(milestone.resources) ? milestone.resources.map(normalizeResource) : [],
+            videos: Array.isArray(milestone.videos) ? milestone.videos.map(normalizeVideo) : [],
+            completed: asBoolean(milestone.completed, false),
+            order: typeof milestone.order === "number" ? milestone.order : milestoneIndex,
+        }));
+        return normalized;
+    }
+
+    if (type === "tasks") {
+        const groups = Array.isArray(section.data) ? section.data : [];
+        normalized.data = groups.filter(isRecord).map((group, groupIndex) => ({
+            id: toId(group.id),
+            title: asString(group.title, `Task Group ${groupIndex + 1}`),
+            tasks: Array.isArray(group.tasks) ? group.tasks.map(normalizeTask) : [],
+        }));
+        return normalized;
+    }
+
+    if (type === "resources") {
+        normalized.data = Array.isArray(section.data) ? section.data.map(normalizeResource) : [];
+        return normalized;
+    }
+
+    if (type === "videos") {
+        normalized.data = Array.isArray(section.data) ? section.data.map(normalizeVideo) : [];
+        return normalized;
+    }
+
+    if (type === "calendar") {
+        const events = Array.isArray(section.data) ? section.data : [];
+        normalized.data = events.filter(isRecord).map((event) => ({
+            id: toId(event.id),
+            title: asString(event.title, "Calendar Event"),
+            date: asString(event.date),
+            description: asString(event.description),
+            completed: asBoolean(event.completed, false),
+        }));
+        return normalized;
+    }
+
+    if (type === "glossary") {
+        const terms = Array.isArray(section.data) ? section.data : [];
+        normalized.data = terms.filter(isRecord).map((term) => ({
+            id: toId(term.id),
+            term: asString(term.term),
+            definition: asString(term.definition),
+            relatedSections: Array.isArray(term.relatedSections)
+                ? term.relatedSections.filter((v): v is string => typeof v === "string")
+                : [],
+        }));
+        return normalized;
+    }
+
+    if (type === "custom") {
+        const data = isRecord(section.data) ? section.data : {};
+        normalized.data = {
+            description: asString(data.description),
+            layout: VALID_LAYOUTS.has(data.layout as string) ? data.layout : "list",
+            items: Array.isArray(data.items)
+                ? data.items.filter(isRecord).map((item) => ({
+                    id: toId(item.id),
+                    title: asString(item.title, "Untitled item"),
+                    description: asString(item.description),
+                    completed: asBoolean(item.completed, false),
+                    metadata: isRecord(item.metadata) ? item.metadata : {},
+                }))
+                : [],
+        };
+        return normalized;
+    }
+
+    if (type === "progress") {
+        normalized.data = {};
+        return normalized;
+    }
+
+    normalized.data = Array.isArray(section.data) ? section.data : [];
+    return normalized;
+}
+
+function normalizeRoadmapPayload(parsed: unknown, fallback: { title?: string; mode?: string; goal?: string; difficulty?: string; estimatedDuration?: string }) {
+    if (!isRecord(parsed)) return null;
+    const sectionsInput = Array.isArray(parsed.sections) ? parsed.sections : [];
+    const sections = sectionsInput.map(normalizeSection).filter((section): section is Record<string, unknown> => Boolean(section));
+    if (sections.length === 0) return null;
+
+    const mode = parsed.mode === "intern" || fallback.mode === "intern" ? "intern" : "general";
+    return {
+        title: asString(parsed.title, fallback.title || "Untitled Course"),
+        summary: asString(parsed.summary),
+        contentType: asString(parsed.contentType, "other"),
+        detectedContext: asString(parsed.detectedContext),
+        totalEstimatedDuration: asString(parsed.totalEstimatedDuration, fallback.estimatedDuration || ""),
+        difficulty: toDifficulty(parsed.difficulty ?? fallback.difficulty),
+        goal: asString(parsed.goal, fallback.goal || ""),
+        mode,
+        sections,
+    };
+}
+
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { content, mode, title, goal, difficulty, estimatedDuration, userApiKey, userProvider, userModel } = body;
+        const { content, mode, title, goal, difficulty, estimatedDuration, userApiKey, userProvider, userModel, testOnly } = body;
 
         if (!content || typeof content !== "string") {
             return NextResponse.json(
@@ -90,8 +386,45 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        const sanitizedUserKey = typeof userApiKey === "string" ? userApiKey.trim() : "";
+        const sanitizedProvider = typeof userProvider === "string" ? userProvider.trim() : "";
+        const sanitizedModel = typeof userModel === "string" ? userModel.trim() : "";
+
         // Use user key if provided
-        const useUserKey = userApiKey && userProvider;
+        const useUserKey = Boolean(sanitizedUserKey && sanitizedProvider);
+
+        if (testOnly) {
+            try {
+                const testPrompt = 'Return only valid JSON: {"ok": true}';
+                await generateStructuredContent(
+                    testPrompt,
+                    useUserKey ? sanitizedUserKey : undefined,
+                    useUserKey ? sanitizedProvider : undefined,
+                    useUserKey ? sanitizedModel : undefined,
+                );
+                return NextResponse.json({ success: true, ok: true });
+            } catch (aiError: any) {
+                const errMsg = String(aiError?.message || "").toLowerCase();
+                if (
+                    errMsg.includes("401") ||
+                    errMsg.includes("403") ||
+                    errMsg.includes("unauthorized") ||
+                    errMsg.includes("forbidden") ||
+                    errMsg.includes("invalid") ||
+                    errMsg.includes("api key") ||
+                    errMsg.includes("permission")
+                ) {
+                    return NextResponse.json(
+                        { success: false, error: "invalid_key", message: "Your API key is invalid or expired. Update it in Settings." },
+                        { status: 401 }
+                    );
+                }
+                return NextResponse.json(
+                    { success: false, error: "provider_error", message: aiError?.message || "Provider connection failed" },
+                    { status: 502 }
+                );
+            }
+        }
 
         let extraContext = "";
         if (goal) extraContext += `User Goal: ${goal}\n`;
@@ -102,10 +435,23 @@ export async function POST(req: NextRequest) {
         
         let rawContent;
         try {
-            rawContent = await generateStructuredContent(fullPrompt, useUserKey ? userApiKey : undefined, useUserKey ? userProvider : undefined);
+            rawContent = await generateStructuredContent(
+                fullPrompt,
+                useUserKey ? sanitizedUserKey : undefined,
+                useUserKey ? sanitizedProvider : undefined,
+                useUserKey ? sanitizedModel : undefined
+            );
         } catch (aiError: any) {
-            const errMsg = aiError.message || "";
-            if (errMsg.includes("401") || errMsg.includes("403") || errMsg.includes("API key") || errMsg.includes("permission")) {
+            const errMsg = String(aiError?.message || "").toLowerCase();
+            if (
+                errMsg.includes("401") ||
+                errMsg.includes("403") ||
+                errMsg.includes("unauthorized") ||
+                errMsg.includes("forbidden") ||
+                errMsg.includes("invalid") ||
+                errMsg.includes("api key") ||
+                errMsg.includes("permission")
+            ) {
                 return NextResponse.json(
                     { success: false, error: "invalid_key", message: "Your API key is invalid or expired. Update it in Settings." },
                     { status: 401 }
@@ -126,23 +472,6 @@ export async function POST(req: NextRequest) {
         try {
             const cleaned = rawContent.replace(/^```(json)?\n?/i, "").replace(/\n?```$/g, "").trim();
             parsed = JSON.parse(cleaned);
-
-            // Backward compatibility map for Task schema
-            // AI returns `text` and `done`, we duplicate they into `title` and `completed` if missing
-            if (parsed.sections) {
-                parsed.sections.forEach((section: any) => {
-                    if (section.type === "module" || section.type === "milestones") {
-                        const tasks = section.data?.tasks;
-                        if (Array.isArray(tasks)) {
-                            tasks.forEach((t: any) => {
-                                if (t.text && !t.title) t.title = t.text;
-                                if (t.done !== undefined && t.completed === undefined) t.completed = t.done;
-                            });
-                        }
-                    }
-                });
-            }
-
         } catch (parseError) {
             console.error("Failed to parse AI JSON:", rawContent, parseError);
             return NextResponse.json(
@@ -151,7 +480,15 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        return NextResponse.json({ success: true, roadmap: parsed });
+        const normalized = normalizeRoadmapPayload(parsed, { title, mode, goal, difficulty, estimatedDuration });
+        if (!normalized) {
+            return NextResponse.json(
+                { success: false, error: "AI response did not match the roadmap schema" },
+                { status: 500 }
+            );
+        }
+
+        return NextResponse.json({ success: true, roadmap: normalized });
     } catch (err) {
         console.error("Parse roadmap error:", err);
         return NextResponse.json(
