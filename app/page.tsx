@@ -7,6 +7,23 @@ import StorageStatusCard from "@/components/shared/StorageStatusCard";
 import WorkspaceLibraryCard from "@/components/workspaces/WorkspaceLibraryCard";
 import { getStorage, getStorageStatus } from "@/lib/storage";
 import { getRoadmapStats } from "@/lib/workspace-stats";
+import { createClient } from '@/utils/supabase/server'
+import { cookies } from 'next/headers'
+
+export default async function Page() {
+    const cookieStore = await cookies()
+    const supabase = createClient(cookieStore)
+
+    const { data: todos } = await supabase.from('todos').select()
+
+    return (
+        <ul>
+            {todos?.map((todo) => (
+                <li>{todo}</li>
+            ))}
+        </ul>
+    )
+}
 import type { Roadmap, StorageStatus } from "@/types";
 import {
     ArrowRight,
@@ -94,8 +111,8 @@ export default function HomePage() {
         storageStatus.mode === "synced-account"
             ? "/settings?tab=privacy"
             : storageStatus.cloudAvailable
-              ? "/auth?next=%2F"
-              : "/settings?tab=privacy";
+                ? "/auth?next=%2F"
+                : "/settings?tab=privacy";
 
     const accountLabel = storageStatus.mode === "synced-account" ? "Account sync" : "Enable sync";
     const accountIcon = storageStatus.mode === "synced-account" ? UserRound : HardDrive;
@@ -304,11 +321,10 @@ export default function HomePage() {
                                         key={item.key}
                                         type="button"
                                         onClick={() => setFilter(item.key)}
-                                        className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] transition-all ${
-                                            filter === item.key
+                                        className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] transition-all ${filter === item.key
                                                 ? "border-indigo-300/20 bg-indigo-500/12 text-indigo-100"
                                                 : "border-white/10 bg-white/[0.03] text-text-secondary hover:text-white"
-                                        }`}
+                                            }`}
                                     >
                                         {item.label}
                                     </button>

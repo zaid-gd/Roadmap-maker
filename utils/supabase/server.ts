@@ -1,49 +1,29 @@
-import { createServerClient as createSupabaseServerClient } from "@supabase/ssr";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { getSupabaseEnv, getSupabaseServiceRoleEnv } from "@/utils/supabase/config";
 
-export async function createServerClient() {
-    const cookieStore = await cookies();
-    const { url, anonKey } = getSupabaseEnv();
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
-    return createSupabaseServerClient(
-        url,
-        anonKey,
+export const createClient = (cookieStore: ReturnType<typeof cookies>) => {
+    return createServerClient(
+        supabaseUrl!,
+        supabaseKey!,
         {
             cookies: {
                 getAll() {
-                    return cookieStore.getAll();
+                    return cookieStore.getAll()
                 },
                 setAll(cookiesToSet) {
                     try {
-                        cookiesToSet.forEach(({ name, value, options }) =>
-                            cookieStore.set(name, value, options)
-                        );
+                        cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
                     } catch {
-                        // Ignore cookie writes when invoked from a Server Component.
+                        // The `setAll` method was called from a Server Component.
+                        // This can be ignored if you have middleware refreshing
+                        // user sessions.
                     }
                 },
             },
-        }
+        },
     );
-}
-
-export async function createClient() {
-    return createServerClient();
-}
-
-export function createServiceRoleClient() {
-    const { url, serviceRoleKey } = getSupabaseServiceRoleEnv();
-
-    return createSupabaseClient(
-        url,
-        serviceRoleKey,
-        {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false,
-            },
-        }
-    );
-}
+};
