@@ -4,18 +4,42 @@ import { Shield } from "lucide-react";
 import { Providers } from "@/components/shared/Providers";
 import { APP_NAME, APP_TAGLINE, BRAND_OWNER } from "@/lib/constants";
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://roadmap.znsnexus.com";
+
 export const viewport: Viewport = {
     themeColor: "#0a0e1a",
 };
 
 export const metadata: Metadata = {
-    title: `${APP_NAME} - Paste Any Guide, Get a Full Interactive Workspace`,
+    title: {
+        default: `${APP_NAME} - Paste Any Guide, Get a Full Interactive Workspace`,
+        template: `%s | ${APP_NAME}`,
+    },
     description: `Transform any roadmap, guide, or curriculum into a fully interactive workspace. Built by ${BRAND_OWNER}.`,
-    metadataBase: new URL("https://roadmap.znsnexus.com"),
+    metadataBase: new URL(appUrl),
+    alternates: {
+        canonical: "/",
+    },
     openGraph: {
-        title: APP_NAME,
+        title: `${APP_NAME} - Paste Any Guide, Get a Full Interactive Workspace`,
         description: APP_TAGLINE,
         type: "website",
+        url: appUrl,
+        siteName: APP_NAME,
+        images: [
+            {
+                url: "/opengraph-image",
+                width: 1200,
+                height: 630,
+                alt: APP_NAME,
+            },
+        ],
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: `${APP_NAME} - Paste Any Guide, Get a Full Interactive Workspace`,
+        description: APP_TAGLINE,
+        images: ["/twitter-image"],
     },
 };
 
