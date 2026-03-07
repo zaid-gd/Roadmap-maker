@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateStructuredContent } from "@/lib/aiClient";
+import { PLANS } from "@/lib/plans";
+import { getEffectivePlanId } from "@/lib/billing";
+import { createServerClient } from "@/utils/supabase/server";
+import { isSupabaseConfigured } from "@/utils/supabase/config";
 
 const SYSTEM_PROMPT = `You are an advanced Context-Aware AI that transforms raw content into a structured, highly organized digital workspace.
 Instead of treating everything as a generic "roadmap", you MUST first dynamically detect the content type and adapt the entire structure accordingly.
@@ -379,6 +383,47 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { content, mode, title, goal, difficulty, estimatedDuration, userApiKey, userProvider, userModel, testOnly } = body;
 
+        const supabase = isSupabaseConfigured() ? await createServerClient() : null;
+        const {
+            data: { user },
+        } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
+
+        if (user && supabase && !testOnly) {
+            const { data: subscription } = await supabase
+                .from("subscriptions")
+                .select("plan_id, status, current_period_end")
+                .eq("user_id", user.id)
+                .maybeSingle();
+
+            const planId = getEffectivePlanId(subscription);
+            const plan = PLANS[planId];
+
+            if (plan.limits.aiGenerations !== -1) {
+                const startOfMonth = new Date();
+                startOfMonth.setDate(1);
+                startOfMonth.setHours(0, 0, 0, 0);
+
+                const { count, error: countError } = await supabase
+                    .from("ai_generation_events")
+                    .select("*", { count: "exact", head: true })
+                    .eq("user_id", user.id)
+                    .gte("created_at", startOfMonth.toISOString());
+
+                if (countError) {
+                    console.error("AI generation usage lookup error:", countError);
+                } else if ((count || 0) >= plan.limits.aiGenerations) {
+                    return NextResponse.json(
+                        {
+                            error: "limit_reached",
+                            plan: planId,
+                            message: `You've used all ${plan.limits.aiGenerations} AI generations this month. Upgrade to Pro for unlimited access.`,
+                        },
+                        { status: 403 }
+                    );
+                }
+            }
+        }
+
         if (!content || typeof content !== "string") {
             return NextResponse.json(
                 { success: false, error: "Content is required" },
@@ -486,6 +531,16 @@ export async function POST(req: NextRequest) {
                 { success: false, error: "AI response did not match the roadmap schema" },
                 { status: 500 }
             );
+        }
+
+        if (user && supabase && !testOnly) {
+            const { error: usageInsertError } = await supabase
+                .from("ai_generation_events")
+                .insert({ user_id: user.id });
+
+            if (usageInsertError) {
+                console.error("AI generation usage insert error:", usageInsertError);
+            }
         }
 
         return NextResponse.json({ success: true, roadmap: normalized });

@@ -37,7 +37,14 @@ GROQ_API_KEY=
 OPENROUTER_API_KEY=
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRO_MONTHLY_PRICE_ID=
+STRIPE_PRO_ANNUAL_PRICE_ID=
+STRIPE_AGENCY_MONTHLY_PRICE_ID=
+STRIPE_AGENCY_ANNUAL_PRICE_ID=
 ```
 
 3. Start the app:
@@ -48,7 +55,12 @@ npm run dev
 
 ## Supabase Setup
 
-If you want cloud sync, run the SQL in [supabase/roadmaps.sql](./supabase/roadmaps.sql) inside your Supabase project and set `NEXT_PUBLIC_SUPABASE_URL` plus `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+If you want the full backend enabled:
+
+- Run the SQL in [supabase/roadmaps.sql](./supabase/roadmaps.sql).
+- Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`.
+- Add Stripe env vars if you want subscription checkout and webhook support.
+- Keep `proxy.ts` enabled so Supabase SSR sessions stay in sync.
 
 ## Scripts
 

@@ -6,17 +6,36 @@ const LEGACY_ROADMAPS_KEY = "zns_workspaces";
 
 type SupabaseRoadmapRow = {
     id: string;
+    user_id: string;
     roadmap: Roadmap;
     updated_at?: string | null;
 };
 
 class SupabaseRoadmapClient {
+    private async getAuthenticatedContext() {
+        const supabase = createSupabaseClient();
+        const {
+            data: { user },
+            error,
+        } = await supabase.auth.getUser();
+
+        if (error || !user) return null;
+
+        return {
+            supabase,
+            userId: user.id,
+        };
+    }
+
     async fetchRoadmaps(): Promise<Roadmap[] | null> {
         try {
-            const supabase = createSupabaseClient();
-            const { data, error } = await supabase
+            const context = await this.getAuthenticatedContext();
+            if (!context) return null;
+
+            const { data, error } = await context.supabase
                 .from("roadmaps")
                 .select("id, roadmap, updated_at")
+                .eq("user_id", context.userId)
                 .order("updated_at", { ascending: false });
 
             if (error || !Array.isArray(data)) return null;
@@ -31,10 +50,13 @@ class SupabaseRoadmapClient {
 
     async upsertRoadmap(roadmap: Roadmap): Promise<void> {
         try {
-            const supabase = createSupabaseClient();
-            await supabase.from("roadmaps").upsert(
+            const context = await this.getAuthenticatedContext();
+            if (!context) return;
+
+            await context.supabase.from("roadmaps").upsert(
                 {
                     id: roadmap.id,
+                    user_id: context.userId,
                     roadmap,
                     updated_at: roadmap.updatedAt ?? new Date().toISOString(),
                 },
@@ -49,10 +71,13 @@ class SupabaseRoadmapClient {
         if (roadmaps.length === 0) return;
 
         try {
-            const supabase = createSupabaseClient();
-            await supabase.from("roadmaps").upsert(
+            const context = await this.getAuthenticatedContext();
+            if (!context) return;
+
+            await context.supabase.from("roadmaps").upsert(
                 roadmaps.map((roadmap) => ({
                     id: roadmap.id,
+                    user_id: context.userId,
                     roadmap,
                     updated_at: roadmap.updatedAt ?? new Date().toISOString(),
                 })),
@@ -65,8 +90,21 @@ class SupabaseRoadmapClient {
 
     async deleteRoadmap(id: string): Promise<void> {
         try {
-            const supabase = createSupabaseClient();
-            await supabase.from("roadmaps").delete().eq("id", id);
+            const context = await this.getAuthenticatedContext();
+            if (!context) return;
+
+            await context.supabase.from("roadmaps").delete().eq("user_id", context.userId).eq("id", id);
+        } catch {
+            // Best effort cloud sync; local remains source of truth on failure.
+        }
+    }
+
+    async deleteAllRoadmaps(): Promise<void> {
+        try {
+            const context = await this.getAuthenticatedContext();
+            if (!context) return;
+
+            await context.supabase.from("roadmaps").delete().eq("user_id", context.userId);
         } catch {
             // Best effort cloud sync; local remains source of truth on failure.
         }
@@ -172,8 +210,14 @@ class LocalStorageProvider implements StorageProvider {
     }
 
     clearRoadmaps(): void {
+        const all = this.readStore();
+        all.forEach((roadmap) => {
+            localStorage.removeItem(`zns_versions_${roadmap.id}`);
+            localStorage.removeItem(`zns:v1:session:${roadmap.id}`);
+        });
         localStorage.removeItem(ROADMAPS_KEY);
         localStorage.removeItem(LEGACY_ROADMAPS_KEY);
+        void this.cloudClient?.deleteAllRoadmaps();
     }
 
     isCloudEnabled(): boolean {

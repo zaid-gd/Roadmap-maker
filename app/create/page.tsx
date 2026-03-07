@@ -7,6 +7,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { getStorage } from "@/lib/storage";
 import { getUserConfig } from "@/lib/userConfig";
+import UpgradeModal from "@/components/payments/UpgradeModal";
 import type { Roadmap } from "@/types";
 
 /* ═══════════════════════════════════════════════════════════
@@ -72,6 +73,7 @@ function CreatePageContent() {
     const [goal, setGoal] = useState("");
     const [difficulty, setDifficulty] = useState<"beginner" | "intermediate" | "advanced" | null>(null);
     const [estimatedDuration, setEstimatedDuration] = useState("");
+    const [upgradeMessage, setUpgradeMessage] = useState("");
 
     // Pre-fill from URL query params (e.g. ?title=...&content=...)
     useEffect(() => {
@@ -207,6 +209,12 @@ function CreatePageContent() {
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: "Failed to parse roadmap" }));
+                if (err.error === "limit_reached") {
+                    setUpgradeMessage(err.message ?? "You have reached your current plan limit.");
+                    clearInterval(interval!);
+                    setIsLoading(false);
+                    return;
+                }
                 throw new Error(err.message ?? err.error ?? "Something went wrong");
             }
 
@@ -646,6 +654,13 @@ function CreatePageContent() {
             </main>
 
             <Footer />
+
+            {upgradeMessage && (
+                <UpgradeModal
+                    message={upgradeMessage}
+                    onClose={() => setUpgradeMessage("")}
+                />
+            )}
         </div>
     );
 }

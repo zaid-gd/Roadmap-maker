@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X, Github } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { Logo } from "@/components/shared/Logo";
+import AuthButton from "@/components/auth/AuthButton";
 
 export default function Header() {
     const pathname = usePathname();
@@ -57,6 +58,7 @@ export default function Header() {
                     </a>
 
                     <ThemeToggle />
+                    <AuthButton />
 
                     {!isWorkspace && (
                         <Link
@@ -71,6 +73,7 @@ export default function Header() {
                 {/* Mobile Menu Button */}
                 <div className="md:hidden flex items-center gap-3">
                     <ThemeToggle />
+                    <AuthButton />
                     <button
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                         className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 border border-border/50 text-text-primary"
