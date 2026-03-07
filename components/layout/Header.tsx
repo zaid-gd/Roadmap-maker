@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Github } from "lucide-react";
+import { ArrowUpRight, Github, Menu, Settings2, Sparkles, X } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { Logo } from "@/components/shared/Logo";
 import AuthButton from "@/components/auth/AuthButton";
+import { PRIMARY_NAV_ITEMS } from "@/lib/navigation";
 
 export default function Header() {
     const pathname = usePathname();
@@ -29,88 +30,118 @@ export default function Header() {
 
     return (
         <header
-            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
-                    ? "bg-obsidian/80 backdrop-blur-xl border-b border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.2)] md:h-16 h-14"
-                    : "bg-transparent border-b border-transparent md:h-20 h-16"
-                }`}
+            className={`fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
+                scrolled
+                    ? "border-b border-white/[0.08] bg-obsidian/84 shadow-[0_18px_60px_rgba(0,0,0,0.34)] backdrop-blur-2xl md:h-18 h-16"
+                    : "border-b border-transparent bg-transparent md:h-20 h-16"
+            }`}
         >
-            <div className="max-w-7xl mx-auto px-6 lg:px-12 h-full flex items-center justify-between">
-                {/* Logo Section */}
-                <Link href="/" className="flex items-center gap-4 group">
-                    <div className="w-8 h-8 bg-indigo-500 rounded flex items-center justify-center transform group-hover:rotate-45 transition-transform duration-500 shadow-[0_0_15px_rgba(99,102,241,0.3)]">
+            <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-4 px-5 lg:px-10">
+                <Link href="/" className="group flex items-center gap-4">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 bg-[linear-gradient(145deg,rgba(85,116,232,0.22),rgba(191,148,71,0.14))] shadow-[0_10px_30px_rgba(0,0,0,0.3)] transition-transform duration-500 group-hover:rotate-6">
                         <Logo />
                     </div>
-                    <span className="font-sans-display font-black text-sm uppercase tracking-[0.2em] text-text-primary">
-                        ZNS <span className="text-text-secondary font-medium">RoadMap Studio</span>
-                    </span>
+                    <div>
+                        <span className="block font-sans-display text-[11px] font-black uppercase tracking-[0.26em] text-text-primary">
+                            ZNS RoadMap Studio
+                        </span>
+                        <span className="block text-[11px] text-text-secondary">Premium local-first course workspaces</span>
+                    </div>
                 </Link>
 
-                {/* Right Actions Section (Desktop) */}
-                <div className="hidden md:flex items-center gap-4">
+                {!isWorkspace && (
+                    <nav className="hidden items-center gap-1 rounded-full border border-white/8 bg-white/[0.03] px-2 py-2 lg:flex">
+                        {PRIMARY_NAV_ITEMS.map((item) => {
+                            const active = pathname === item.href;
+
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] transition-all ${
+                                        active
+                                            ? "bg-white/[0.08] text-white"
+                                            : "text-text-secondary hover:bg-white/[0.05] hover:text-white"
+                                    }`}
+                                >
+                                    {item.label}
+                                </Link>
+                            );
+                        })}
+                    </nav>
+                )}
+
+                <div className="hidden items-center gap-3 md:flex">
                     <a
                         href="https://github.com/zaid-gd/Social-Media-Plan-maker"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/5 transition-colors border border-border/50 text-text-secondary hover:text-white"
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-text-secondary transition-colors hover:bg-white/[0.08] hover:text-white"
                         title="GitHub Repository"
                     >
                         <Github size={20} />
                     </a>
-
                     <ThemeToggle />
                     <AuthButton />
-
                     {!isWorkspace && (
                         <Link
                             href="/create"
-                            className="ml-2 inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-obsidian font-sans-display font-bold text-xs uppercase tracking-wider px-6 py-2.5 transition-all duration-300 shadow-[0_4px_14px_rgba(99,102,241,0.3)] hover:shadow-[0_6px_20px_rgba(99,102,241,0.4)]"
+                            className="ml-1 inline-flex items-center gap-2 rounded-full border border-indigo-300/20 bg-[linear-gradient(135deg,rgba(85,116,232,0.92),rgba(191,148,71,0.74))] px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-obsidian transition-all duration-300 hover:brightness-110"
                         >
-                            Create New
+                            <Sparkles size={14} />
+                            Create
                         </Link>
                     )}
                 </div>
 
-                {/* Mobile Menu Button */}
-                <div className="md:hidden flex items-center gap-3">
+                <div className="flex items-center gap-3 md:hidden">
                     <ThemeToggle />
-                    <AuthButton />
                     <button
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 border border-border/50 text-text-primary"
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-text-primary"
                     >
                         {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
                 </div>
             </div>
 
-            {/* Mobile Menu Overlay */}
             {mobileMenuOpen && (
-                <div className="md:hidden absolute top-full left-0 right-0 bg-obsidian-elevated/95 backdrop-blur-2xl border-b border-border shadow-2xl animate-fade-in p-6 space-y-6">
-                    <nav className="flex flex-col gap-4">
+                <div className="absolute left-0 right-0 top-full border-b border-white/10 bg-[linear-gradient(180deg,rgba(22,26,34,0.98),rgba(11,13,18,0.98))] px-5 pb-6 pt-4 shadow-2xl backdrop-blur-2xl animate-fade-in md:hidden">
+                    <div className="mb-4 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-secondary">Navigation</p>
+                        <nav className="mt-4 grid gap-2">
+                            {PRIMARY_NAV_ITEMS.map((item) => (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className="flex items-center justify-between rounded-2xl border border-white/8 bg-black/10 px-4 py-3 text-sm font-medium text-text-primary transition-colors hover:bg-white/[0.05]"
+                                >
+                                    <span>{item.label}</span>
+                                    <ArrowUpRight size={15} className="text-text-secondary" />
+                                </Link>
+                            ))}
+                        </nav>
+                    </div>
+
+                    <div className="grid gap-3">
+                        <AuthButton />
                         <Link
-                            href="/"
-                            className="text-lg font-sans-display uppercase tracking-widest text-text-primary hover:text-indigo-400"
+                            href="/settings"
+                            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-medium text-text-primary"
                         >
-                            Home
+                            <Settings2 size={16} />
+                            Studio Settings
                         </Link>
-                        {!isWorkspace && (
-                            <Link
-                                href="/create"
-                                className="text-lg font-sans-display uppercase tracking-widest text-text-primary hover:text-indigo-400"
-                            >
-                                Start New Project
-                            </Link>
-                        )}
                         <a
                             href="https://github.com/zaid-gd/Social-Media-Plan-maker"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-lg font-sans-display uppercase tracking-widest text-text-primary hover:text-indigo-400"
+                            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-medium text-text-primary"
                         >
-                            <Github size={20} />
+                            <Github size={16} />
                             GitHub
                         </a>
-                    </nav>
+                    </div>
                 </div>
             )}
         </header>

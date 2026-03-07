@@ -3,15 +3,22 @@ import { createServerClient } from "@supabase/ssr";
 import { getSupabaseEnv, isSupabaseConfigured } from "@/utils/supabase/config";
 
 export async function updateSession(request: NextRequest) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-pathname", request.nextUrl.pathname);
+
     if (!isSupabaseConfigured()) {
         return NextResponse.next({
-            request,
+            request: {
+                headers: requestHeaders,
+            },
         });
     }
 
     const { url, anonKey } = getSupabaseEnv();
     let response = NextResponse.next({
-        request,
+        request: {
+            headers: requestHeaders,
+        },
     });
 
     const supabase = createServerClient(url, anonKey, {

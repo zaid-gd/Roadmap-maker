@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import "./globals.css";
-import { Shield } from "lucide-react";
+import Footer from "@/components/layout/Footer";
 import { Providers } from "@/components/shared/Providers";
 import { APP_NAME, APP_TAGLINE, BRAND_OWNER } from "@/lib/constants";
 
@@ -43,25 +44,26 @@ export const metadata: Metadata = {
     },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    const pathname = (await headers()).get("x-pathname") || "";
+    const hideFooter = ["/embed/", "/workspace/", "/share/"].some((prefix) => pathname.startsWith(prefix));
+
     return (
         <html lang="en">
             <head>
                 <meta name="color-scheme" content="dark" />
             </head>
-            <body className="noise-overlay min-h-screen flex flex-col">
-                <Providers>{children}</Providers>
-                <footer className="border-t border-border bg-obsidian py-3 px-6 flex items-center justify-between text-[12px] text-[#5C6378] select-none">
-                    <div>{`Powered by ${BRAND_OWNER} (c) 2026`}</div>
-                    <div className="flex items-center gap-1.5">
-                        <Shield size={12} />
-                        <span>Your content stays local unless you configure cloud sync.</span>
+            <body className="noise-overlay min-h-screen bg-obsidian">
+                <Providers>
+                    <div className="flex min-h-screen flex-col">
+                        <div className="flex-1">{children}</div>
+                        {!hideFooter && <Footer />}
                     </div>
-                </footer>
+                </Providers>
             </body>
         </html>
     );

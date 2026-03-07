@@ -4,7 +4,7 @@ import { isSupabaseConfigured } from "@/utils/supabase/config";
 export default async function NotesPage() {
     if (!isSupabaseConfigured()) {
         return (
-            <div className="min-h-screen bg-obsidian px-6 py-20 text-text-primary">
+            <div className="min-h-full bg-obsidian px-6 py-20 text-text-primary">
                 <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-obsidian-surface p-8">
                     <h1 className="font-display text-3xl text-white">Supabase is not configured</h1>
                     <p className="mt-3 text-sm text-text-secondary">
@@ -22,7 +22,7 @@ export default async function NotesPage() {
 
     if (!user) {
         return (
-            <div className="min-h-screen bg-obsidian px-6 py-20 text-text-primary">
+            <div className="min-h-full bg-obsidian px-6 py-20 text-text-primary">
                 <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-obsidian-surface p-8">
                     <h1 className="font-display text-3xl text-white">Sign in required</h1>
                     <p className="mt-3 text-sm text-text-secondary">
@@ -40,7 +40,7 @@ export default async function NotesPage() {
         .order("updated_at", { ascending: false });
 
     return (
-        <div className="min-h-screen bg-obsidian px-6 py-20 text-text-primary">
+        <div className="min-h-full bg-obsidian px-6 py-20 text-text-primary">
             <div className="mx-auto max-w-4xl rounded-2xl border border-border bg-obsidian-surface p-8">
                 <h1 className="font-display text-3xl text-white">Notes</h1>
                 <p className="mt-3 text-sm text-text-secondary">

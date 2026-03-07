@@ -19,7 +19,7 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
 
     if (!roadmap) {
         return (
-            <div className="min-h-screen flex flex-col">
+            <div className="min-h-full flex flex-col">
                 <Header />
                 <main className="flex-1 pt-14 flex items-center justify-center">
                     <div className="text-center animate-fade-in">

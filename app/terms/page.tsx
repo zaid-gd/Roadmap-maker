@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
     title: "Terms of Use",
@@ -12,9 +11,9 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
     return (
-        <div className="min-h-screen bg-obsidian text-text-primary">
+        <div className="flex min-h-full flex-col bg-obsidian text-text-primary">
             <Header />
-            <main className="mx-auto max-w-4xl px-6 py-28">
+            <main className="mx-auto flex-1 w-full max-w-4xl px-6 py-28">
                 <h1 className="font-display text-4xl text-white">Terms of Use</h1>
                 <div className="mt-8 space-y-6 text-sm leading-7 text-text-secondary">
                     <p>This product is provided as a workspace and content-structuring tool. You are responsible for the source material, generated outputs, and any third-party services you connect.</p>
@@ -22,7 +21,6 @@ export default function TermsPage() {
                     <p>Use of the product must comply with applicable law and the terms of any upstream services you configure.</p>
                 </div>
             </main>
-            <Footer />
         </div>
     );
 }

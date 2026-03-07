@@ -3,7 +3,8 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Loader2, LogOut, UserRound } from "lucide-react";
+import { HardDrive, Loader2, LogOut, UserRound } from "lucide-react";
+import { getStorage } from "@/lib/storage";
 import { createClient as createSupabaseClient } from "@/utils/supabase/client";
 import { isSupabaseConfigured } from "@/utils/supabase/config";
 
@@ -25,20 +26,28 @@ export default function AuthButton() {
         }
 
         const supabase = createSupabaseClient();
+        const syncFromCloud = getStorage().syncFromCloud;
         let active = true;
 
         void supabase.auth.getUser().then(({ data, error }) => {
             if (!active || error) return;
             setAuthState(data.user ? { email: data.user.email ?? null } : null);
+            if (data.user && syncFromCloud) {
+                void syncFromCloud();
+            }
             setLoading(false);
         });
 
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (session?.user && syncFromCloud) {
+                void syncFromCloud();
+            }
             startTransition(() => {
                 setAuthState(session?.user ? { email: session.user.email ?? null } : null);
                 setLoading(false);
+                router.refresh();
             });
         });
 
@@ -46,7 +55,7 @@ export default function AuthButton() {
             active = false;
             subscription.unsubscribe();
         };
-    }, []);
+    }, [router]);
 
     if (!isSupabaseConfigured()) {
         return null;
@@ -67,9 +76,10 @@ export default function AuthButton() {
             <Link
                 href={`/auth${next}`}
                 className="inline-flex items-center gap-2 rounded-lg border border-border/50 px-4 py-2 text-xs font-bold uppercase tracking-wider text-text-primary transition-colors hover:border-white/20 hover:bg-white/5"
+                title="Your work stays in this browser until you sign in."
             >
-                <UserRound size={14} />
-                Sign In
+                <HardDrive size={14} />
+                Enable Sync
             </Link>
         );
     }

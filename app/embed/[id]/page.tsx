@@ -10,7 +10,7 @@ export default function EmbedPage({ params }: { params: Promise<{ id: string }> 
 
     if (!roadmap) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-obsidian text-text-secondary text-sm">
+            <div className="min-h-full flex items-center justify-center bg-obsidian text-text-secondary text-sm">
                 Workspace not found
             </div>
         );

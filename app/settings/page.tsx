@@ -4,13 +4,14 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import ManageBillingButton from "@/components/payments/ManageBillingButton";
+import StorageStatusCard from "@/components/shared/StorageStatusCard";
 import { createClient as createSupabaseClient } from "@/utils/supabase/client";
 import { isSupabaseConfigured } from "@/utils/supabase/config";
 import { getEffectivePlanId, getPlanName, isPaidPlan, type SubscriptionRecord } from "@/lib/billing";
-import { getRoadmapsBackupJson, getStorage } from "@/lib/storage";
+import { getRoadmapsBackupJson, getStorage, getStorageStatus } from "@/lib/storage";
 import { getUserConfig, saveUserConfig, clearUserConfig, DEFAULT_CONFIG, AIProvider } from "@/lib/userConfig";
+import type { StorageStatus } from "@/types";
 import {
     AlertCircle,
     ArrowUpRight,
@@ -96,7 +97,7 @@ function Toast({ toast, onClose }: { toast: NonNullable<ToastState>; onClose: ()
                 </div>
                 <p className="flex-1 leading-6">{toast.message}</p>
                 <button type="button" onClick={onClose} className="text-text-secondary hover:text-white">
-                    ×
+                    x
                 </button>
             </div>
         </div>
@@ -105,7 +106,7 @@ function Toast({ toast, onClose }: { toast: NonNullable<ToastState>; onClose: ()
 
 export default function SettingsPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-obsidian" />}>
+        <Suspense fallback={<div className="min-h-full bg-obsidian" />}>
             <SettingsContent />
         </Suspense>
     );
@@ -124,6 +125,11 @@ function SettingsContent() {
     const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
     const [billingLoading, setBillingLoading] = useState(true);
     const [toast, setToast] = useState<ToastState>(null);
+    const [storageStatus, setStorageStatus] = useState<StorageStatus>({
+        mode: "local-only",
+        cloudAvailable: false,
+        email: null,
+    });
 
     useEffect(() => {
         setConfig(getUserConfig());
@@ -195,6 +201,20 @@ function SettingsContent() {
         };
     }, []);
 
+    useEffect(() => {
+        let active = true;
+
+        void getStorageStatus().then((status) => {
+            if (active) {
+                setStorageStatus(status);
+            }
+        });
+
+        return () => {
+            active = false;
+        };
+    }, []);
+
     const effectivePlanId = useMemo(() => getEffectivePlanId(subscription), [subscription]);
     const isPaid = isPaidPlan(effectivePlanId);
     const renewalDate = subscription?.current_period_end ? formatDate(subscription.current_period_end) : null;
@@ -217,7 +237,7 @@ function SettingsContent() {
         if (payment === "success") {
             setToast({
                 tone: "success",
-                message: `🎉 Welcome to ${getPlanName(effectivePlanId)}! Your subscription is now active.`,
+                message: `Welcome to ${getPlanName(effectivePlanId)}! Your subscription is now active.`,
             });
         }
 
@@ -299,7 +319,7 @@ function SettingsContent() {
     };
 
     return (
-        <div className="min-h-screen bg-obsidian flex flex-col">
+        <div className="flex min-h-full flex-col bg-obsidian">
             <Header />
 
             {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
@@ -577,31 +597,61 @@ function SettingsContent() {
                         <div className="space-y-8 animate-fade-in">
                             <div>
                                 <h2 className="text-2xl font-display text-white mb-2">Privacy & Data</h2>
+                                <p className="text-sm leading-7 text-text-secondary">
+                                    This is the primary control surface for local-first storage, optional account sync,
+                                    exports, and destructive cleanup.
+                                </p>
                             </div>
 
-                            <div className="flex items-center justify-between p-4 bg-obsidian-surface border border-border rounded-xl">
-                                <div>
-                                    <h4 className="font-bold text-white mb-1">Show Progress Notice</h4>
-                                    <p className="text-sm text-text-secondary">Display &quot;Progress saved in your browser&quot; in the sidebar</p>
+                            <StorageStatusCard
+                                status={storageStatus}
+                                actionHref={
+                                    storageStatus.mode === "synced-account"
+                                        ? "/settings?tab=billing"
+                                        : "/auth?next=%2Fsettings%3Ftab%3Dprivacy"
+                                }
+                                actionLabel={
+                                    storageStatus.mode === "synced-account"
+                                        ? "Review billing and account"
+                                        : "Sign in to enable sync"
+                                }
+                            />
+
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div className="flex items-center justify-between rounded-[24px] border border-white/10 bg-obsidian-surface p-5">
+                                    <div>
+                                        <h4 className="font-bold text-white mb-1">Show storage notice</h4>
+                                        <p className="text-sm text-text-secondary">
+                                            Keep a visible reminder that roadmap progress is still saving in-browser.
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const nextConfig = { ...config, showProgressNotice: !config.showProgressNotice };
+                                            saveUserConfig(nextConfig);
+                                            setConfig(nextConfig);
+                                        }}
+                                        className={`w-12 h-6 rounded-full transition-colors ${config.showProgressNotice ? "bg-indigo-500" : "bg-white/10"}`}
+                                    >
+                                        <div className={`w-5 h-5 rounded-full bg-white transition-transform ${config.showProgressNotice ? "translate-x-6" : "translate-x-0.5"}`} />
+                                    </button>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const newConfig = { ...config, showProgressNotice: !config.showProgressNotice };
-                                        saveUserConfig(newConfig);
-                                        setConfig(newConfig);
-                                    }}
-                                    className={`w-12 h-6 rounded-full transition-colors ${config.showProgressNotice ? "bg-indigo-500" : "bg-white/10"}`}
-                                >
-                                    <div className={`w-5 h-5 rounded-full bg-white transition-transform ${config.showProgressNotice ? "translate-x-6" : "translate-x-0.5"}`} />
-                                </button>
+
+                                <div className="rounded-[24px] border border-white/10 bg-obsidian-surface p-5">
+                                    <h4 className="font-bold text-white mb-1">Export and recovery</h4>
+                                    <p className="text-sm leading-7 text-text-secondary">
+                                        Export your workspace JSON before device changes or cleanup. Sync is additive, but
+                                        explicit backups still matter.
+                                    </p>
+                                </div>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="grid gap-4 md:grid-cols-2">
                                 <button
                                     type="button"
                                     onClick={handleExportData}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-obsidian-surface border border-border rounded-xl text-text-primary hover:bg-white/5"
+                                    className="flex w-full items-center justify-center gap-2 rounded-[24px] border border-white/10 bg-obsidian-surface px-4 py-4 text-text-primary transition-colors hover:bg-white/5"
                                 >
                                     <Download size={18} />
                                     Export all my data as JSON
@@ -609,7 +659,7 @@ function SettingsContent() {
                                 <button
                                     type="button"
                                     onClick={() => setClearConfirm(true)}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/10"
+                                    className="flex w-full items-center justify-center gap-2 rounded-[24px] border border-red-500/30 px-4 py-4 text-red-400 transition-colors hover:bg-red-500/10"
                                 >
                                     <Trash2 size={18} />
                                     Clear all workspace data
@@ -633,10 +683,12 @@ function SettingsContent() {
                                 </div>
                             )}
 
-                            <div className="p-4 bg-obsidian-surface/50 border border-border rounded-xl">
-                                <h4 className="font-bold text-white mb-2">Privacy Policy</h4>
+                            <div className="rounded-[24px] border border-white/10 bg-obsidian-surface/50 p-5">
+                                <h4 className="font-bold text-white mb-2">Privacy summary</h4>
                                 <p className="text-sm text-text-secondary">
-                                    Your content is processed by AI providers you choose. API keys stay on your device. Workspace data is stored locally and can sync to Supabase when configured.
+                                    Your content is processed by the AI provider you choose. API keys stay on your device,
+                                    roadmap data stays local by default, and Supabase sync activates only when you explicitly
+                                    sign in with email.
                                 </p>
                             </div>
                         </div>
@@ -666,14 +718,13 @@ function SettingsContent() {
                             </div>
 
                             <div className="pt-8 border-t border-border">
-                                <p className="text-text-secondary text-sm">Powered by ZNS Nexus · ZNS Enterprises © 2026</p>
+                                <p className="text-text-secondary text-sm">Built for local-first planning with optional Supabase sync and Stripe billing.</p>
                             </div>
                         </div>
                     )}
                 </main>
             </div>
-
-            <Footer />
         </div>
     );
 }
+

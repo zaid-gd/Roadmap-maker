@@ -1,5 +1,6 @@
-import type { Roadmap, StorageProvider } from "@/types";
+import type { Roadmap, StorageProvider, StorageStatus } from "@/types";
 import { createClient as createSupabaseClient } from "@/utils/supabase/client";
+import { isSupabaseConfigured } from "@/utils/supabase/config";
 
 export const ROADMAPS_KEY = "zns:v1:roadmaps";
 const LEGACY_ROADMAPS_KEY = "zns_workspaces";
@@ -137,7 +138,7 @@ function mergeRoadmaps(local: Roadmap[], cloud: Roadmap[]): Roadmap[] {
 
 function hasSupabaseEnv(): boolean {
     if (typeof window === "undefined") return false;
-    return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    return isSupabaseConfigured();
 }
 
 class LocalStorageProvider implements StorageProvider {
@@ -247,4 +248,49 @@ export function getStorage(): StorageProvider {
 
 export function getRoadmapsBackupJson(): string {
     return localStorage.getItem(ROADMAPS_KEY) || "[]";
+}
+
+export async function getStorageStatus(): Promise<StorageStatus> {
+    if (!isSupabaseConfigured()) {
+        return {
+            mode: "supabase-unavailable",
+            cloudAvailable: false,
+            email: null,
+        };
+    }
+
+    if (typeof window === "undefined") {
+        return {
+            mode: "local-only",
+            cloudAvailable: true,
+            email: null,
+        };
+    }
+
+    try {
+        const supabase = createSupabaseClient();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+            return {
+                mode: "local-only",
+                cloudAvailable: true,
+                email: null,
+            };
+        }
+
+        return {
+            mode: "synced-account",
+            cloudAvailable: true,
+            email: user.email ?? null,
+        };
+    } catch {
+        return {
+            mode: "local-only",
+            cloudAvailable: true,
+            email: null,
+        };
+    }
 }

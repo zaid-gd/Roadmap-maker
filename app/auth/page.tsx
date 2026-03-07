@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import AuthForm from "@/components/auth/AuthForm";
 import { createClient } from "@/utils/supabase/server";
 import { isSupabaseConfigured } from "@/utils/supabase/config";
@@ -19,9 +18,9 @@ export default async function AuthPage({
 
     if (!isSupabaseConfigured()) {
         return (
-            <div className="min-h-screen bg-obsidian text-text-primary">
+            <div className="flex min-h-full flex-col bg-obsidian text-text-primary">
                 <Header />
-                <main className="flex min-h-[calc(100vh-8rem)] items-center justify-center px-6 pt-24">
+                <main className="flex flex-1 items-center justify-center px-6 pb-12 pt-24">
                     <div className="w-full max-w-xl rounded-[28px] border border-white/10 bg-obsidian-surface p-8">
                         <h1 className="text-3xl font-display text-white">Supabase is not configured</h1>
                         <p className="mt-4 text-sm leading-7 text-text-secondary">
@@ -29,7 +28,6 @@ export default async function AuthPage({
                         </p>
                     </div>
                 </main>
-                <Footer />
             </div>
         );
     }
@@ -44,9 +42,9 @@ export default async function AuthPage({
     }
 
     return (
-        <div className="min-h-screen bg-obsidian text-text-primary">
+        <div className="flex min-h-full flex-col bg-obsidian text-text-primary">
             <Header />
-            <main className="relative flex min-h-[calc(100vh-8rem)] items-center justify-center overflow-hidden px-6 pt-24">
+            <main className="relative flex flex-1 items-center justify-center overflow-hidden px-6 pb-12 pt-24">
                 <div className="pointer-events-none absolute inset-0 hero-mesh-gradient opacity-60" />
                 <div className="pointer-events-none absolute inset-0 landing-grid-bg opacity-25" />
                 <div className="relative z-10 w-full py-12">
@@ -67,7 +65,6 @@ export default async function AuthPage({
                     </div>
                 </div>
             </main>
-            <Footer />
         </div>
     );
 }

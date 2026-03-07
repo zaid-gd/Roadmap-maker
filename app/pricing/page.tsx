@@ -4,7 +4,6 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { ArrowRight, CheckCircle2, HelpCircle, ShieldCheck, Sparkles, X } from "lucide-react"
 import Header from "@/components/layout/Header"
-import Footer from "@/components/layout/Footer"
 import CheckoutButton from "@/components/payments/CheckoutButton"
 import { PLANS, type BillingInterval, type PlanId } from "@/lib/plans"
 
@@ -142,10 +141,10 @@ export default function PricingPage() {
     const [interval, setInterval] = useState<BillingInterval>("monthly")
 
     return (
-        <div className="min-h-screen bg-obsidian text-text-primary">
+        <div className="flex min-h-full flex-col bg-obsidian text-text-primary">
             <Header />
 
-            <main className="relative overflow-hidden pt-24">
+            <main className="relative flex-1 overflow-hidden pt-24">
                 <div className="pointer-events-none absolute inset-0 hero-mesh-gradient opacity-60" />
                 <div className="pointer-events-none absolute inset-0 landing-grid-bg opacity-25" />
 
@@ -223,8 +222,6 @@ export default function PricingPage() {
                     </div>
                 </section>
             </main>
-
-            <Footer />
         </div>
     )
 }

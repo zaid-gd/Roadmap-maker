@@ -56,7 +56,7 @@ export default function AuthForm({ nextPath, initialError }: AuthFormProps) {
                 </div>
                 <h1 className="text-4xl font-display text-white">Sign in to sync your workspaces</h1>
                 <p className="mt-4 text-sm leading-7 text-text-secondary">
-                    Local storage still works without auth. Sign in when you want user-owned Supabase sync, notes, and billing state to follow your account.
+                    This app saves locally by default. Sign in with email when you want account-owned Supabase sync, notes, and billing state to follow you across devices.
                 </p>
             </div>
 
@@ -106,7 +106,7 @@ export default function AuthForm({ nextPath, initialError }: AuthFormProps) {
                 onClick={() => router.push(nextPath)}
                 className="mt-4 w-full text-sm text-text-secondary transition-colors hover:text-white"
             >
-                Continue without signing in
+                Stay in local-only mode
             </button>
         </div>
     );

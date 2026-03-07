@@ -1,9 +1,6 @@
-/* ═══════════════════════════════════════════════════════════
-   ZNS RoadMap Studio — TypeScript Type Definitions
-   ═══════════════════════════════════════════════════════════ */
+/* ZNS RoadMap Studio type definitions */
 
-// ── Section Types ──
-
+/* Section types */
 export type SectionType =
     | "module"
     | "milestones"
@@ -17,14 +14,13 @@ export type SectionType =
     | "submissions"
     | "custom";
 
-// ── Core: Roadmap ──
-
+/* Core roadmap model */
 export interface Roadmap {
     id: string;
     title: string;
     mode: "general" | "intern";
-    summary?: string; // Overall goals banner
-    objectives?: string[]; // Top-level course objectives
+    summary?: string;
+    objectives?: string[];
     sections: Section[];
     rawContent: string;
     createdAt: string;
@@ -35,8 +31,6 @@ export interface Roadmap {
         accentColor?: string;
         logoUrl?: string;
     };
-
-    // AI generated new fields
     contentType?: "roadmap" | "playbook" | "curriculum" | "strategy" | "tutorial" | "reference" | "plan" | "other" | string;
     detectedContext?: string;
     totalEstimatedDuration?: string;
@@ -44,8 +38,7 @@ export interface Roadmap {
     goal?: string;
 }
 
-// ── Section (discriminated union) ──
-
+/* Section discriminated union */
 export interface SectionBase {
     id: string;
     title: string;
@@ -98,7 +91,7 @@ export interface TaskSection extends SectionBase {
 
 export interface ProgressSection extends SectionBase {
     type: "progress";
-    data: Record<string, never>; // computed live
+    data: Record<string, never>;
 }
 
 export interface ResourceSection extends SectionBase {
@@ -136,8 +129,7 @@ export interface CustomSection extends SectionBase {
     data: CustomSectionData;
 }
 
-// ── Data Models ──
-
+/* Data models */
 export interface Milestone {
     id: string;
     title: string;
@@ -162,8 +154,6 @@ export interface Task {
     notes: string;
     subtasks: SubTask[];
     attachments: Resource[];
-
-    // AI generated new fields
     text?: string;
     description?: string;
     estimatedTime?: string;
@@ -252,8 +242,15 @@ export interface CustomItem {
     metadata?: Record<string, string>;
 }
 
-// ── Storage Interface ──
+export type StorageMode = "local-only" | "synced-account" | "supabase-unavailable";
 
+export interface StorageStatus {
+    mode: StorageMode;
+    email?: string | null;
+    cloudAvailable: boolean;
+}
+
+/* Storage interface */
 export interface StorageProvider {
     getRoadmaps(): Roadmap[];
     getRoadmap(id: string): Roadmap | null;
@@ -265,8 +262,7 @@ export interface StorageProvider {
     isCloudEnabled?(): boolean;
 }
 
-// ── API Types ──
-
+/* API types */
 export interface ParseRoadmapRequest {
     content: string;
     mode: "general" | "intern";

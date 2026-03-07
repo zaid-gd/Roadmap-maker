@@ -4,7 +4,6 @@ import { useState, useRef, useCallback, useEffect, useMemo, Suspense } from "rea
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, ChevronUp, Brain, Sparkles } from "lucide-react";
 import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import { getStorage } from "@/lib/storage";
 import { getUserConfig } from "@/lib/userConfig";
 import UpgradeModal from "@/components/payments/UpgradeModal";
@@ -48,7 +47,7 @@ const STEP_DELAY_MS = 600;
 
 export default function CreatePage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-obsidian" />}>
+        <Suspense fallback={<div className="min-h-full bg-obsidian" />}>
             <CreatePageContent />
         </Suspense>
     );
@@ -317,7 +316,7 @@ function CreatePageContent() {
        MAIN CREATE PAGE  — Notion-inspired single-column flow
        ═══════════════════════════════════════════════════════════ */
     return (
-        <div className="min-h-screen flex flex-col bg-obsidian text-text-primary selection:bg-indigo-500/30 selection:text-indigo-200">
+        <div className="flex min-h-full flex-col bg-obsidian text-text-primary selection:bg-indigo-500/30 selection:text-indigo-200">
             <Header />
 
             <main className="flex-1 pt-20 pb-24 flex justify-center">
@@ -652,8 +651,6 @@ function CreatePageContent() {
                     <div className="h-8" />
                 </div>
             </main>
-
-            <Footer />
 
             {upgradeMessage && (
                 <UpgradeModal
