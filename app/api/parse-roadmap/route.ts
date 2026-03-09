@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateStructuredContent } from "@/lib/aiClient";
-import { PLANS } from "@/lib/plans";
-import { getEffectivePlanId } from "@/lib/billing";
+import { deductCredits } from "@/lib/server/credits";
+import { generateStructuredJson, testAiConnection } from "@/lib/server/ai";
+import { getAiProviderInvalidKeyMessage, isAiProvider } from "@/lib/ai-config";
 import { createServerClient } from "@/utils/supabase/server";
 import { isSupabaseConfigured } from "@/utils/supabase/config";
+import { truncateForAi } from "@/lib/openai";
 
 const SYSTEM_PROMPT = `You are an advanced Context-Aware AI that transforms raw content into a structured, highly organized digital workspace.
 Instead of treating everything as a generic "roadmap", you MUST first dynamically detect the content type and adapt the entire structure accordingly.
@@ -378,6 +379,19 @@ function normalizeRoadmapPayload(parsed: unknown, fallback: { title?: string; mo
     };
 }
 
+function isInvalidKeyError(error: unknown) {
+    const errMsg = String((error as { message?: string } | undefined)?.message || "").toLowerCase();
+    return (
+        errMsg.includes("401") ||
+        errMsg.includes("403") ||
+        errMsg.includes("unauthorized") ||
+        errMsg.includes("forbidden") ||
+        errMsg.includes("invalid") ||
+        errMsg.includes("api key") ||
+        errMsg.includes("permission")
+    );
+}
+
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
@@ -388,42 +402,6 @@ export async function POST(req: NextRequest) {
             data: { user },
         } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
 
-        if (user && supabase && !testOnly) {
-            const { data: subscription } = await supabase
-                .from("subscriptions")
-                .select("plan_id, status, current_period_end")
-                .eq("user_id", user.id)
-                .maybeSingle();
-
-            const planId = getEffectivePlanId(subscription);
-            const plan = PLANS[planId];
-
-            if (plan.limits.aiGenerations !== -1) {
-                const startOfMonth = new Date();
-                startOfMonth.setDate(1);
-                startOfMonth.setHours(0, 0, 0, 0);
-
-                const { count, error: countError } = await supabase
-                    .from("ai_generation_events")
-                    .select("*", { count: "exact", head: true })
-                    .eq("user_id", user.id)
-                    .gte("created_at", startOfMonth.toISOString());
-
-                if (countError) {
-                    console.error("AI generation usage lookup error:", countError);
-                } else if ((count || 0) >= plan.limits.aiGenerations) {
-                    return NextResponse.json(
-                        {
-                            error: "limit_reached",
-                            plan: planId,
-                            message: `You've used all ${plan.limits.aiGenerations} AI generations this month. Upgrade to Pro for unlimited access.`,
-                        },
-                        { status: 403 }
-                    );
-                }
-            }
-        }
-
         if (!content || typeof content !== "string") {
             return NextResponse.json(
                 { success: false, error: "Content is required" },
@@ -432,41 +410,57 @@ export async function POST(req: NextRequest) {
         }
 
         const sanitizedUserKey = typeof userApiKey === "string" ? userApiKey.trim() : "";
-        const sanitizedProvider = typeof userProvider === "string" ? userProvider.trim() : "";
-        const sanitizedModel = typeof userModel === "string" ? userModel.trim() : "";
-
-        // Use user key if provided
-        const useUserKey = Boolean(sanitizedUserKey && sanitizedProvider);
+        const sanitizedProvider = isAiProvider(userProvider) ? userProvider : "openai";
+        const sanitizedModel = typeof userModel === "string" && userModel.trim().length > 0 ? userModel.trim() : undefined;
+        const useUserKey = Boolean(sanitizedUserKey);
 
         if (testOnly) {
             try {
-                const testPrompt = 'Return only valid JSON: {"ok": true}';
-                await generateStructuredContent(
-                    testPrompt,
-                    useUserKey ? sanitizedUserKey : undefined,
-                    useUserKey ? sanitizedProvider : undefined,
-                    useUserKey ? sanitizedModel : undefined,
+                await testAiConnection(
+                    useUserKey
+                        ? {
+                            apiKey: sanitizedUserKey,
+                            model: sanitizedModel,
+                            provider: sanitizedProvider,
+                        }
+                        : undefined,
                 );
                 return NextResponse.json({ success: true, ok: true });
-            } catch (aiError: any) {
-                const errMsg = String(aiError?.message || "").toLowerCase();
-                if (
-                    errMsg.includes("401") ||
-                    errMsg.includes("403") ||
-                    errMsg.includes("unauthorized") ||
-                    errMsg.includes("forbidden") ||
-                    errMsg.includes("invalid") ||
-                    errMsg.includes("api key") ||
-                    errMsg.includes("permission")
-                ) {
+            } catch (aiError) {
+                if (isInvalidKeyError(aiError)) {
                     return NextResponse.json(
-                        { success: false, error: "invalid_key", message: "Your API key is invalid or expired. Update it in Settings." },
+                        { success: false, error: "invalid_key", message: getAiProviderInvalidKeyMessage(sanitizedProvider) },
                         { status: 401 }
                     );
                 }
                 return NextResponse.json(
-                    { success: false, error: "provider_error", message: aiError?.message || "Provider connection failed" },
+                    {
+                        success: false,
+                        error: "provider_error",
+                        message: (aiError as { message?: string } | undefined)?.message || "Provider connection failed",
+                    },
                     { status: 502 }
+                );
+            }
+        }
+
+        if (user) {
+            const creditResult = await deductCredits({
+                kind: "workspace_generation",
+                userApiKey: useUserKey ? sanitizedUserKey : undefined,
+                metadata: {
+                    mode: mode === "intern" ? "intern" : "general",
+                },
+            });
+
+            if (!creditResult.charged && creditResult.reason === "insufficient") {
+                return NextResponse.json(
+                    {
+                        error: "limit_reached",
+                        plan: creditResult.status.planId,
+                        message: `You have ${creditResult.status.remaining} credits remaining. Workspace generation costs 10 credits. Add your own provider key or upgrade for a higher allowance.`,
+                    },
+                    { status: 403 }
                 );
             }
         }
@@ -476,29 +470,24 @@ export async function POST(req: NextRequest) {
         if (difficulty) extraContext += `Target Difficulty: ${difficulty}\n`;
         if (estimatedDuration) extraContext += `Estimated Duration: ${estimatedDuration}\n`;
 
-        const fullPrompt = `${SYSTEM_PROMPT}\n\n${title ? `Title: ${title}\n` : ""}Mode: ${mode || "general"}\n${extraContext}Content:\n${content}`;
+        const fullPrompt = `${SYSTEM_PROMPT}\n\n${title ? `Title: ${title}\n` : ""}Mode: ${mode || "general"}\n${extraContext}Content:\n${truncateForAi(content)}`;
         
         let rawContent;
         try {
-            rawContent = await generateStructuredContent(
+            rawContent = await generateStructuredJson(
                 fullPrompt,
-                useUserKey ? sanitizedUserKey : undefined,
-                useUserKey ? sanitizedProvider : undefined,
-                useUserKey ? sanitizedModel : undefined
+                useUserKey
+                    ? {
+                        apiKey: sanitizedUserKey,
+                        model: sanitizedModel,
+                        provider: sanitizedProvider,
+                    }
+                    : undefined,
             );
-        } catch (aiError: any) {
-            const errMsg = String(aiError?.message || "").toLowerCase();
-            if (
-                errMsg.includes("401") ||
-                errMsg.includes("403") ||
-                errMsg.includes("unauthorized") ||
-                errMsg.includes("forbidden") ||
-                errMsg.includes("invalid") ||
-                errMsg.includes("api key") ||
-                errMsg.includes("permission")
-            ) {
+        } catch (aiError) {
+            if (isInvalidKeyError(aiError)) {
                 return NextResponse.json(
-                    { success: false, error: "invalid_key", message: "Your API key is invalid or expired. Update it in Settings." },
+                    { success: false, error: "invalid_key", message: getAiProviderInvalidKeyMessage(sanitizedProvider) },
                     { status: 401 }
                 );
             }
@@ -531,16 +520,6 @@ export async function POST(req: NextRequest) {
                 { success: false, error: "AI response did not match the roadmap schema" },
                 { status: 500 }
             );
-        }
-
-        if (user && supabase && !testOnly) {
-            const { error: usageInsertError } = await supabase
-                .from("ai_generation_events")
-                .insert({ user_id: user.id });
-
-            if (usageInsertError) {
-                console.error("AI generation usage insert error:", usageInsertError);
-            }
         }
 
         return NextResponse.json({ success: true, roadmap: normalized });

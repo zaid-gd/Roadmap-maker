@@ -1,8 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Layers, PencilLine, Trash2 } from "lucide-react";
+import { ArrowRight, PencilLine, Trash2 } from "lucide-react";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import type { Roadmap } from "@/types";
+import { cn } from "@/lib/utils";
 import { getRelativeTimeLabel, getRoadmapDisplayTitle, getRoadmapStateLabel, getRoadmapStats } from "@/lib/workspace-stats";
 
 interface WorkspaceLibraryCardProps {
@@ -14,120 +30,166 @@ interface WorkspaceLibraryCardProps {
 export default function WorkspaceLibraryCard({ roadmap, onDelete, onRename }: WorkspaceLibraryCardProps) {
     const stats = getRoadmapStats(roadmap);
     const displayTitle = getRoadmapDisplayTitle(roadmap);
-    const tone =
-        roadmap.mode === "intern"
-            ? "border-emerald-400/18 bg-[linear-gradient(180deg,rgba(18,34,30,0.68),rgba(14,18,22,0.92))]"
-            : "border-white/10 bg-[linear-gradient(180deg,rgba(26,29,39,0.96),rgba(15,17,23,0.96))]";
-
-    const badgeTone =
-        roadmap.mode === "intern"
-            ? "border-emerald-400/28 bg-emerald-500/10 text-emerald-200"
-            : "border-indigo-400/28 bg-indigo-500/10 text-indigo-100";
-
-    const progressTone =
-        stats.progressState === "completed"
-            ? "bg-emerald-400"
-            : stats.progressState === "in-progress"
-              ? "bg-indigo-400"
-              : "bg-amber-400";
+    const [isRenaming, setIsRenaming] = useState(false);
+    const [nextTitle, setNextTitle] = useState(displayTitle);
 
     const handleRename = () => {
         if (!onRename) return;
-
-        const nextTitle = window.prompt("Rename workspace", displayTitle);
-        if (!nextTitle || !nextTitle.trim() || nextTitle.trim() === displayTitle) {
+        const trimmedTitle = nextTitle.trim();
+        if (!trimmedTitle || trimmedTitle === displayTitle) {
+            setNextTitle(displayTitle);
+            setIsRenaming(false);
             return;
         }
 
-        onRename(roadmap.id, nextTitle.trim());
+        onRename(roadmap.id, trimmedTitle);
+        setIsRenaming(false);
     };
 
     const handleDelete = () => {
         if (!onDelete) return;
-
-        if (window.confirm("Delete this workspace? This cannot be undone.")) {
-            onDelete(roadmap.id);
-        }
+        onDelete(roadmap.id);
     };
 
     return (
-        <article className={`group flex h-full flex-col overflow-hidden rounded-[28px] border shadow-[0_22px_60px_rgba(0,0,0,0.18)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_32px_80px_rgba(0,0,0,0.28)] ${tone}`}>
-            <div className="flex items-start justify-between gap-4 border-b border-white/[0.08] px-6 py-5">
+        <Card className="flex h-full flex-col">
+            <CardHeader className="gap-4">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-3">
+                            <CardTitle className="truncate text-base">{displayTitle}</CardTitle>
+                            <span className="rounded-sm border border-border px-2 py-1 text-[11px] uppercase tracking-[0.12em] text-text-secondary">
+                                {roadmap.mode === "intern" ? "Intern" : "General"}
+                            </span>
+                        </div>
+                        <p className="mt-1 text-sm text-text-secondary">{getRoadmapStateLabel(stats.progressState)}</p>
+                    </div>
+
+                    <Button asChild variant="ghost" size="icon" aria-label={`Open ${displayTitle}`}>
+                        <Link href={`/workspace/${roadmap.id}`}>
+                            <ArrowRight size={16} />
+                        </Link>
+                    </Button>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
+                    <span>{stats.moduleCount} modules</span>
+                    <span aria-hidden="true">/</span>
+                    <span>{getRelativeTimeLabel(roadmap.updatedAt || roadmap.createdAt)}</span>
+                </div>
+            </CardHeader>
+
+            <CardContent className="flex flex-1 flex-col gap-5">
+                {isRenaming ? (
+                    <div className="space-y-3">
+                        <label htmlFor={`rename-${roadmap.id}`} className="text-sm font-medium text-text-primary">
+                            Rename workspace
+                        </label>
+                        <Input
+                            id={`rename-${roadmap.id}`}
+                            value={nextTitle}
+                            onChange={(event) => setNextTitle(event.target.value)}
+                        />
+                        <div className="flex gap-2">
+                            <Button type="button" size="sm" onClick={handleRename}>
+                                Save
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => {
+                                    setNextTitle(displayTitle);
+                                    setIsRenaming(false);
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
+                ) : null}
+
                 <div>
-                    <div className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] ${badgeTone}`}>
-                        {roadmap.mode === "intern" ? "Intern" : "General"}
+                    <div className="mb-2 flex items-center justify-between text-xs text-text-muted">
+                        <span>{stats.percent}% complete</span>
+                        <span>
+                            {stats.completedTasks}/{stats.totalTasks}
+                        </span>
                     </div>
-                    <h3 className="mt-4 font-display text-2xl leading-tight text-white">{displayTitle}</h3>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-[var(--color-surface-muted)]">
+                        <div
+                            className={cn(
+                                "h-full rounded-full transition-[width] duration-300",
+                                stats.progressState === "completed"
+                                    ? "bg-[var(--color-success)]"
+                                    : stats.progressState === "in-progress"
+                                      ? "bg-[var(--color-accent)]"
+                                      : "bg-[var(--color-border-strong)]",
+                            )}
+                            style={{ width: `${stats.percent}%` }}
+                        />
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    {onRename && (
-                        <button
+                <div className="grid grid-cols-2 gap-3 text-sm text-text-secondary">
+                    <div className="rounded-2xl border border-border bg-[var(--color-surface-subtle)] px-4 py-3">
+                        <p className="text-xs uppercase tracking-[0.12em] text-text-muted">State</p>
+                        <p className="mt-2 font-medium text-text-primary">{getRoadmapStateLabel(stats.progressState)}</p>
+                    </div>
+                    <div className="rounded-2xl border border-border bg-[var(--color-surface-subtle)] px-4 py-3">
+                        <p className="text-xs uppercase tracking-[0.12em] text-text-muted">Updated</p>
+                        <p className="mt-2 font-medium text-text-primary">{getRelativeTimeLabel(roadmap.updatedAt || roadmap.createdAt)}</p>
+                    </div>
+                </div>
+            </CardContent>
+
+            <CardFooter className="mt-auto flex flex-wrap justify-between gap-2 border-t border-border pt-4">
+                <div className="flex flex-wrap gap-2">
+                    {onRename ? (
+                        <Button
                             type="button"
-                            onClick={handleRename}
-                            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-text-secondary transition-colors hover:bg-white/[0.08] hover:text-white"
-                            aria-label="Rename workspace"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                                setNextTitle(displayTitle);
+                                setIsRenaming((current) => !current);
+                            }}
                         >
-                            <PencilLine size={15} />
-                        </button>
-                    )}
-                    {onDelete && (
-                        <button
-                            type="button"
-                            onClick={handleDelete}
-                            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-text-secondary transition-colors hover:border-red-400/20 hover:bg-red-500/10 hover:text-red-200"
-                            aria-label="Delete workspace"
-                        >
-                            <Trash2 size={15} />
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            <div className="flex flex-1 flex-col px-6 py-5">
-                <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-                        <p className="text-[11px] uppercase tracking-[0.22em] text-text-secondary">Modules</p>
-                        <p className="mt-3 text-2xl font-semibold text-white">{stats.moduleCount}</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-                        <p className="text-[11px] uppercase tracking-[0.22em] text-text-secondary">Tasks</p>
-                        <p className="mt-3 text-2xl font-semibold text-white">
-                            {stats.completedTasks}
-                            <span className="ml-1 text-base text-text-secondary">/ {stats.totalTasks}</span>
-                        </p>
-                    </div>
-                    <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-                        <p className="text-[11px] uppercase tracking-[0.22em] text-text-secondary">Status</p>
-                        <p className="mt-3 text-lg font-semibold text-white">{getRoadmapStateLabel(stats.progressState)}</p>
-                    </div>
+                            <PencilLine size={14} />
+                            {isRenaming ? "Editing" : "Rename"}
+                        </Button>
+                    ) : null}
+                    {onDelete ? (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button type="button" variant="ghost" size="sm">
+                                    <Trash2 size={14} />
+                                    Delete
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete workspace?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This removes the workspace from your library. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDelete}>Delete workspace</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    ) : null}
                 </div>
 
-                <div className="mt-5">
-                    <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.22em] text-text-secondary">
-                        <span>Progress</span>
-                        <span className="text-text-primary">{stats.percent}%</span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
-                        <div className={`h-full rounded-full transition-all duration-700 ${progressTone}`} style={{ width: `${stats.percent}%` }} />
-                    </div>
-                </div>
-
-                <div className="mt-auto flex items-center justify-between border-t border-white/[0.08] pt-5">
-                    <div className="flex items-center gap-3 text-sm text-text-secondary">
-                        <Layers size={15} />
-                        <span>{getRelativeTimeLabel(roadmap.updatedAt || roadmap.createdAt)}</span>
-                    </div>
-
-                    <Link
-                        href={`/workspace/${roadmap.id}`}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:bg-white/[0.1]"
-                    >
-                        Continue
-                        <ArrowRight size={15} />
+                <Button asChild variant="secondary" size="sm">
+                    <Link href={`/workspace/${roadmap.id}`}>
+                        Open
+                        <ArrowRight size={14} />
                     </Link>
-                </div>
-            </div>
-        </article>
+                </Button>
+            </CardFooter>
+        </Card>
     );
 }

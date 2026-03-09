@@ -36,6 +36,10 @@ export interface Roadmap {
     totalEstimatedDuration?: string;
     difficulty?: "beginner" | "intermediate" | "advanced";
     goal?: string;
+    isPublic?: boolean;
+    forkCount?: number;
+    forkedFrom?: string | null;
+    ownerId?: string;
 }
 
 /* Section discriminated union */
@@ -248,6 +252,73 @@ export interface StorageStatus {
     mode: StorageMode;
     email?: string | null;
     cloudAvailable: boolean;
+}
+
+export interface SrsItem {
+    id: string;
+    roadmapId: string;
+    sectionId?: string;
+    prompt: string;
+    answer: string;
+    easeFactor: number;
+    intervalDays: number;
+    repetitions: number;
+    dueAt: string;
+    lastReviewedAt?: string | null;
+}
+
+export interface CreditStatus {
+    planId: string;
+    allowance: number;
+    used: number;
+    remaining: number;
+    resetDate: string;
+}
+
+export interface CreditTransaction {
+    id: string;
+    kind: "workspace_generation" | "module_regeneration" | "quiz" | "export_pdf" | "review" | "adjustment";
+    amount: number;
+    createdAt: string;
+    metadata?: Record<string, string>;
+}
+
+export interface PrivacySettings {
+    anonymousAnalytics: boolean;
+    allowPublicGallery: boolean;
+}
+
+export interface ProgressSnapshot {
+    id: string;
+    roadmapId: string;
+    sectionId: string;
+    completionRate: number;
+    completedTasks: number;
+    totalTasks: number;
+    createdAt: string;
+}
+
+export interface CoachingSession {
+    id: string;
+    roadmapId: string;
+    date: string;
+    durationMinutes: number;
+    topics: string[];
+    nextSteps: string;
+}
+
+export interface PublicRoadmapCard {
+    id: string;
+    title: string;
+    summary?: string;
+    mode: "general" | "intern";
+    contentType?: string;
+    difficulty?: "beginner" | "intermediate" | "advanced";
+    totalEstimatedDuration?: string;
+    moduleCount?: number;
+    forkCount: number;
+    updatedAt: string;
+    isSeed?: boolean;
 }
 
 /* Storage interface */

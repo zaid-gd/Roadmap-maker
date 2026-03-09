@@ -58,7 +58,7 @@ export default function SettingsModal({ roadmap, isOpen, onClose, onUpdateBrandi
                                     value={titleOverride}
                                     onChange={(e) => setTitleOverride(e.target.value)}
                                     placeholder={roadmap.title}
-                                    className="w-full bg-obsidian-surface border border-border-subtle rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-colors"
+                                    className="w-full bg-obsidian-surface border border-border-subtle rounded-lg px-4 py-2 text-sm text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
                                 />
                                 <p className="text-sm text-text-secondary mt-1">Overrides the title shown in the sidebar and header.</p>
                             </div>
@@ -73,7 +73,7 @@ export default function SettingsModal({ roadmap, isOpen, onClose, onUpdateBrandi
                                             value={logoUrl}
                                             onChange={(e) => setLogoUrl(e.target.value)}
                                             placeholder="https://example.com/logo.png"
-                                            className="w-full bg-obsidian-surface border border-border-subtle rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-colors"
+                                            className="w-full bg-obsidian-surface border border-border-subtle rounded-lg pl-9 pr-4 py-2 text-sm text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
                                         />
                                     </div>
                                 </div>
@@ -91,7 +91,7 @@ export default function SettingsModal({ roadmap, isOpen, onClose, onUpdateBrandi
                                     />
                                     <span className="text-sm font-mono text-text-secondary">{accentColor}</span>
                                 </div>
-                                <p className="text-sm text-text-secondary mt-1">Replaces the default indigo accent color.</p>
+                                <p className="text-sm text-text-secondary mt-1">Replaces the workspace accent color.</p>
                             </div>
 
                             <div className="pt-2 border-t border-border">

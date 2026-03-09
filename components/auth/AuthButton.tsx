@@ -3,10 +3,11 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { HardDrive, Loader2, LogOut, UserRound } from "lucide-react";
+import { HardDrive, Loader2, LogOut } from "lucide-react";
 import { getStorage } from "@/lib/storage";
 import { createClient as createSupabaseClient } from "@/utils/supabase/client";
 import { isSupabaseConfigured } from "@/utils/supabase/config";
+import { cn } from "@/lib/utils";
 
 type AuthState = {
     email: string | null;
@@ -63,7 +64,7 @@ export default function AuthButton() {
 
     if (loading) {
         return (
-            <div className="inline-flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 text-xs uppercase tracking-wider text-text-secondary">
+            <div className="inline-flex min-h-10 items-center gap-2 rounded-md border border-border bg-surface px-3 text-sm text-text-muted">
                 <Loader2 size={14} className="animate-spin" />
                 Account
             </div>
@@ -75,11 +76,11 @@ export default function AuthButton() {
         return (
             <Link
                 href={`/auth${next}`}
-                className="inline-flex items-center gap-2 rounded-lg border border-border/50 px-4 py-2 text-xs font-bold uppercase tracking-wider text-text-primary transition-colors hover:border-white/20 hover:bg-white/5"
+                className="button-primary min-h-10 px-4 text-sm"
                 title="Your work stays in this browser until you sign in."
             >
                 <HardDrive size={14} />
-                Enable Sync
+                Sign in
             </Link>
         );
     }
@@ -95,7 +96,7 @@ export default function AuthButton() {
             type="button"
             onClick={() => void handleSignOut()}
             disabled={isPending}
-            className="inline-flex items-center gap-2 rounded-lg border border-border/50 px-4 py-2 text-xs font-bold uppercase tracking-wider text-text-primary transition-colors hover:border-white/20 hover:bg-white/5 disabled:opacity-60"
+            className={cn("button-secondary min-h-10 px-4 text-sm disabled:opacity-60", isPending && "pointer-events-none")}
             title={authState.email ?? "Signed in"}
         >
             {isPending ? <Loader2 size={14} className="animate-spin" /> : <LogOut size={14} />}

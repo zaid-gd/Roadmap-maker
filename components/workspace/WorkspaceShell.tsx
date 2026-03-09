@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import type { Roadmap, Section, ModuleSection as ModuleSectionType, CalendarSection } from "@/types";
+import type { Roadmap, Section, ModuleSection as ModuleSectionType, CalendarSection, SrsItem } from "@/types";
 import { useProgress } from "@/hooks/useProgress";
 import { useStreak } from "@/hooks/useStreak";
 import { useAchievements, BadgeType, BADGES_CONFIG } from "@/hooks/useAchievements";
@@ -10,6 +10,19 @@ import ProgressRing from "@/components/shared/ProgressRing";
 import SectionRenderer from "@/components/workspace/SectionRenderer";
 import ShareEmbedModal from "@/components/workspace/ShareEmbedModal";
 import SettingsModal from "@/components/workspace/SettingsModal";
+import SrsReviewModal from "@/components/workspace/SrsReviewModal";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import Link from "next/link";
 import { SECTION_LABELS } from "@/lib/constants";
@@ -19,10 +32,11 @@ import { exportAsMarkdown, exportAsJSON, exportAsPDF } from "@/lib/export";
 import { saveVersion, getVersions } from "@/lib/versioning";
 import { getUserConfig } from "@/lib/userConfig";
 import { getStorage } from "@/lib/storage";
+import { seedSrsItems } from "@/lib/srs";
 
 interface WorkspaceShellProps {
     roadmap: Roadmap;
-    onUpdateSection: (sectionId: string, updater: (s: Section) => Section) => void;
+    onUpdateSection?: (sectionId: string, updater: (s: Section) => Section) => void;
     onUpdateRoadmap?: (updates: Partial<Roadmap>) => void;
     isEmbed?: boolean;
     isReadOnly?: boolean;
@@ -41,10 +55,36 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
     const { sessionTimeMs, getModuleTime } = useTimeTracker(activeSectionId !== "dashboard" ? activeSectionId : undefined);
     const router = useRouter();
     const [userConfig, setUserConfig] = useState<any>(null);
+    const [srsItems, setSrsItems] = useState<SrsItem[]>([]);
+    const [isSrsModalOpen, setIsSrsModalOpen] = useState(false);
+    const srsStorageKey = useMemo(() => `zns:v1:srs:${roadmap.id}`, [roadmap.id]);
 
     useEffect(() => {
         setUserConfig(getUserConfig());
     }, []);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const seededItems = seedSrsItems(roadmap);
+        let storedItems: SrsItem[] = [];
+
+        try {
+            const stored = localStorage.getItem(srsStorageKey);
+            storedItems = stored ? JSON.parse(stored) as SrsItem[] : [];
+        } catch {
+            storedItems = [];
+        }
+
+        const mergedItems = new Map(seededItems.map((item) => [item.id, item]));
+        storedItems.forEach((item) => {
+            mergedItems.set(item.id, item);
+        });
+
+        const nextItems = Array.from(mergedItems.values());
+        localStorage.setItem(srsStorageKey, JSON.stringify(nextItems));
+        setSrsItems(nextItems);
+    }, [roadmap, srsStorageKey]);
 
     // Tour State
     const [tourStep, setTourStep] = useState(-1);
@@ -86,6 +126,8 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
     const [showExportMenu, setShowExportMenu] = useState(false);
     const [showVersionHistory, setShowVersionHistory] = useState(false);
     const [versions, setVersions] = useState<any[]>([]);
+    const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+    const [versionToRestore, setVersionToRestore] = useState<any | null>(null);
 
     useEffect(() => {
         if (roadmap?.id) {
@@ -157,26 +199,28 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
         if (tourStep < 0) return;
         const ids = ["tour-sidebar", "tour-progress", "tour-first-module", "tour-mark-complete"];
         const id = ids[tourStep];
+        const el = document.getElementById(id);
+
+        if (!el) return;
 
         const updateRect = () => {
-            const el = document.getElementById(id);
-            if (el) {
-                setTourTarget(el.getBoundingClientRect());
-                el.classList.add("relative", "z-[60]");
-            }
+            setTourTarget(el.getBoundingClientRect());
         };
 
+        el.classList.add("relative", "z-[60]");
         updateRect();
-        const interval = setInterval(updateRect, 200);
+        const resizeObserver = new ResizeObserver(updateRect);
+        resizeObserver.observe(el);
         window.addEventListener("resize", updateRect);
+        window.addEventListener("scroll", updateRect, true);
 
         return () => {
-            clearInterval(interval);
+            resizeObserver.disconnect();
             window.removeEventListener("resize", updateRect);
-            const el = document.getElementById(id);
-            if (el) el.classList.remove("relative", "z-[60]");
+            window.removeEventListener("scroll", updateRect, true);
+            el.classList.remove("relative", "z-[60]");
         };
-    }, [tourStep]);
+    }, [tourStep, activeSectionId]);
 
     const getModuleProgress = (section: Section): number => {
         if (section.type === "module") {
@@ -379,6 +423,42 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
         if (window.innerWidth < 1024) setSidebarOpen(false);
     };
 
+    const handleResetProgress = () => {
+        const freshSections = roadmap.sections.map((section) => {
+            if (section.type === "module") {
+                return {
+                    ...section,
+                    data: {
+                        ...section.data,
+                        completed: false,
+                        tasks: (section.data.tasks || []).map((task) => ({
+                            ...task,
+                            completed: false,
+                            subtasks: (task.subtasks || []).map((subtask) => ({ ...subtask, completed: false })),
+                        })),
+                    },
+                };
+            }
+
+            return section;
+        });
+
+        onUpdateRoadmap?.({ sections: freshSections });
+        setIsResetDialogOpen(false);
+        window.location.reload();
+    };
+
+    const handleRestoreVersion = () => {
+        if (!versionToRestore) return;
+
+        saveVersion(roadmap);
+        const restored = { ...roadmap, sections: versionToRestore.sections };
+        onUpdateRoadmap?.(restored);
+        setVersionToRestore(null);
+        setShowVersionHistory(false);
+        window.location.reload();
+    };
+
     // Calculate intelligent insights
     const mostTimeSpentModule = useMemo(() => {
         let maxTime = 0;
@@ -402,6 +482,15 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }, [roadmap]);
 
+    const dueSrsItems = useMemo(() => {
+        const now = Date.now();
+        return srsItems
+            .filter((item) => item.roadmapId === roadmap.id)
+            .filter((item) => new Date(item.dueAt).getTime() <= now)
+            .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())
+            .slice(0, 12);
+    }, [roadmap.id, srsItems]);
+
     const formatTime = (ms: number) => {
         const hrs = Math.floor(ms / 3600000);
         const mins = Math.floor((ms % 3600000) / 60000);
@@ -409,9 +498,66 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
         return `${mins}m`;
     };
 
+    const handleSaveSrsItems = useCallback(async (reviewedItems: SrsItem[]) => {
+        if (reviewedItems.length === 0) return;
+
+        const reviewedLookup = new Map(reviewedItems.map((item) => [item.id, item]));
+
+        setSrsItems((current) => {
+            const merged = current.map((item) => reviewedLookup.get(item.id) ?? item);
+            localStorage.setItem(srsStorageKey, JSON.stringify(merged));
+            return merged;
+        });
+
+        try {
+            await fetch("/api/srs/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ items: reviewedItems }),
+            });
+        } catch {
+            // Signed-out users stay local-first; sync failure is non-blocking here.
+        }
+    }, [srsStorageKey]);
+
+    const getUtilityIcon = (type: string) => {
+        if (type === "milestones") return <Target size={16} aria-hidden="true" />;
+        if (type === "tasks") return <ListTodo size={16} aria-hidden="true" />;
+        if (type === "progress") return <BarChart2 size={16} aria-hidden="true" />;
+        if (type === "resources") return <BookOpen size={16} aria-hidden="true" />;
+        if (type === "videos") return <Video size={16} aria-hidden="true" />;
+        if (type === "calendar") return <Calendar size={16} aria-hidden="true" />;
+        if (type === "notes") return <FileText size={16} aria-hidden="true" />;
+        if (type === "glossary") return <Braces size={16} aria-hidden="true" />;
+        if (type === "submissions") return <Printer size={16} aria-hidden="true" />;
+
+        switch (type) {
+            case "milestones":
+                return "🏁";
+            case "tasks":
+                return "✅";
+            case "progress":
+                return "📊";
+            case "resources":
+                return "📚";
+            case "videos":
+                return "🎥";
+            case "calendar":
+                return "📅";
+            case "notes":
+                return "📝";
+            case "glossary":
+                return "📖";
+            case "submissions":
+                return "📤";
+            default:
+                return "🔧";
+        }
+    };
+
     return (
         <div
-            className="h-screen flex flex-col overflow-hidden bg-obsidian selection:bg-[var(--workspace-accent)]/30"
+            className="workspace-shell-neutral h-screen flex flex-col overflow-hidden bg-obsidian selection:bg-[var(--workspace-accent)]/20"
             style={{
                 "--color-indigo-500": accentColor,
                 "--color-indigo-600": accentColor,
@@ -436,7 +582,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                 {/* Sidebar */}
                 <aside
                     id="tour-sidebar"
-                    className={`${sidebarOpen ? "w-64 sm:w-72" : "w-16"} shrink-0 border-r border-border bg-obsidian-light backdrop-blur-sm overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-30 flex flex-col group`}
+                    className={`${sidebarOpen ? "w-64 sm:w-72" : "w-16"} shrink-0 border-r border-border bg-[var(--color-surface)] overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-30 flex flex-col group`}
                 >
                     {/* Header: Collapse Toggle */}
                     <div className="h-14 flex items-center px-4 border-b border-border">
@@ -444,9 +590,11 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                             type="button"
                             onClick={() => setSidebarOpen(!sidebarOpen)}
                             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 transition-colors text-text-secondary hover:text-white shrink-0"
-                            title="Toggle Sidebar (Ctrl+\)"
+                            title="Toggle Sidebar (Ctrl+\\)"
+                            aria-label="Toggle sidebar"
                         >
-                            |||
+                            <span aria-hidden="true" className="text-sm font-semibold tracking-[-0.3em]">|||</span>
+                            <span className="sr-only">Toggle sidebar</span>
                         </button>
                         {sidebarOpen && (
                             <div className="ml-3 flex items-center gap-2 truncate">
@@ -470,16 +618,17 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                             <div className="p-4 space-y-4">
                                 <div className="relative">
                                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
-                                    <input
+                                    <Input
                                         type="text"
-                                        placeholder="Search course..."
+                                        placeholder="Search workspace..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full bg-obsidian-surface border border-border-subtle rounded-lg pl-9 pr-4 py-2 text-xs text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                                        aria-label="Search workspace"
+                                        className="h-9 border-border bg-[var(--color-surface-subtle)] pl-9 pr-4 text-xs text-text-primary placeholder:text-text-muted"
                                     />
                                 </div>
 
-                                <div className="bg-obsidian-surface border border-border rounded-lg p-3">
+                                <div className="rounded-md border border-border bg-[var(--color-surface-subtle)] p-3">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="font-sans-display text-[12px] uppercase tracking-widest text-text-secondary">Total Progress</span>
                                         <span className="font-sans-display text-[12px] text-cyan-400 font-bold">{progress.overall}%</span>
@@ -499,10 +648,10 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                     onClick={() => onNavigate("dashboard")}
                                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 text-sm hover:bg-white/5 ${activeSectionId === "dashboard" ? "bg-indigo-500/12 border-l-[3px] border-indigo-500 text-white font-medium font-medium" : "text-text-secondary"
                                         } ${!sidebarOpen && 'justify-center'}`}
-                                    title="Course Dashboard"
+                                    title="Overview"
                                 >
                                     <LayoutDashboard size={sidebarOpen ? 18 : 20} className="shrink-0" />
-                                    {sidebarOpen && <span className="truncate">Course Dashboard</span>}
+                                    {sidebarOpen && <span className="truncate">Overview</span>}
                                 </button>
                             </div>
 
@@ -581,7 +730,10 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                                         }`}
                                                     onClick={() => onNavigate(section.id)}
                                                 >
-                                                    <span className="w-5 shrink-0 text-center opacity-70">{getSectionIcon(section.type, 0)}</span>
+                                                    <span className="w-5 shrink-0 text-center opacity-70">
+                                                        {getUtilityIcon(section.type)}
+                                                        <span className="sr-only">{label}</span>
+                                                    </span>
                                                     <span className="truncate">{label}</span>
                                                 </button>
                                             );
@@ -609,7 +761,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                             <span>Settings</span>
                                         </Link>
                                         {userConfig?.useCustomKey && (
-                                            <div className="flex items-center gap-1.5 px-3 py-1 text-cyan-400 text-[10px] uppercase tracking-wider font-medium" title={`Using your ${userConfig.provider} API key`}>
+                                            <div className="flex items-center gap-1.5 px-3 py-1 text-cyan-400 text-[10px] uppercase tracking-wider font-medium" title="Using your custom AI provider">
                                                 <Key size={12} /> Custom API
                                             </div>
                                         )}
@@ -617,36 +769,32 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                             <div className="flex items-center justify-between px-3 py-1 mt-1 mb-1">
                                                 <div className="flex items-center gap-1.5 text-text-secondary opacity-70">
                                                     <HardDrive size={12} />
-                                                    <span className="text-[10px] uppercase tracking-wider font-medium">Progress saved in your browser</span>
+                                                    <span className="text-[10px] uppercase tracking-wider font-medium">Saved in this browser</span>
                                                 </div>
-                                                <button
-                                                    onClick={() => {
-                                                        if (window.confirm("Are you sure you want to reset all progress? This cannot be undone.")) {
-                                                            const freshSections = roadmap.sections.map(s => {
-                                                                if (s.type === "module") {
-                                                                    return {
-                                                                        ...s,
-                                                                        data: {
-                                                                            ...s.data,
-                                                                            completed: false,
-                                                                            tasks: (s.data.tasks || []).map(t => ({
-                                                                                ...t,
-                                                                                completed: false,
-                                                                                subtasks: (t.subtasks || []).map(st => ({ ...st, completed: false }))
-                                                                            }))
-                                                                        }
-                                                                    };
-                                                                }
-                                                                return s;
-                                                            });
-                                                            onUpdateRoadmap?.({ sections: freshSections });
-                                                            window.location.reload();
-                                                        }
-                                                    }}
-                                                    className="text-[10px] uppercase tracking-wider font-bold text-red-400 hover:text-red-300 transition-colors"
-                                                >
-                                                    Reset
-                                                </button>
+                                                <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                                                    <AlertDialogTrigger asChild>
+                                                        <button
+                                                            type="button"
+                                                            className="text-[10px] uppercase tracking-wider font-bold text-red-400 hover:text-red-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)]"
+                                                        >
+                                                            Reset
+                                                        </button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Reset all workspace progress?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                This clears completion state for every module task and subtask in this workspace. The action cannot be undone.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={handleResetProgress}>
+                                                                Reset progress
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
                                             </div>
                                         )}
                                     </>
@@ -665,7 +813,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                             <Settings size={18} />
                                         </Link>
                                         {userConfig?.useCustomKey && (
-                                            <div className="flex items-center gap-1.5 text-cyan-400 text-[8px] uppercase tracking-wider font-medium" title={`Using your ${userConfig.provider} API key`}>
+                                            <div className="flex items-center gap-1.5 text-cyan-400 text-[8px] uppercase tracking-wider font-medium" title="Using your custom AI provider">
                                                 <Key size={10} />
                                             </div>
                                         )}
@@ -685,10 +833,10 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                 )}
 
                 {/* Main Content Area */}
-                <main className="flex-1 overflow-y-auto relative bg-obsidian flex flex-col">
+                <main id="main-content" className="flex-1 overflow-y-auto relative bg-obsidian flex flex-col">
                     {/* Workspace Header */}
                     {!isEmbed && !isReadOnly && (
-                        <div className="sticky top-0 z-30 flex-shrink-0 border-b border-border bg-obsidian/80 backdrop-blur-md flex items-center justify-between px-6 py-3">
+                        <div className="sticky top-0 z-30 flex-shrink-0 border-b border-border bg-[var(--color-page)]/95 backdrop-blur-md flex items-center justify-between px-6 py-3">
                             <div className="flex-1">
                                 {/* Potential breadcrumbs or workspace specific title override here */}
                             </div>
@@ -698,6 +846,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                     onClick={() => setShowShortcuts(!showShortcuts)}
                                     className="flex items-center justify-center w-8 h-8 rounded-lg bg-obsidian-surface text-text-secondary hover:text-white hover:bg-white/5 transition-colors border border-border"
                                     title="Keyboard Shortcuts"
+                                    aria-label="Open keyboard shortcuts"
                                 >
                                     <HelpCircle size={16} />
                                 </button>
@@ -705,7 +854,13 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                     <div className="absolute top-16 right-6 w-80 bg-obsidian-elevated border border-border rounded-xl shadow-2xl z-50 animate-fade-in p-5">
                                         <div className="flex items-center justify-between mb-4">
                                             <h3 className="font-sans-display text-xs uppercase tracking-widest text-text-primary font-bold">Keyboard Shortcuts</h3>
-                                            <button onClick={() => setShowShortcuts(false)} className="text-text-secondary hover:text-white"><X size={14} /></button>
+                                            <button
+                                                onClick={() => setShowShortcuts(false)}
+                                                className="text-text-secondary hover:text-white"
+                                                aria-label="Close keyboard shortcuts"
+                                            >
+                                                <X size={14} />
+                                            </button>
                                         </div>
                                         <div className="space-y-2">
                                             {[
@@ -723,6 +878,16 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                         </div>
                                     </div>
                                 )}
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSrsModalOpen(true)}
+                                    disabled={dueSrsItems.length === 0}
+                                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-obsidian-surface px-3 py-2 text-xs font-bold uppercase tracking-widest text-text-secondary transition-colors hover:text-white hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+                                    title={dueSrsItems.length === 0 ? "No spaced repetition cards are due right now" : `Review ${dueSrsItems.length} spaced repetition cards`}
+                                >
+                                    <History size={14} />
+                                    {dueSrsItems.length > 0 ? `Review ${dueSrsItems.length}` : "Review Cards"}
+                                </button>
                                 {/* Export Dropdown */}
                                 <div className="relative">
                                     <button
@@ -751,6 +916,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                     onClick={() => setShowVersionHistory(true)}
                                     className="flex items-center justify-center w-8 h-8 rounded-lg bg-obsidian-surface text-text-secondary hover:text-white hover:bg-white/5 transition-colors border border-border"
                                     title="Version History"
+                                    aria-label="Open version history"
                                 >
                                     <History size={16} />
                                 </button>
@@ -771,7 +937,8 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                         {isLowQuality && (
                             <div className="bg-indigo-500/10 border-b border-indigo-500/20 text-indigo-400 py-3 px-4 flex flex-col sm:flex-row items-center justify-center gap-4 text-sm z-10 relative">
                                 <span className="flex items-center gap-2">
-                                    ⚠️ Your content generated a minimal workspace. For richer results, try adding more detail to your content or use a longer guide.
+                                    <Info size={16} aria-hidden="true" />
+                                    Your content generated a minimal workspace. For richer results, try adding more detail to your content or use a longer guide.
                                 </span>
                                 <button
                                     onClick={() => router.push('/create')}
@@ -855,13 +1022,23 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                                 <h4 className="font-display text-base font-semibold text-text-primary font-medium mb-2">{getMotivationalMessage(progress.overall)}</h4>
                                                 <p className="text-sm text-text-secondary mb-8 font-sans-display uppercase tracking-widest">{progress.completedTasks} of {progress.totalTasks} Tasks Completed</p>
 
-                                                <button
-                                                    onClick={() => onNavigate(firstIncompleteModule.id)}
-                                                    className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-sans-display text-xs uppercase tracking-widest font-bold rounded-lg transition-all flex items-center gap-3 group drop-shadow-[0_0_15px_rgba(99,102,241,0.4)]"
-                                                >
-                                                    Continue Learning
-                                                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                                                </button>
+                                                <div className="flex flex-col gap-3 sm:flex-row">
+                                                    <button
+                                                        onClick={() => onNavigate(firstIncompleteModule.id)}
+                                                        className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-sans-display text-xs uppercase tracking-widest font-bold rounded-lg transition-all flex items-center gap-3 group drop-shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+                                                    >
+                                                        Continue Learning
+                                                        <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsSrsModalOpen(true)}
+                                                        disabled={dueSrsItems.length === 0 || isReadOnly}
+                                                        className="px-6 py-4 border border-border-subtle bg-obsidian-elevated text-text-primary font-sans-display text-xs uppercase tracking-widest font-bold rounded-lg transition-colors hover:border-indigo-500/40 hover:text-indigo-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    >
+                                                        {dueSrsItems.length > 0 ? `Review ${dueSrsItems.length} Cards` : "No Cards Due"}
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1050,12 +1227,12 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                             </div>
                         ) : activeSection ? (
                             <div className="p-6 sm:p-8 lg:p-12 max-w-5xl mx-auto relative z-10 min-h-full">
-                                <SectionRenderer
-                                    section={activeSection}
-                                    roadmap={roadmap}
-                                    onUpdate={(updater) => onUpdateSection(activeSection.id, updater)}
-                                    onApiError={onApiError}
-                                />
+                                    <SectionRenderer
+                                        section={activeSection}
+                                        roadmap={roadmap}
+                                        onUpdate={(updater) => onUpdateSection?.(activeSection.id, updater)}
+                                        onApiError={onApiError}
+                                    />
                             </div>
                         ) : null}
                     </div>
@@ -1093,6 +1270,13 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                     </button>
                 </div>
             )}
+
+            <SrsReviewModal
+                isOpen={isSrsModalOpen}
+                items={dueSrsItems}
+                onClose={() => setIsSrsModalOpen(false)}
+                onSave={handleSaveSrsItems}
+            />
 
             {/* TOUR OVERLAY */}
             {tourStep >= 0 && (
@@ -1142,7 +1326,13 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                     <div className="w-full max-w-md bg-obsidian border-l border-border h-full shadow-2xl animate-in slide-in-from-right duration-300 overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="p-6 border-b border-border flex items-center justify-between sticky top-0 bg-obsidian z-10">
                             <h3 className="font-sans-display text-xs uppercase tracking-widest text-text-primary font-bold">Version History</h3>
-                            <button onClick={() => setShowVersionHistory(false)} className="text-text-secondary hover:text-white"><X size={16} /></button>
+                            <button
+                                onClick={() => setShowVersionHistory(false)}
+                                aria-label="Close version history"
+                                className="text-text-secondary hover:text-white"
+                            >
+                                <X size={16} />
+                            </button>
                         </div>
                         <div className="p-6 space-y-4">
                             {versions.length === 0 ? (
@@ -1153,16 +1343,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                         <div className="flex items-center justify-between">
                                             <span className="font-bold text-text-primary">{v.label}</span>
                                             <button
-                                                onClick={async () => {
-                                                    if (window.confirm("Restore this version? Current progress will be saved as a new version.")) {
-                                                        saveVersion(roadmap);
-                                                        const restored = { ...roadmap, sections: v.sections };
-                                                        // We need to update parent. Assuming onUpdateRoadmap exists.
-                                                        onUpdateRoadmap?.(restored);
-                                                        setShowVersionHistory(false);
-                                                        window.location.reload();
-                                                    }
-                                                }}
+                                                onClick={() => setVersionToRestore(v)}
                                                 className="text-xs bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 px-2 py-1 rounded border border-indigo-500/30"
                                             >
                                                 Restore
@@ -1178,6 +1359,30 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                     </div>
                 </div>
             )}
+
+            <AlertDialog
+                open={Boolean(versionToRestore)}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setVersionToRestore(null);
+                    }
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Restore saved version?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Your current progress will be saved as a new version before this snapshot is restored.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleRestoreVersion}>
+                            Restore version
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* Modals */}
             <ShareEmbedModal

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { ModuleSection as ModuleSectionType, Section, Task, Roadmap, Resource } from "@/types";
 import SmartEmbed from "@/components/shared/SmartEmbed";
-import { CheckCircle2, Clock, ChevronRight, BookOpen, Video, ListTodo, FileText, X, Navigation, Circle, RefreshCw, BarChart2, Target } from "lucide-react";
+import { getAiProviderInvalidKeyMessage } from "@/lib/ai-config";
+import { getActiveApiKey, getActiveModel, getUserConfig } from "@/lib/userConfig";
+import { CheckCircle2, Clock, ChevronRight, BookOpen, Video, ListTodo, FileText, X, Navigation, Circle, RefreshCw, BarChart2, Target, Link2, Wrench, Code2, GraduationCap, Paperclip } from "lucide-react";
 
 interface Props {
     section: ModuleSectionType;
@@ -13,7 +15,21 @@ interface Props {
     onApiError?: (error: { message: string }) => void;
 }
 
-type TabType = 'overview' | 'tasks' | 'resources' | 'videos' | 'notes';
+type TabType = 'overview' | 'tasks' | 'resources' | 'videos' | 'quiz' | 'notes';
+
+interface QuizQuestion {
+    id: string;
+    prompt: string;
+    choices: string[];
+    answerIndex: number;
+    explanation: string;
+}
+
+interface QuizPayload {
+    sectionId: string;
+    title: string;
+    questions: QuizQuestion[];
+}
 
 export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, onApiError }: Props) {
     const data = section.data;
@@ -21,15 +37,28 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, 
     const resources = data.resources || [];
     const videos = data.videos || [];
     const objectives = data.objectives || [];
+    const glossaryHasContent = Boolean(
+        roadmap?.sections.some((candidate) => candidate.type === "glossary" && candidate.data.length > 0),
+    );
+    const hasTaskQuizSource = tasks.some((task) => Boolean(task.title || task.description || task.text || task.notes));
+    const canGenerateQuiz = Boolean(
+        roadmap && (data.description?.trim() || data.notes?.trim() || glossaryHasContent || hasTaskQuizSource),
+    );
+    const quizCacheKey = roadmap ? `zns:v1:quiz:${roadmap.id}:${section.id}` : null;
+    const quizScoreKey = roadmap ? `zns:v1:quiz-score:${roadmap.id}:${section.id}:${new Date().toISOString().slice(0, 10)}` : null;
 
     // Calculate tabs to show
     const hasOverview = !!(data.description || data.concepts || objectives.length > 0);
-    const availableTabs: { id: TabType; label: string; icon: React.ReactNode }[] = [];
-    if (hasOverview) availableTabs.push({ id: 'overview', label: 'Overview', icon: <BookOpen size={14} /> });
-    if (tasks.length > 0) availableTabs.push({ id: 'tasks', label: 'Tasks', icon: <ListTodo size={14} /> });
-    if (resources.length > 0) availableTabs.push({ id: 'resources', label: 'Resources', icon: <FileText size={14} /> });
-    if (videos.length > 0) availableTabs.push({ id: 'videos', label: 'Videos', icon: <Video size={14} /> });
-    availableTabs.push({ id: 'notes', label: 'Notes', icon: <FileText size={14} /> });
+    const availableTabs: { id: TabType; label: string; icon: React.ReactNode }[] = useMemo(() => {
+        const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [];
+        if (hasOverview) tabs.push({ id: 'overview', label: 'Overview', icon: <BookOpen size={14} /> });
+        if (tasks.length > 0) tabs.push({ id: 'tasks', label: 'Tasks', icon: <ListTodo size={14} /> });
+        if (resources.length > 0) tabs.push({ id: 'resources', label: 'Resources', icon: <FileText size={14} /> });
+        if (videos.length > 0) tabs.push({ id: 'videos', label: 'Videos', icon: <Video size={14} /> });
+        if (canGenerateQuiz) tabs.push({ id: 'quiz', label: 'Quiz', icon: <Target size={14} /> });
+        tabs.push({ id: 'notes', label: 'Notes', icon: <FileText size={14} /> });
+        return tabs;
+    }, [canGenerateQuiz, hasOverview, resources.length, tasks.length, videos.length]);
 
     const [activeTab, setActiveTab] = useState<TabType>(availableTabs[0].id);
     const [activeVideoId, setActiveVideoId] = useState<string | null>(videos.length > 0 ? videos[0].id : null);
@@ -41,21 +70,21 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, 
     const [focusedTaskIdx, setFocusedTaskIdx] = useState(-1);
 
     const [notesText, setNotesText] = useState(data.notes || "");
-    const [saveStatus, setSaveStatus] = useState<"saved " | "saving..." | "">("");
+    const [saveStatus, setSaveStatus] = useState<"saved" | "saving..." | "">("");
+    const [quizData, setQuizData] = useState<QuizPayload | null>(null);
+    const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
+    const [quizScore, setQuizScore] = useState<number | null>(null);
+    const [quizSubmitted, setQuizSubmitted] = useState(false);
+    const [quizError, setQuizError] = useState("");
+    const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
 
     const handleRegenerate = async () => {
         setShowRegenConfirm(false);
         setIsRegenerating(true);
         setRegenError("");
         try {
-            // Get user config if available
-            let userConfig = null;
-            if (typeof window !== "undefined") {
-                try {
-                    const stored = localStorage.getItem("zns_user_config");
-                    if (stored) userConfig = JSON.parse(stored);
-                } catch {}
-            }
+            const userConfig = getUserConfig();
+            const activeApiKey = getActiveApiKey(userConfig);
 
             const payload: any = {
                 content: "Regenerate only this section data: " + JSON.stringify(section.data),
@@ -63,10 +92,10 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, 
                 title: section.title + " (REGENERATE SECTION ONLY)",
             };
 
-            if (userConfig?.useCustomKey && userConfig?.apiKey) {
-                payload.userApiKey = userConfig.apiKey;
+            if (userConfig?.useCustomKey && activeApiKey) {
+                payload.userApiKey = activeApiKey;
+                payload.userModel = getActiveModel(userConfig);
                 payload.userProvider = userConfig.provider;
-                payload.userModel = userConfig.model;
             }
 
             const res = await fetch("/api/parse-roadmap", {
@@ -77,8 +106,9 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, 
             const json = await res.json();
 
             if (json.error === "invalid_key") {
-                setRegenError("Your API key is invalid. Update it in Settings.");
-                onApiError?.({ message: "Your API key is invalid or expired. Update it in Settings." });
+                const invalidKeyMessage = json.message ?? getAiProviderInvalidKeyMessage(userConfig.provider);
+                setRegenError(invalidKeyMessage);
+                onApiError?.({ message: invalidKeyMessage });
                 setIsRegenerating(false);
                 return;
             }
@@ -108,6 +138,79 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, 
     useEffect(() => {
         setNotesText(section.data.notes || "");
     }, [section.id, section.data.notes]);
+
+    useEffect(() => {
+        if (!availableTabs.some((tab) => tab.id === activeTab)) {
+            setActiveTab(availableTabs[0].id);
+        }
+    }, [activeTab, availableTabs]);
+
+    useEffect(() => {
+        if (!quizCacheKey || typeof window === "undefined") {
+            setQuizData(null);
+            setSelectedAnswers({});
+            setQuizScore(null);
+            setQuizSubmitted(false);
+            return;
+        }
+
+        try {
+            const storedQuiz = localStorage.getItem(quizCacheKey);
+            setQuizData(storedQuiz ? JSON.parse(storedQuiz) as QuizPayload : null);
+        } catch {
+            setQuizData(null);
+        }
+
+        try {
+            const storedScore = quizScoreKey ? localStorage.getItem(quizScoreKey) : null;
+            if (!storedScore) {
+                setSelectedAnswers({});
+                setQuizScore(null);
+                setQuizSubmitted(false);
+                return;
+            }
+
+            const parsed = JSON.parse(storedScore) as { selectedAnswers?: Record<string, number>; score?: number };
+            setSelectedAnswers(parsed.selectedAnswers ?? {});
+            setQuizScore(typeof parsed.score === "number" ? parsed.score : null);
+            setQuizSubmitted(typeof parsed.score === "number");
+        } catch {
+            setSelectedAnswers({});
+            setQuizScore(null);
+            setQuizSubmitted(false);
+        }
+    }, [quizCacheKey, quizScoreKey]);
+
+    useEffect(() => {
+        if (notesText === (section.data.notes || "")) {
+            setSaveStatus("");
+            return;
+        }
+
+        setSaveStatus("saving...");
+        const timeoutId = window.setTimeout(() => {
+            onUpdate((candidate) => {
+                const moduleSection = candidate as ModuleSectionType;
+                return {
+                    ...moduleSection,
+                    data: {
+                        ...moduleSection.data,
+                        notes: notesText,
+                    },
+                };
+            });
+            setSaveStatus("saved");
+        }, 400);
+
+        const clearStatusId = window.setTimeout(() => {
+            setSaveStatus("");
+        }, 1600);
+
+        return () => {
+            window.clearTimeout(timeoutId);
+            window.clearTimeout(clearStatusId);
+        };
+    }, [notesText, onUpdate, section.data.notes]);
 
     let completedCount = 0;
     let totalCount = 0;
@@ -177,6 +280,79 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, 
         });
     };
 
+    const handleGenerateQuiz = async () => {
+        if (!roadmap) return;
+
+        setQuizError("");
+        setIsGeneratingQuiz(true);
+
+        try {
+            const userConfig = getUserConfig();
+            const activeApiKey = getActiveApiKey(userConfig);
+            const response = await fetch("/api/quiz/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    roadmap,
+                    sectionId: section.id,
+                    userApiKey: userConfig.useCustomKey ? activeApiKey : undefined,
+                    userModel: userConfig.useCustomKey ? getActiveModel(userConfig) : undefined,
+                    userProvider: userConfig.useCustomKey ? userConfig.provider : undefined,
+                }),
+            });
+
+            const payload = await response.json();
+            if (!payload.success || !payload.quiz) {
+                const message = payload.error === "insufficient_credits"
+                    ? "Not enough credits to generate a quiz. Upgrade or use your own provider key in Settings."
+                    : "Failed to generate a quiz for this module.";
+
+                setQuizError(message);
+                onApiError?.({ message });
+                return;
+            }
+
+            const nextQuiz = payload.quiz as QuizPayload;
+            setQuizData(nextQuiz);
+            setSelectedAnswers({});
+            setQuizScore(null);
+            setQuizSubmitted(false);
+
+            if (quizCacheKey) {
+                localStorage.setItem(quizCacheKey, JSON.stringify(nextQuiz));
+            }
+            if (quizScoreKey) {
+                localStorage.removeItem(quizScoreKey);
+            }
+        } catch {
+            const message = "An error occurred while generating the quiz.";
+            setQuizError(message);
+            onApiError?.({ message });
+        } finally {
+            setIsGeneratingQuiz(false);
+        }
+    };
+
+    const handleQuizChoice = (questionId: string, answerIndex: number) => {
+        if (quizSubmitted) return;
+        setSelectedAnswers((current) => ({ ...current, [questionId]: answerIndex }));
+    };
+
+    const handleQuizSubmit = () => {
+        if (!quizData) return;
+
+        const score = quizData.questions.reduce((total, question) => {
+            return total + (selectedAnswers[question.id] === question.answerIndex ? 1 : 0);
+        }, 0);
+
+        setQuizScore(score);
+        setQuizSubmitted(true);
+
+        if (quizScoreKey) {
+            localStorage.setItem(quizScoreKey, JSON.stringify({ score, selectedAnswers }));
+        }
+    };
+
     // Navigation logic
     const moduleSections = roadmap?.sections.filter(s => s.type === "module" || s.type === "milestones") || [];
     const currentIndex = moduleSections.findIndex(s => s.id === section.id);
@@ -185,15 +361,15 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, 
 
     const resourceTypeIcon = (type: string) => {
         switch (type) {
-            case "video": return "▶";
-            case "doc": return "📄";
-            case "pdf": return "📕";
-            case "link": return "🔗";
-            case "code": return "💻";
-            case "tool": return "🛠";
-            case "course": return "🎓";
-            case "book": return "📖";
-            default: return "📎";
+            case "video": return <Video size={18} />;
+            case "doc": return <FileText size={18} />;
+            case "pdf": return <BookOpen size={18} />;
+            case "link": return <Link2 size={18} />;
+            case "code": return <Code2 size={18} />;
+            case "tool": return <Wrench size={18} />;
+            case "course": return <GraduationCap size={18} />;
+            case "book": return <BookOpen size={18} />;
+            default: return <Paperclip size={18} />;
         }
     };
 
@@ -211,7 +387,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, 
                             <div className="flex items-center gap-3 mb-1">
                                 {data.estimatedTime && (
                                     <span className="font-sans-display text-[12px] uppercase tracking-[0.2em] text-text-secondary">
-                                        ⏱ {data.estimatedTime}
+                                        <Clock size={12} className="mr-1 inline-flex" /> {data.estimatedTime}
                                     </span>
                                 )}
                                 <span className="font-sans-display text-[12px] uppercase tracking-widest text-indigo-400 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20">
@@ -502,6 +678,132 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, 
                     </div>
                 )}
 
+                {activeTab === 'quiz' && (
+                    <div className="p-8 max-w-4xl animate-fade-in space-y-6">
+                        <div className="flex flex-col gap-3 border-b border-border pb-6 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h3 className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary">Knowledge Check</h3>
+                                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-text-secondary">
+                                    Turn this module into a short multiple-choice quiz based on its tasks, notes, glossary terms, and description.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => void handleGenerateQuiz()}
+                                disabled={isGeneratingQuiz}
+                                className="inline-flex items-center gap-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-indigo-300 transition-colors hover:bg-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <RefreshCw size={14} className={isGeneratingQuiz ? "animate-spin" : ""} />
+                                {quizData ? "Generate fresh quiz" : "Generate quiz"}
+                            </button>
+                        </div>
+
+                        {quizError && (
+                            <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                                {quizError}
+                            </div>
+                        )}
+
+                        {!quizData ? (
+                            <div className="rounded-2xl border border-dashed border-border bg-obsidian-surface/30 p-8 text-center">
+                                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-300">
+                                    <Target size={20} />
+                                </div>
+                                <h4 className="font-display text-2xl text-white">No quiz generated yet</h4>
+                                <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-text-secondary">
+                                    Generate a five-question review for this module when you want a fast checkpoint before moving on.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-5">
+                                {quizSubmitted && quizScore !== null && (
+                                    <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 p-5">
+                                        <div className="font-sans-display text-[11px] uppercase tracking-[0.2em] text-indigo-300">Quiz Score</div>
+                                        <div className="mt-2 font-display text-4xl text-white">
+                                            {quizScore} / {quizData.questions.length}
+                                        </div>
+                                        <p className="mt-2 text-sm text-text-secondary">
+                                            Your score is saved for today in this browser so you can review explanations without losing your answers.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {quizData.questions.map((question, index) => {
+                                    const selectedAnswer = selectedAnswers[question.id];
+                                    const isCorrect = selectedAnswer === question.answerIndex;
+
+                                    return (
+                                        <div key={question.id} className="rounded-2xl border border-border bg-obsidian-surface/40 p-6">
+                                            <div className="mb-4 flex items-start justify-between gap-4">
+                                                <div>
+                                                    <div className="mb-2 font-sans-display text-[11px] uppercase tracking-[0.2em] text-text-secondary">
+                                                        Question {index + 1}
+                                                    </div>
+                                                    <h4 className="font-display text-2xl leading-tight text-white">{question.prompt}</h4>
+                                                </div>
+                                                {quizSubmitted && (
+                                                    <span className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.15em] ${
+                                                        isCorrect
+                                                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                                                            : "border-red-500/30 bg-red-500/10 text-red-300"
+                                                    }`}>
+                                                        {isCorrect ? "Correct" : "Review"}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                {question.choices.map((choice, choiceIndex) => {
+                                                    const isSelected = selectedAnswer === choiceIndex;
+                                                    const showCorrectAnswer = quizSubmitted && question.answerIndex === choiceIndex;
+
+                                                    return (
+                                                        <button
+                                                            key={`${question.id}-${choiceIndex}`}
+                                                            type="button"
+                                                            onClick={() => handleQuizChoice(question.id, choiceIndex)}
+                                                            disabled={quizSubmitted}
+                                                            className={`w-full rounded-xl border px-4 py-3 text-left text-sm transition-all ${
+                                                                showCorrectAnswer
+                                                                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
+                                                                    : isSelected
+                                                                        ? "border-indigo-500/40 bg-indigo-500/10 text-white"
+                                                                        : "border-border bg-obsidian-light/60 text-text-primary hover:border-indigo-500/20 hover:bg-white/5"
+                                                            } disabled:cursor-default`}
+                                                        >
+                                                            <span className="mr-3 inline-flex h-6 w-6 items-center justify-center rounded-full border border-current/20 text-[11px] font-bold uppercase">
+                                                                {String.fromCharCode(65 + choiceIndex)}
+                                                            </span>
+                                                            {choice}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {quizSubmitted && (
+                                                <div className="mt-4 rounded-xl border border-border bg-black/20 px-4 py-3 text-sm leading-relaxed text-text-secondary">
+                                                    <span className="font-medium text-white">Explanation:</span> {question.explanation}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+
+                                {!quizSubmitted && (
+                                    <button
+                                        type="button"
+                                        onClick={handleQuizSubmit}
+                                        disabled={quizData.questions.some((question) => selectedAnswers[question.id] === undefined)}
+                                        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-xs font-bold uppercase tracking-[0.15em] text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        Submit answers
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* 4. Videos Tab */}
                 {activeTab === 'videos' && (
                     <div className="flex flex-col lg:flex-row h-full animate-fade-in">
@@ -544,7 +846,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, 
                                         </span>
                                         {v.duration && (
                                             <span className="font-sans-display text-[9px] uppercase tracking-widest text-text-secondary tabular-nums mt-1">
-                                                ⏱ {v.duration}
+                                                <Clock size={10} className="mr-1 inline-flex" /> {v.duration}
                                             </span>
                                         )}
                                     </button>
@@ -567,7 +869,7 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, 
                             value={notesText}
                             onChange={(e) => setNotesText(e.target.value)}
                             placeholder="Type your notes for this module here... Autosaves as you type."
-                            className="flex-1 w-full bg-obsidian-surface/30 border border-border-subtle rounded-xl p-6 font-body text-text-primary text-base leading-relaxed placeholder:text-text-secondary/30 focus:outline-none focus:border-indigo-500/50 resize-none transition-colors"
+                            className="flex-1 w-full bg-obsidian-surface/30 border border-border-subtle rounded-xl p-6 font-body text-text-primary text-base leading-relaxed placeholder:text-text-secondary/30 resize-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
                         />
                     </div>
                 )}
@@ -583,7 +885,8 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, 
                         : "opacity-30 cursor-not-allowed text-text-secondary"
                         }`}
                 >
-                    ← Previous
+                    <ChevronRight size={14} className="rotate-180" />
+                    Previous
                 </button>
                 <div className="flex gap-1">
                     {moduleSections.map((_, i) => (
@@ -598,7 +901,8 @@ export default function ModuleSection({ section, roadmap, onUpdate, onNavigate, 
                         : "opacity-30 cursor-not-allowed text-text-secondary"
                         }`}
                 >
-                    Next module →
+                    Next module
+                    <ChevronRight size={14} />
                 </button>
             </div>
         </div>

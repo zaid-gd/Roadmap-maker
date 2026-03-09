@@ -1,38 +1,39 @@
 "use client";
 
-import { use } from "react";
-import { useState } from "react";
-import { useRoadmap } from "@/hooks/useRoadmap";
-import WorkspaceShell from "@/components/workspace/WorkspaceShell";
-import Header from "@/components/layout/Header";
+import { use, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, X, Settings } from "lucide-react";
+import { AlertCircle, Search, Settings, X } from "lucide-react";
+import Header from "@/components/layout/Header";
+import WorkspaceShell from "@/components/workspace/WorkspaceShell";
+import { useRoadmap } from "@/hooks/useRoadmap";
 
 export default function WorkspacePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const { roadmap, updateSection, saveRoadmap } = useRoadmap(id);
-    const [apiError, setApiError] = useState<{message: string} | null>(null);
+    const [apiError, setApiError] = useState<{ message: string } | null>(null);
 
-    const handleApiError = (error: {message: string}) => {
+    const handleApiError = (error: { message: string }) => {
         setApiError(error);
     };
 
     if (!roadmap) {
         return (
-            <div className="min-h-full flex flex-col">
+            <div className="min-h-full bg-[var(--color-page)]">
                 <Header />
-                <main className="flex-1 pt-14 flex items-center justify-center">
-                    <div className="text-center animate-fade-in">
-                        <span className="text-5xl mb-4 block">🔍</span>
-                        <h2 className="font-display text-xl font-bold text-text-primary text-text-primary mb-2">
-                            Roadmap not found
-                        </h2>
-                        <p className="text-text-secondary mb-6">
-                            This workspace doesn&apos;t exist or was deleted.
+                <main className="page-shell flex min-h-[calc(100vh-4rem)] items-center justify-center pt-14">
+                    <div className="max-w-md text-center">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md border border-border bg-[var(--color-surface)] text-text-muted">
+                            <Search size={20} />
+                        </div>
+                        <h2 className="mt-6 text-3xl font-display tracking-[-0.03em] text-text-primary">Workspace not found</h2>
+                        <p className="mt-3 text-sm leading-7 text-text-secondary">
+                            This workspace does not exist anymore, or the link no longer points to saved content.
                         </p>
-                        <Link href="/" className="btn btn-primary">
-                            Go Home
-                        </Link>
+                        <div className="mt-6 flex justify-center">
+                            <Link href="/workspaces" className="button-primary">
+                                Back to library
+                            </Link>
+                        </div>
                     </div>
                 </main>
             </div>
@@ -41,21 +42,25 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
 
     return (
         <div>
-            {apiError && (
-                <div className="fixed top-0 left-0 right-0 z-[100] bg-red-500/10 border-b border-red-500/30 p-3 flex items-center justify-center gap-3 animate-in slide-in-from-top">
-                    <AlertCircle size={18} className="text-red-400" />
-                    <span className="text-red-400 text-sm">{apiError.message}</span>
-                    <Link href="/settings" className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs rounded border border-red-500/30 flex items-center gap-1">
-                        <Settings size={12} /> Go to Settings
-                    </Link>
-                    <button onClick={() => setApiError(null)} className="text-red-400 hover:text-white ml-2">
-                        <X size={16} />
-                    </button>
+            {apiError ? (
+                <div className="fixed left-0 right-0 top-0 z-[100] border-b border-[var(--color-danger)]/25 bg-[var(--color-danger)]/5 px-4 py-3">
+                    <div className="mx-auto flex max-w-4xl items-center justify-center gap-3 text-sm text-[var(--color-danger)]">
+                        <AlertCircle size={18} />
+                        <span>{apiError.message}</span>
+                        <Link href="/settings" className="button-secondary !min-h-9">
+                            <Settings size={12} />
+                            Open settings
+                        </Link>
+                        <button type="button" onClick={() => setApiError(null)} className="text-[var(--color-danger)] transition-colors hover:opacity-80">
+                            <X size={16} />
+                        </button>
+                    </div>
                 </div>
-            )}
-            <WorkspaceShell 
-                roadmap={roadmap} 
-                onUpdateSection={updateSection} 
+            ) : null}
+
+            <WorkspaceShell
+                roadmap={roadmap}
+                onUpdateSection={updateSection}
                 onUpdateRoadmap={(updates) => saveRoadmap({ ...roadmap, ...updates })}
                 onApiError={handleApiError}
             />

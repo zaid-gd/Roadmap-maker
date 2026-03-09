@@ -1,14 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { headers } from "next/headers";
+import { GeistMono } from "geist/font/mono";
+import { GeistSans } from "geist/font/sans";
 import "./globals.css";
-import Footer from "@/components/layout/Footer";
 import { Providers } from "@/components/shared/Providers";
 import { APP_NAME, APP_TAGLINE, BRAND_OWNER } from "@/lib/constants";
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://roadmap.znsnexus.com";
 
 export const viewport: Viewport = {
-    themeColor: "#0a0e1a",
+    themeColor: [
+        { media: "(prefers-color-scheme: light)", color: "#faf9f6" },
+        { media: "(prefers-color-scheme: dark)", color: "#0C0E14" },
+    ],
 };
 
 export const metadata: Metadata = {
@@ -18,8 +21,14 @@ export const metadata: Metadata = {
     },
     description: `Transform any roadmap, guide, or curriculum into a fully interactive workspace. Built by ${BRAND_OWNER}.`,
     metadataBase: new URL(appUrl),
+    manifest: "/manifest.json",
     alternates: {
         canonical: "/",
+    },
+    icons: {
+        icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+        shortcut: ["/favicon.svg"],
+        apple: ["/favicon.svg"],
     },
     openGraph: {
         title: `${APP_NAME} - Paste Any Guide, Get a Full Interactive Workspace`,
@@ -49,20 +58,17 @@ export default async function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const pathname = (await headers()).get("x-pathname") || "";
-    const hideFooter = ["/embed/", "/workspace/", "/share/"].some((prefix) => pathname.startsWith(prefix));
-
     return (
-        <html lang="en">
-            <head>
-                <meta name="color-scheme" content="dark" />
-            </head>
-            <body className="noise-overlay min-h-screen bg-obsidian">
+        <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+            <body className="min-h-screen bg-page text-text">
+                <a
+                    href="#main-content"
+                    className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:rounded focus:bg-[var(--color-accent)] focus:px-4 focus:py-2 focus:text-white"
+                >
+                    Skip to main content
+                </a>
                 <Providers>
-                    <div className="flex min-h-screen flex-col">
-                        <div className="flex-1">{children}</div>
-                        {!hideFooter && <Footer />}
-                    </div>
+                    {children}
                 </Providers>
             </body>
         </html>

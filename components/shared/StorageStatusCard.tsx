@@ -3,40 +3,38 @@
 import Link from "next/link";
 import { HardDrive, ShieldCheck, UserRound } from "lucide-react";
 import type { StorageStatus } from "@/types";
+import { cn } from "@/lib/utils";
 
 function getStatusMeta(status: StorageStatus) {
     if (status.mode === "synced-account") {
         return {
             icon: UserRound,
             eyebrow: "Synced account",
-            title: status.email ? `Sync enabled for ${status.email}` : "Sync enabled",
-            description:
-                "Roadmaps still save locally first, then sync to your signed-in Supabase account for backup and cross-device continuity.",
-            tone: "border-emerald-400/30 bg-emerald-500/10 text-emerald-100",
-            badge: "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
+            title: status.email ? status.email : "Cloud sync enabled",
+            description: "Work saves locally first, then syncs to your signed-in account.",
+            tone: "border-[var(--color-accent)]/20 bg-[var(--color-accent-soft)]/50",
+            badge: "text-[var(--color-accent)]",
         };
     }
 
     if (status.mode === "supabase-unavailable") {
         return {
             icon: ShieldCheck,
-            eyebrow: "Browser-only mode",
-            title: "Supabase sync is not configured",
-            description:
-                "This studio is currently running as a pure local-browser experience. Your work remains on this device until Supabase credentials are configured.",
-            tone: "border-white/10 bg-white/[0.03] text-text-primary",
-            badge: "border-white/10 bg-white/5 text-text-secondary",
+            eyebrow: "Browser only",
+            title: "Cloud sync unavailable",
+            description: "This environment is running without sync configuration.",
+            tone: "border-border bg-surface-subtle",
+            badge: "text-text-muted",
         };
     }
 
     return {
         icon: HardDrive,
-        eyebrow: "Local-only mode",
-        title: "Your roadmaps stay in this browser",
-        description:
-            "You can create and manage workspaces without an account. Sign in with email later when you want cloud backup, account billing, and cross-device sync.",
-        tone: "border-amber-400/30 bg-amber-500/10 text-amber-50",
-        badge: "border-amber-400/30 bg-amber-500/10 text-amber-100",
+        eyebrow: "Local only",
+        title: "Saved on this device",
+        description: "You can work without an account and enable sync later.",
+        tone: "border-border bg-surface",
+        badge: "text-text-muted",
     };
 }
 
@@ -52,25 +50,24 @@ export default function StorageStatusCard({ status, actionHref, actionLabel }: S
     const showAction = Boolean(actionHref && actionLabel && status.mode !== "synced-account");
 
     return (
-        <div className={`rounded-[28px] border p-6 shadow-[0_24px_70px_rgba(0,0,0,0.24)] ${meta.tone}`}>
-            <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-                <div className="max-w-2xl">
-                    <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] ${meta.badge}`}>
-                        <Icon size={13} />
-                        {meta.eyebrow}
+        <div className={cn("surface-panel flex flex-col gap-5 p-5", meta.tone)}>
+            <div className="flex items-start justify-between gap-4">
+                <div className="space-y-3">
+                    <div className={cn("inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em]", meta.badge)}>
+                        <Icon size={14} />
+                        <span>{meta.eyebrow}</span>
                     </div>
-                    <h3 className="mt-4 font-display text-2xl text-white">{meta.title}</h3>
-                    <p className="mt-3 max-w-2xl text-sm leading-7 text-text-secondary">{meta.description}</p>
+                    <div className="space-y-1">
+                        <h3 className="text-lg font-semibold text-text-primary">{meta.title}</h3>
+                        <p className="max-w-xl text-sm text-text-secondary">{meta.description}</p>
+                    </div>
                 </div>
 
-                {showAction && (
-                    <Link
-                        href={actionHref!}
-                        className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-medium text-text-primary transition-colors hover:bg-white/[0.1]"
-                    >
+                {showAction ? (
+                    <Link href={actionHref!} className="button-secondary shrink-0 whitespace-nowrap">
                         {actionLabel}
                     </Link>
-                )}
+                ) : null}
             </div>
         </div>
     );

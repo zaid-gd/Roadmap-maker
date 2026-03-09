@@ -2,8 +2,9 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CheckCircle2, Loader2, Mail, ShieldCheck } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { createClient as createSupabaseClient } from "@/utils/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface AuthFormProps {
     nextPath: string;
@@ -16,6 +17,7 @@ export default function AuthForm({ nextPath, initialError }: AuthFormProps) {
     const [message, setMessage] = useState("");
     const [error, setError] = useState(initialError ?? "");
     const [loading, setLoading] = useState(false);
+    const [focused, setFocused] = useState(false);
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -48,53 +50,50 @@ export default function AuthForm({ nextPath, initialError }: AuthFormProps) {
     };
 
     return (
-        <div className="w-full max-w-xl rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.16),_transparent_42%),linear-gradient(180deg,_rgba(26,29,39,0.98),_rgba(15,17,23,0.98))] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
+        <div className="w-full max-w-md rounded-md border border-border bg-[var(--color-surface-subtle)] p-8">
             <div className="mb-8">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-indigo-200">
-                    <ShieldCheck size={13} />
-                    Supabase Account
-                </div>
-                <h1 className="text-4xl font-display text-white">Sign in to sync your workspaces</h1>
-                <p className="mt-4 text-sm leading-7 text-text-secondary">
-                    This app saves locally by default. Sign in with email when you want account-owned Supabase sync, notes, and billing state to follow you across devices.
-                </p>
+                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-text-muted">Sign in</p>
+                <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-text-primary">Continue with email</h1>
+                <p className="mt-3 text-sm leading-6 text-text-secondary">Use a magic link to enable account-backed access across devices.</p>
             </div>
 
             <form className="space-y-5" onSubmit={handleSubmit}>
                 <label className="block">
-                    <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-text-secondary">Email address</span>
-                    <div className="relative">
-                        <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary" />
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(event) => setEmail(event.target.value)}
-                            required
-                            placeholder="you@example.com"
-                            className="w-full rounded-xl border border-white/10 bg-black/20 py-3 pl-12 pr-4 text-sm text-white outline-none transition-colors focus:border-indigo-400/40"
-                        />
-                    </div>
+                    <span className="mb-2 block text-xs font-medium uppercase tracking-[0.14em] text-text-secondary">Email address</span>
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        onFocus={() => setFocused(true)}
+                        onBlur={() => setFocused(false)}
+                        required
+                        placeholder="you@example.com"
+                        className="field-input"
+                    />
                 </label>
 
-                {message && (
-                    <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                {message ? (
+                    <div className="rounded-md border border-[color:rgba(47,166,125,0.24)] bg-[color:rgba(47,166,125,0.08)] px-4 py-3 text-sm text-text-primary">
                         <div className="flex items-start gap-3">
-                            <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+                            <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[var(--color-success)]" />
                             <span>{message}</span>
                         </div>
                     </div>
-                )}
+                ) : null}
 
-                {error && (
-                    <div className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                {error ? (
+                    <div className="rounded-md border border-[color:rgba(216,104,104,0.24)] bg-[color:rgba(216,104,104,0.08)] px-4 py-3 text-sm text-[var(--color-danger)]">
                         {error}
                     </div>
-                )}
+                ) : null}
 
                 <button
                     type="submit"
                     disabled={loading}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-obsidian transition-colors hover:bg-indigo-400 disabled:opacity-60"
+                    className={cn(
+                        "button-primary w-full justify-center",
+                        focused ? "opacity-100" : "opacity-90",
+                    )}
                 >
                     {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                     Email me a magic link
@@ -104,9 +103,9 @@ export default function AuthForm({ nextPath, initialError }: AuthFormProps) {
             <button
                 type="button"
                 onClick={() => router.push(nextPath)}
-                className="mt-4 w-full text-sm text-text-secondary transition-colors hover:text-white"
+                className="mt-4 inline-flex min-h-11 items-center text-sm text-text-secondary transition-colors hover:text-text-primary"
             >
-                Stay in local-only mode
+                Continue in local-only mode
             </button>
         </div>
     );

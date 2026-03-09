@@ -125,7 +125,7 @@ export default function Notes({ section, onUpdate }: Props) {
                             type="text"
                             value={activeNote.title}
                             onChange={(e) => updateNote(activeNote.id, { title: e.target.value })}
-                            className="w-full bg-transparent border-none text-2xl sm:text-3xl font-display font-black text-text-primary placeholder:text-text-secondary/40 focus:outline-none mb-2"
+                            className="mb-2 w-full bg-transparent border-none text-2xl font-display font-black text-text-primary placeholder:text-text-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 sm:text-3xl"
                             placeholder="Note Title"
                         />
                         <div className="flex items-center gap-4 text-xs font-bold text-text-secondary/60 uppercase tracking-widest">
@@ -140,7 +140,7 @@ export default function Notes({ section, onUpdate }: Props) {
                         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 31px, rgba(255,255,255,0.03) 31px, rgba(255,255,255,0.03) 32px)", backgroundPosition: "0 8px" }} />
 
                         <textarea
-                            className="w-full h-full bg-transparent border-none resize-none text-[15px] sm:text-base leading-8 font-serif text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-0 custom-scrollbar relative z-10 drop-shadow-sm"
+                            className="custom-scrollbar relative z-10 h-full w-full resize-none border-none bg-transparent text-[15px] font-serif leading-8 text-text-primary drop-shadow-sm placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 sm:text-base"
                             value={activeNote.content}
                             onChange={(e) => updateNote(activeNote.id, { content: e.target.value })}
                             onKeyDown={handleKeyDown}
