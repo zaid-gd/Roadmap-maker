@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ModalProps {
     isOpen: boolean;
@@ -40,30 +43,24 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = "ma
                 if (e.target === overlayRef.current) onClose();
             }}
         >
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <div className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-page)_74%,transparent)] backdrop-blur-md" />
 
-            <div
-                className={`relative ${maxWidth} w-full glass-elevated rounded-xl shadow-2xl animate-scale-in`}
-                style={{ overscrollBehavior: "contain" }}
-            >
-                {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-border">
-                    <h3 className="font-display font-bold text-text-primary text-text-primary">{title}</h3>
-                    <button
+            <Card className={`relative ${maxWidth} w-full`} style={{ overscrollBehavior: "contain" }}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border p-4">
+                    <CardTitle className="font-display text-base font-semibold text-text-primary">{title}</CardTitle>
+                    <Button
                         type="button"
+                        variant="ghost"
+                        size="icon"
                         onClick={onClose}
-                        className="btn btn-ghost p-1.5 text-text-secondary hover:text-text-primary"
+                        className="rounded-full"
                         aria-label="Close modal"
                     >
-                        ✕
-                    </button>
-                </div>
-
-                {/* Body */}
-                <div className="p-4">
-                    {children}
-                </div>
-            </div>
+                        <X className="h-4 w-4" />
+                    </Button>
+                </CardHeader>
+                <CardContent className="p-4">{children}</CardContent>
+            </Card>
         </div>
     );
 }

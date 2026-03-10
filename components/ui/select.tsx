@@ -14,7 +14,7 @@ const SelectTrigger = React.forwardRef<
     <SelectPrimitive.Trigger
         ref={ref}
         className={cn(
-            "flex h-10 w-full items-center justify-between rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+            "flex h-10 w-full items-center justify-between rounded-[14px] border border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-surface)_94%,var(--color-page))] px-3 py-2 text-sm text-[var(--color-text)] transition-[border-color,box-shadow,background-color] hover:border-[var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-accent)_24%,transparent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-page)] disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
             className
         )}
         {...props}
@@ -55,7 +55,7 @@ const SelectContent = React.forwardRef<
         <SelectPrimitive.Content
             ref={ref}
             className={cn(
-                "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] shadow-lg",
+                "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-[20px] border border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-surface)_96%,var(--color-page))] text-[var(--color-text)] shadow-[0_24px_64px_color-mix(in_srgb,var(--color-page)_72%,transparent)]",
                 position === "popper" &&
                     "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
                 className
@@ -90,7 +90,7 @@ const SelectItem = React.forwardRef<
     <SelectPrimitive.Item
         ref={ref}
         className={cn(
-            "relative flex w-full cursor-default select-none items-center rounded-md py-2 pl-8 pr-2 text-sm outline-none focus:bg-[var(--color-surface-subtle)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+            "relative flex w-full cursor-default select-none items-center rounded-[12px] py-2 pl-8 pr-2 text-sm outline-none focus:bg-[color:color-mix(in_srgb,var(--color-accent)_12%,var(--color-surface))] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
             className
         )}
         {...props}

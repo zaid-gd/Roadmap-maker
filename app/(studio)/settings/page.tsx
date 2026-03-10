@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
     ArrowUpRight,
     Check,
-    CreditCard,
     Download,
     ExternalLink,
     Eye,
@@ -16,15 +15,12 @@ import {
     KeyRound,
     Loader2,
     LogOut,
-    Shield,
-    Sparkles,
     Trash2,
     UserRound,
 } from "lucide-react";
 import ManageBillingButton from "@/components/payments/ManageBillingButton";
 import StorageStatusCard from "@/components/shared/StorageStatusCard";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
@@ -137,101 +133,24 @@ function Toast({ toast, onClose }: { toast: NonNullable<ToastState>; onClose: ()
     );
 }
 
-function CategoryButton({
-    active,
-    icon,
-    label,
-    description,
-    onClick,
-}: {
-    active: boolean;
-    icon: ReactNode;
-    label: string;
-    description: string;
-    onClick: () => void;
-}) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className={`group w-full rounded-[24px] border px-4 py-4 text-left transition-all ${
-                active
-                    ? "border-blue-200 bg-blue-50 text-text-primary shadow-[0_18px_48px_rgba(79,124,255,0.08)]"
-                    : "border-border bg-surface text-text-primary hover:bg-surface-raised"
-            }`}
-        >
-            <div className="flex items-start gap-3">
-                <div className={`mt-0.5 rounded-2xl border p-2 ${active ? "border-blue-200 bg-white" : "border-border bg-surface-raised"}`}>
-                    {icon}
-                </div>
-                <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">{label}</p>
-                    <p className="mt-1 text-xs leading-6 text-text-secondary">{description}</p>
-                </div>
-                <div
-                    className={`mt-0.5 rounded-full border p-2 transition-all ${
-                        active
-                            ? "border-blue-200 bg-white text-[var(--color-accent)]"
-                            : "border-transparent bg-transparent text-text-secondary opacity-0 group-hover:border-border group-hover:bg-surface-raised group-hover:opacity-100"
-                    }`}
-                >
-                    <ArrowUpRight size={14} />
-                </div>
-            </div>
-        </button>
-    );
-}
-
-function SnapshotTile({
-    label,
-    value,
-    detail,
-    tone = "default",
-}: {
-    label: string;
-    value: string;
-    detail: string;
-    tone?: "default" | "accent" | "success";
-}) {
-    const toneClass =
-        tone === "accent"
-            ? "border-blue-200 bg-blue-50"
-            : tone === "success"
-                ? "border-emerald-200 bg-emerald-50"
-                : "border-border bg-surface";
-
-    return (
-        <div className={`rounded-[24px] border p-4 ${toneClass}`}>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-secondary">{label}</p>
-            <p className="mt-3 text-lg font-semibold text-text-primary">{value}</p>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">{detail}</p>
-        </div>
-    );
-}
-
 function SectionCard({
-    eyebrow,
     title,
     description,
     children,
 }: {
-    eyebrow: string;
     title: string;
     description: string;
     children: ReactNode;
 }) {
     return (
-        <Card className="rounded-[32px]">
-            <CardContent className="space-y-8 p-6 lg:p-8">
-                <div>
-                    <p className="eyebrow">{eyebrow}</p>
-                    <h2 className="mt-4 font-display text-3xl text-text-primary">{title}</h2>
-                    <p className="mt-3 max-w-3xl text-sm leading-7 text-text-secondary">{description}</p>
-                </div>
-                <Separator />
-                <div className="space-y-5">{children}</div>
-            </CardContent>
-        </Card>
+        <section className="settings-section">
+            <div>
+                <h2 className="text-2xl font-semibold text-text-primary">{title}</h2>
+                <p className="mt-2 text-sm leading-7 text-text-secondary">{description}</p>
+            </div>
+            <Separator />
+            <div className="space-y-6">{children}</div>
+        </section>
     );
 }
 
@@ -245,14 +164,12 @@ function SettingRow({
     children: ReactNode;
 }) {
     return (
-        <div className="studio-panel-soft p-5">
-            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                <div className="max-w-2xl">
-                    <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
-                    <p className="mt-2 text-sm leading-7 text-text-secondary">{description}</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">{children}</div>
+        <div className="settings-field">
+            <div>
+                <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
+                <p className="mt-1 text-sm leading-6 text-text-secondary">{description}</p>
             </div>
+            <div className="flex flex-wrap items-center gap-3">{children}</div>
         </div>
     );
 }
@@ -292,6 +209,10 @@ function SettingsContent() {
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
     const [privacySettings, setPrivacySettings] = useState<PrivacySettings | null>(null);
+    const [privacyDraft, setPrivacyDraft] = useState<PrivacySettings>({
+        anonymousAnalytics: false,
+        allowPublicGallery: false,
+    });
     const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
     const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
     const [loading, setLoading] = useState(true);
@@ -314,6 +235,18 @@ function SettingsContent() {
     useEffect(() => {
         applyAccentTheme(config.accentColor);
     }, [config.accentColor]);
+
+    useEffect(() => {
+        if (privacySettings) {
+            setPrivacyDraft(privacySettings);
+            return;
+        }
+
+        setPrivacyDraft({
+            anonymousAnalytics: false,
+            allowPublicGallery: false,
+        });
+    }, [privacySettings]);
 
     useEffect(() => {
         const tab = searchParams.get("tab");
@@ -537,6 +470,10 @@ function SettingsContent() {
         }
     }
 
+    async function handleSavePrivacy() {
+        await updatePrivacy(privacyDraft);
+    }
+
     async function handleExportData() {
         setExporting(true);
 
@@ -631,26 +568,22 @@ function SettingsContent() {
         {
             id: "general" as const,
             label: "General",
-            description: "Storage mode, sync state, account identity, and local studio preferences.",
-            icon: <UserRound size={16} />,
+            description: "Storage, sync state, account identity, and local preferences.",
         },
         {
             id: "ai" as const,
             label: "AI / API Key",
             description: "Choose shared studio AI or your own provider key.",
-            icon: <KeyRound size={16} />,
         },
         {
             id: "privacy" as const,
             label: "Privacy",
             description: "Export data, control gallery visibility, and delete all data.",
-            icon: <Shield size={16} />,
         },
         {
             id: "billing" as const,
             label: "Billing",
             description: "Plan status, credit allowance, transaction history, and upgrades.",
-            icon: <CreditCard size={16} />,
         },
     ];
 
@@ -661,172 +594,39 @@ function SettingsContent() {
             : storageStatus.mode === "supabase-unavailable"
                 ? "Browser-only"
                 : "Local-only";
-    const storageModeDetail =
-        storageStatus.mode === "synced-account"
-            ? "Browser saves mirror to your account."
-            : "Work remains scoped to this device.";
-    const creditSummaryValue = creditStatus ? `${creditStatus.remaining}` : userEmail ? "Loading..." : "Sign in";
-    const creditSummaryDetail = creditStatus
-        ? `${creditStatus.used} used of ${creditStatus.allowance} this cycle.`
-        : userEmail
-            ? "Loading current studio allowance."
-            : "Use BYOK or sign in to track credits.";
-    const categoryContext: Record<Category, { eyebrow: string; title: string; description: string; points: string[] }> = {
-        general: {
-            eyebrow: "Workspace state",
-            title: "Local-first controls",
-            description: "This section handles how the studio behaves on this browser first, then how it syncs when an account is attached.",
-            points: [
-                "Storage remains browser-first even when sync is enabled.",
-                "Accent color and presentation choices stay local to this device.",
-                "Account sign-in unlocks backup and cross-device continuity without changing the local-first model.",
-            ],
-        },
-        ai: {
-            eyebrow: "Provider routing",
-            title: "Shared AI or BYOK",
-            description: "Switch between studio-managed credits and your own provider key without changing the rest of the workspace flow.",
-            points: [
-                "Supported providers stay scoped to the current browser session.",
-                "Testing the active key checks the selected provider directly.",
-                "BYOK skips studio credit deductions and uses your chosen model.",
-            ],
-        },
-        privacy: {
-            eyebrow: "Data ownership",
-            title: "Visibility and deletion controls",
-            description: "Exports, gallery visibility, analytics preferences, and destructive actions all live here so the blast radius is explicit.",
-            points: [
-                "Gallery exposure stays opt-in and can be revoked.",
-                "Exports adapt to local-only or signed-in account state.",
-                "Delete actions are intentionally isolated behind confirmation.",
-            ],
-        },
-        billing: {
-            eyebrow: "Allowance tracking",
-            title: "Plan and credit health",
-            description: "Use this area to read account billing state, remaining monthly allowance, and recent credit activity in one place.",
-            points: [
-                "Paid plans raise the monthly allowance instead of changing workspace behavior.",
-                "Recent credit events explain where usage went.",
-                "If allowance gets tight, BYOK remains a direct escape hatch.",
-            ],
-        },
-    };
-    const activeContext = categoryContext[activeCategory];
 
     return (
         <main className="studio-page">
             {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
 
-            <section className="relative overflow-hidden studio-panel px-6 py-8 lg:px-8">
-                <div
-                    className="pointer-events-none absolute inset-0 opacity-90"
-                    style={{
-                        background:
-                            "radial-gradient(circle at top right, color-mix(in srgb, var(--color-accent) 10%, white) 0%, transparent 42%), linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(247,244,238,0.96) 100%)",
-                    }}
-                />
-                <div className="relative grid gap-8 xl:grid-cols-[minmax(0,1.1fr)_320px]">
-                    <div className="max-w-4xl">
-                        <p className="eyebrow">Studio settings</p>
-                        <h1 className="mt-4 max-w-3xl font-display text-4xl leading-[0.98] text-text-primary md:text-5xl">
-                            Run the studio from one control surface.
-                        </h1>
-                        <p className="mt-5 max-w-3xl text-sm leading-8 text-text-secondary md:text-base">
-                            Settings now split into a navigation rail, a focused work area, and a persistent account snapshot so sync, credits, privacy, and provider setup are easier to read at a glance.
-                        </p>
-
-                        <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            <SnapshotTile
-                                label="Storage mode"
-                                value={storageModeLabel}
-                                detail={storageModeDetail}
-                                tone="default"
-                            />
-                            <SnapshotTile
-                                label="Plan"
-                                value={getPlanName(effectivePlanId)}
-                                detail={paidPlan ? "Subscription is active for this account." : "Free tier remains available locally."}
-                                tone="accent"
-                            />
-                            <SnapshotTile
-                                label="Credits left"
-                                value={creditSummaryValue}
-                                detail={creditSummaryDetail}
-                                tone={creditStatus && creditStatus.remaining > 25 ? "success" : "default"}
-                            />
-                            <SnapshotTile
-                                label="Current focus"
-                                value={activeCategoryMeta.label}
-                                detail={activeCategoryMeta.description}
-                                tone="default"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="rounded-[30px] border border-border bg-white/80 p-6 shadow-[0_18px_44px_rgba(21,21,21,0.05)] backdrop-blur">
-                        <p className="eyebrow">{activeContext.eyebrow}</p>
-                        <h2 className="mt-4 font-display text-3xl leading-tight text-text-primary">{activeContext.title}</h2>
-                        <p className="mt-3 text-sm leading-7 text-text-secondary">{activeContext.description}</p>
-                        <div className="mt-6 flex flex-wrap gap-2">
-                            {categoryButtons.map((item) => (
-                                <button
-                                    key={item.id}
-                                    type="button"
-                                    onClick={() => switchCategory(item.id)}
-                                    className={`rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition-colors ${
-                                        activeCategory === item.id
-                                            ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
-                                            : "border-border bg-surface text-text-secondary hover:border-border-strong hover:text-text-primary"
-                                    }`}
-                                >
-                                    {item.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+            <header className="app-header-block">
+                <div>
+                    <p className="eyebrow">Settings</p>
+                    <h1 className="mt-3 text-4xl font-display leading-none text-text-primary md:text-5xl">Studio settings</h1>
+                    <p className="mt-4 max-w-2xl text-sm leading-7 text-text-secondary">{activeCategoryMeta.description}</p>
                 </div>
-            </section>
+            </header>
 
-            <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
-                <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
-                    <div className="studio-panel p-4">
-                        <div className="space-y-3">
-                            {categoryButtons.map((item) => (
-                                <CategoryButton
-                                    key={item.id}
-                                    active={activeCategory === item.id}
-                                    icon={item.icon}
-                                    label={item.label}
-                                    description={item.description}
-                                    onClick={() => switchCategory(item.id)}
-                                />
-                            ))}
-                        </div>
-                    </div>
+            <div className="settings-shell lg:grid-cols-[180px_minmax(0,1fr)]">
+                <nav className="settings-nav lg:sticky lg:top-24">
+                    {categoryButtons.map((item) => (
+                        <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => switchCategory(item.id)}
+                            className="settings-nav-link text-left"
+                            data-active={activeCategory === item.id}
+                        >
+                            {item.label}
+                        </button>
+                    ))}
+                </nav>
 
-                    <div className="studio-panel p-5">
-                        <p className="eyebrow text-text-muted">{activeContext.eyebrow}</p>
-                        <h3 className="mt-4 text-xl font-semibold text-text-primary">{activeContext.title}</h3>
-                        <p className="mt-3 text-sm leading-7 text-text-secondary">{activeContext.description}</p>
-                        <div className="mt-5 space-y-3">
-                            {activeContext.points.map((point) => (
-                                <div key={point} className="flex items-start gap-3">
-                                    <span className="mt-2 h-2 w-2 rounded-full bg-[var(--color-accent)]" />
-                                    <p className="text-sm leading-7 text-text-secondary">{point}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </aside>
-
-                <div className="min-w-0 space-y-6">
+                <div className="settings-content">
                     {activeCategory === "general" && (
                         <SectionCard
-                            eyebrow="General"
-                            title="Control storage, sync, and the local studio feel."
-                            description="Anonymous sessions keep everything in this browser. A signed-in account preserves the same local-first behavior, then syncs that work to Supabase for backup and cross-device continuity."
+                            title="General"
+                            description="Manage storage behavior, account sync, and browser-scoped studio preferences."
                         >
                             <StorageStatusCard
                                 status={storageStatus}
@@ -838,8 +638,8 @@ function SettingsContent() {
                                 title="Current account"
                                 description={
                                     userEmail
-                                        ? "This is the email attached to your synced workspace data, billing, and future account-scoped features."
-                                        : "You are currently using RoadMap Studio without an account. Your work stays on this device unless you enable sync."
+                                        ? "This email is attached to synced workspace data, billing, and account-level settings."
+                                        : "You are currently using RoadMap Studio without an account. Work stays on this device unless you enable sync."
                                 }
                             >
                                 {loading ? (
@@ -875,21 +675,22 @@ function SettingsContent() {
                             </SettingRow>
 
                             <SettingRow
-                                title="Storage model"
-                                description="Roadmaps always save locally first. When sync is enabled, the same work is mirrored to your Supabase account instead of being made public or moved out of the browser."
+                                title="Storage mode"
+                                description="Roadmaps always save locally first. When sync is enabled, the same work is mirrored to your account."
                             >
-                                <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm text-text-primary">
-                                    <Sparkles size={14} />
-                                    Local-first architecture
+                                <div className="inline-flex items-center rounded-full border border-border bg-surface px-4 py-2 text-sm text-text-primary">
+                                    {storageModeLabel}
                                 </div>
                             </SettingRow>
 
-                            <div className="studio-panel-soft p-6">
-                                <p className="text-sm font-semibold text-text-primary">Accent color</p>
-                                <p className="mt-2 text-sm leading-7 text-text-secondary">
-                                    Choose the highlight color used across your local studio surfaces on this device.
-                                </p>
-                                <div className="mt-5 flex flex-wrap gap-3">
+                            <div className="settings-field">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-text-primary">Accent color</h3>
+                                    <p className="mt-1 text-sm leading-6 text-text-secondary">
+                                        Choose the highlight color used across this browser session.
+                                    </p>
+                                </div>
+                                <div className="mt-4 flex flex-wrap gap-3">
                                     {ACCENT_COLORS.map((color) => {
                                         const active = config.accentColor === color;
                                         return (
@@ -918,126 +719,120 @@ function SettingsContent() {
                             </SettingRow>
 
                             <SettingRow
-                                title="Save local preferences"
-                                description="Appearance and browser-scoped studio preferences stay on this device until you reset them."
+                                title="Show progress notices"
+                                description="Keep lightweight completion hints and nudges visible in the studio interface."
                             >
+                                <Toggle
+                                    checked={config.showProgressNotice}
+                                    onChange={(next) => setConfig((current) => ({ ...current, showProgressNotice: next }))}
+                                />
+                            </SettingRow>
+
+                            <div className="settings-action-row">
+                                <div className="mr-auto">
+                                    <Button type="button" variant="secondary" onClick={handleResetConfig}>
+                                        Reset local preferences
+                                    </Button>
+                                </div>
                                 <Button type="button" onClick={handleSaveConfig}>
                                     {savingConfig ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                                    Save preferences
+                                    Save changes
                                 </Button>
-                                <Button type="button" variant="secondary" onClick={handleResetConfig}>
-                                    Reset local preferences
-                                </Button>
-                            </SettingRow>
+                            </div>
                         </SectionCard>
                     )}
 
                     {activeCategory === "billing" && (
                         <SectionCard
-                            eyebrow="Plan and credits"
-                            title="Track billing status and monthly AI allowance."
-                            description="Paid plans unlock higher monthly credits. If you prefer, you can bypass studio credits entirely by using your own provider key."
+                            title="Billing"
+                            description="Review plan status, current allowance, and recent credit activity."
                         >
-                            <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-                                <div className="studio-panel-soft p-6">
-                                    <div className="flex flex-wrap items-center gap-3">
-                                        <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${getPlanBadgeClasses(effectivePlanId)}`}>
-                                            {getPlanName(effectivePlanId)}
+                            <div className="settings-field">
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${getPlanBadgeClasses(effectivePlanId)}`}>
+                                        {getPlanName(effectivePlanId)}
+                                    </span>
+                                    {subscription?.status && (
+                                        <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${getStatusBadgeClasses(subscription.status)}`}>
+                                            {subscription.status}
                                         </span>
-                                        {subscription?.status && (
-                                            <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${getStatusBadgeClasses(subscription.status)}`}>
-                                                {subscription.status}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <h3 className="mt-5 text-2xl font-semibold text-text-primary">
-                                        {paidPlan ? "Your subscription is active." : "You are on the free studio tier."}
-                                    </h3>
-                                    <p className="mt-3 text-sm leading-7 text-text-secondary">
-                                        {paidPlan
-                                            ? renewalDate
-                                                ? `Your current billing period renews on ${renewalDate}.`
-                                                : "Your subscription is active and account-scoped."
-                                            : "Upgrade when you need more monthly AI allowance, client-facing features, or higher collaboration capacity."}
-                                    </p>
-                                    <div className="mt-6 flex flex-wrap gap-3">
-                                        {paidPlan ? (
-                                            <ManageBillingButton />
-                                        ) : (
-                                            <Link
-                                                href="/pricing"
-                                                className="button-primary"
-                                            >
-                                                View pricing
-                                                <ArrowUpRight size={14} />
-                                            </Link>
-                                        )}
-                                        <Link
-                                            href="/pricing"
-                                            className="button-secondary"
-                                        >
-                                            Compare plans
-                                            <ExternalLink size={14} />
-                                        </Link>
-                                    </div>
-                                </div>
-
-                                <div className={`rounded-[28px] border p-6 ${getCreditTone(creditStatus)}`}>
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-secondary">Monthly credits</p>
-                                    <h3 className="mt-4 text-4xl font-semibold text-text-primary">{creditStatus ? creditStatus.remaining : userEmail ? "..." : "--"}</h3>
-                                    <p className="mt-2 text-sm leading-7 text-text-secondary">
-                                        {creditStatus
-                                            ? `${creditStatus.used} used out of ${creditStatus.allowance}. Resets ${formatDate(creditStatus.resetDate)}.`
-                                            : userEmail
-                                                ? "Loading current credit allowance."
-                                                : "Sign in to track studio-managed monthly credits. BYOK can still bypass credits entirely."}
-                                    </p>
-                                    {creditStatus && (
-                                        <div className="mt-5 h-3 overflow-hidden rounded-full bg-border/70">
-                                            <div
-                                                className="h-full rounded-full bg-[linear-gradient(90deg,#4F7CFF,#C69B5A)]"
-                                                style={{ width: `${Math.max(8, Math.min(100, (creditStatus.used / Math.max(creditStatus.allowance, 1)) * 100))}%` }}
-                                            />
-                                        </div>
                                     )}
+                                </div>
+                                <p className="mt-4 text-sm leading-7 text-text-secondary">
+                                    {paidPlan
+                                        ? renewalDate
+                                            ? `Your current billing period renews on ${renewalDate}.`
+                                            : "Your subscription is active and account-scoped."
+                                        : "You are on the free studio tier. Upgrade when you need more monthly AI allowance or client-facing features."}
+                                </p>
+                                <div className="mt-4 flex flex-wrap gap-3">
+                                    {paidPlan ? (
+                                        <ManageBillingButton />
+                                    ) : (
+                                        <Link href="/pricing" className="button-primary">
+                                            View pricing
+                                            <ArrowUpRight size={14} />
+                                        </Link>
+                                    )}
+                                    <Link href="/pricing" className="button-secondary">
+                                        Compare plans
+                                        <ExternalLink size={14} />
+                                    </Link>
                                 </div>
                             </div>
 
-                            <div className="studio-panel-soft p-6">
+                            <div className="settings-field">
+                                <h3 className="text-sm font-semibold text-text-primary">Monthly credits</h3>
+                                <p className="mt-1 text-sm leading-6 text-text-secondary">
+                                    {creditStatus
+                                        ? `${creditStatus.remaining} remaining. ${creditStatus.used} used out of ${creditStatus.allowance}. Resets ${formatDate(creditStatus.resetDate)}.`
+                                        : userEmail
+                                            ? "Loading current credit allowance."
+                                            : "Sign in to track studio-managed monthly credits. BYOK can bypass credits entirely."}
+                                </p>
+                                {creditStatus && (
+                                    <div className="mt-4 h-3 overflow-hidden rounded-full bg-border/70">
+                                        <div
+                                            className="h-full rounded-full bg-[linear-gradient(90deg,#4F7CFF,#C69B5A)]"
+                                            style={{ width: `${Math.max(8, Math.min(100, (creditStatus.used / Math.max(creditStatus.allowance, 1)) * 100))}%` }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="settings-field">
                                 <div className="flex items-center justify-between gap-4">
                                     <div>
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-secondary">Recent transactions</p>
-                                        <h3 className="mt-3 text-xl font-semibold text-text-primary">Latest credit activity</h3>
+                                        <h3 className="text-sm font-semibold text-text-primary">Recent transactions</h3>
+                                        <p className="mt-1 text-sm leading-6 text-text-secondary">Latest credit activity for this account.</p>
                                     </div>
                                     {userEmail && (
-                                        <button
-                                            type="button"
-                                            onClick={() => void refreshRemoteSettings()}
-                                            className="button-secondary"
-                                        >
+                                        <button type="button" onClick={() => void refreshRemoteSettings()} className="button-secondary">
                                             Refresh
                                         </button>
                                     )}
                                 </div>
 
-                                <div className="mt-6 space-y-3">
+                                <div className="mt-4 space-y-3">
                                     {transactions.length > 0 ? (
                                         transactions.map((transaction) => (
-                                            <div key={transaction.id} className="flex flex-col gap-2 rounded-[22px] border border-border bg-surface px-4 py-4 md:flex-row md:items-center md:justify-between">
-                                                <div>
-                                                    <p className="text-sm font-semibold text-text-primary">{getTransactionLabel(transaction.kind)}</p>
-                                                    <p className="mt-1 text-xs uppercase tracking-[0.18em] text-text-secondary">{formatRelativeDate(transaction.createdAt)}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-sm font-semibold text-text-primary">{transaction.amount} credits</p>
-                                                    {transaction.metadata?.roadmapTitle && (
-                                                        <p className="mt-1 text-sm text-text-secondary">{transaction.metadata.roadmapTitle}</p>
-                                                    )}
+                                            <div key={transaction.id} className="rounded-[18px] border border-border bg-surface px-4 py-4">
+                                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-text-primary">{getTransactionLabel(transaction.kind)}</p>
+                                                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-text-secondary">{formatRelativeDate(transaction.createdAt)}</p>
+                                                    </div>
+                                                    <div className="text-left sm:text-right">
+                                                        <p className="text-sm font-semibold text-text-primary">{transaction.amount} credits</p>
+                                                        {transaction.metadata?.roadmapTitle && (
+                                                            <p className="mt-1 text-sm text-text-secondary">{transaction.metadata.roadmapTitle}</p>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="studio-empty px-4 py-6 text-sm leading-7 text-text-secondary">
+                                        <div className="rounded-[18px] border border-dashed border-border px-4 py-6 text-sm leading-7 text-text-secondary">
                                             {userEmail
                                                 ? "No credit transactions yet. Generated work, quizzes, and reviews will appear here."
                                                 : "Sign in to store and view credit history on your account."}
@@ -1050,29 +845,28 @@ function SettingsContent() {
 
                     {activeCategory === "privacy" && (
                         <SectionCard
-                            eyebrow="Privacy and data"
-                            title="Control exports, public visibility, and destructive actions."
-                            description="Signed-in settings are stored on your account. Local-only sessions can still export browser data and clear everything from this device."
+                            title="Privacy"
+                            description="Control analytics, gallery visibility, exports, and destructive actions."
                         >
                             <SettingRow
                                 title="Anonymous analytics"
-                                description="Allow product analytics that help improve the studio without attaching events to your public profile or publishing your roadmaps."
+                                description="Allow product analytics that help improve the studio without exposing your work publicly."
                             >
                                 <Toggle
-                                    checked={privacySettings?.anonymousAnalytics ?? false}
+                                    checked={privacyDraft.anonymousAnalytics}
                                     disabled={!userEmail || privacySaving}
-                                    onChange={(next) => void updatePrivacy({ anonymousAnalytics: next })}
+                                    onChange={(next) => setPrivacyDraft((current) => ({ ...current, anonymousAnalytics: next }))}
                                 />
                             </SettingRow>
 
                             <SettingRow
                                 title="Allow public gallery participation"
-                                description="When disabled, your account will no longer expose shareable gallery entries. Existing public roadmaps are forced back to private visibility."
+                                description="When disabled, your account will no longer expose shareable gallery entries."
                             >
                                 <Toggle
-                                    checked={privacySettings?.allowPublicGallery ?? false}
+                                    checked={privacyDraft.allowPublicGallery}
                                     disabled={!userEmail || privacySaving}
-                                    onChange={(next) => void updatePrivacy({ allowPublicGallery: next })}
+                                    onChange={(next) => setPrivacyDraft((current) => ({ ...current, allowPublicGallery: next }))}
                                 />
                             </SettingRow>
 
@@ -1095,14 +889,15 @@ function SettingsContent() {
                                 </button>
                             </SettingRow>
 
-                            <div className="studio-danger p-6">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-red-700">Danger zone</p>
-                                <h3 className="mt-4 text-2xl font-semibold text-text-primary">Delete everything attached to this studio state.</h3>
-                                <p className="mt-3 max-w-3xl text-sm leading-7 text-text-secondary">
+                            <div className="settings-field">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-red-700">Danger zone</h3>
+                                    <p className="mt-1 text-sm leading-6 text-text-secondary">
                                     {userEmail
-                                        ? "This removes account-scoped roadmaps, notes, privacy settings, analytics history, coaching sessions, credit records, and local browser copies on this device. Your auth account remains, but the stored studio data is deleted."
+                                        ? "This removes account-scoped roadmaps, notes, privacy settings, analytics history, coaching sessions, credit records, and local browser copies on this device. Your auth account remains."
                                         : "This clears all roadmaps and studio preferences from this browser only."}
-                                </p>
+                                    </p>
+                                </div>
 
                                 {deleteRequiresConfirmation && (
                                     <div className="mt-5 max-w-sm">
@@ -1131,18 +926,24 @@ function SettingsContent() {
                                     </Button>
                                 </div>
                             </div>
+
+                            <div className="settings-action-row">
+                                <Button type="button" onClick={() => void handleSavePrivacy()} disabled={!userEmail || privacySaving}>
+                                    {privacySaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                                    Save changes
+                                </Button>
+                            </div>
                         </SectionCard>
                     )}
 
                     {activeCategory === "ai" && (
                         <SectionCard
-                            eyebrow="AI provider setup"
-                            title="Choose shared studio credits or your own provider key."
-                            description="The studio uses shared AI credits by default. If you prefer, enable BYOK and keep your selected provider key in this browser only."
+                            title="AI / API Key"
+                            description="Use shared studio AI credits by default or switch to your own provider key for this browser."
                         >
                             <SettingRow
                                 title="Use your own provider key"
-                                description="When enabled, AI requests use the selected provider and key stored in this browser and skip studio credit deductions."
+                                description="When enabled, requests use the selected provider and skip studio credit deductions."
                             >
                                 <Toggle
                                     checked={config.useCustomKey}
@@ -1150,11 +951,14 @@ function SettingsContent() {
                                 />
                             </SettingRow>
 
-                            <div className="studio-panel-soft p-6">
-                                <div className="space-y-5">
-                                    <div>
-                                        <p className="block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">Provider</p>
-                                        <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                            <div className="settings-field">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-text-primary">Provider</h3>
+                                    <p className="mt-1 text-sm leading-6 text-text-secondary">
+                                        Pick the provider and model used when BYOK is enabled.
+                                    </p>
+                                </div>
+                                <div className="mt-4 grid gap-2 sm:grid-cols-2">
                                             {AI_PROVIDER_OPTIONS.map((option) => (
                                                 <button
                                                     key={option.value}
@@ -1165,7 +969,7 @@ function SettingsContent() {
                                                             provider: option.value,
                                                         }))
                                                     }
-                                                    className={`rounded-[20px] border px-4 py-3 text-left transition-colors ${
+                                                    className={`rounded-[18px] border px-4 py-3 text-left transition-colors ${
                                                         config.provider === option.value
                                                             ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)]"
                                                             : "border-border bg-surface hover:border-border-strong"
@@ -1175,56 +979,62 @@ function SettingsContent() {
                                                     <div className="mt-1 text-sm leading-6 text-text-secondary">{option.description}</div>
                                                 </button>
                                             ))}
-                                        </div>
-                                    </div>
+                                </div>
+                            </div>
 
-                                    <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary" htmlFor="provider-model">
-                                            Model
-                                        </label>
-                                        <div className="mt-3 flex flex-wrap gap-2">
-                                            {PROVIDER_MODEL_PRESETS[config.provider].map((model) => (
-                                                <Button
-                                                    key={model}
-                                                    type="button"
-                                                    variant={getActiveModel(config) === model ? "default" : "outline"}
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        setConfig((current) => ({
-                                                            ...current,
-                                                            modelByProvider: {
-                                                                ...current.modelByProvider,
-                                                                [current.provider]: model,
-                                                            },
-                                                        }))
-                                                    }
-                                                >
-                                                    {model}
-                                                </Button>
-                                            ))}
-                                        </div>
-                                        <Input
-                                            id="provider-model"
-                                            value={getActiveModel(config)}
-                                            onChange={(event) =>
+                            <div className="settings-field">
+                                <label className="text-sm font-semibold text-text-primary" htmlFor="provider-model">
+                                    Model
+                                </label>
+                                <p className="mt-1 text-sm leading-6 text-text-secondary">
+                                    Choose a preset or enter a model id manually.
+                                </p>
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    {PROVIDER_MODEL_PRESETS[config.provider].map((model) => (
+                                        <Button
+                                            key={model}
+                                            type="button"
+                                            variant={getActiveModel(config) === model ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() =>
                                                 setConfig((current) => ({
                                                     ...current,
                                                     modelByProvider: {
                                                         ...current.modelByProvider,
-                                                        [current.provider]: event.target.value,
+                                                        [current.provider]: model,
                                                     },
                                                 }))
                                             }
-                                            placeholder="Enter a model id"
-                                            className="mt-3"
-                                        />
-                                    </div>
-
-                                    <label className="block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary" htmlFor="provider-api-key">
-                                        {PROVIDER_KEY_LABELS[config.provider]}
-                                    </label>
+                                        >
+                                            {model}
+                                        </Button>
+                                    ))}
                                 </div>
-                                <div className="mt-3 flex flex-col gap-3 lg:flex-row">
+                                <Input
+                                    id="provider-model"
+                                    value={getActiveModel(config)}
+                                    onChange={(event) =>
+                                        setConfig((current) => ({
+                                            ...current,
+                                            modelByProvider: {
+                                                ...current.modelByProvider,
+                                                [current.provider]: event.target.value,
+                                            },
+                                        }))
+                                    }
+                                    placeholder="Enter a model id"
+                                    className="mt-3"
+                                />
+                            </div>
+
+                            <div className="settings-field">
+                                <label className="text-sm font-semibold text-text-primary" htmlFor="provider-api-key">
+                                    {PROVIDER_KEY_LABELS[config.provider]}
+                                </label>
+                                <p className="mt-1 text-sm leading-6 text-text-secondary">
+                                    Provider keys stay in this browser and are never written to Supabase.
+                                </p>
+                                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                                     <div className="relative flex-1">
                                         <Input
                                             id="provider-api-key"
@@ -1256,7 +1066,7 @@ function SettingsContent() {
                                         onClick={() => void handleTestApiKey()}
                                         disabled={testingKey}
                                         variant="secondary"
-                                        className="h-12 justify-center"
+                                        className="justify-center"
                                     >
                                         {testingKey ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
                                         Test connection
@@ -1265,7 +1075,7 @@ function SettingsContent() {
 
                                 {testMessage && (
                                     <div
-                                        className={`mt-4 rounded-[20px] border px-4 py-3 text-sm leading-7 ${testTone === "success"
+                                        className={`mt-4 rounded-[18px] border px-4 py-3 text-sm leading-7 ${testTone === "success"
                                                 ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                                                 : testTone === "error"
                                                     ? "border-red-200 bg-red-50 text-red-700"
@@ -1277,123 +1087,15 @@ function SettingsContent() {
                                 )}
                             </div>
 
-                            <SettingRow
-                                title="Save AI preferences"
-                            description="Preferences are stored locally in this browser. Provider keys are never written to Supabase."
-                        >
-                            <Button type="button" onClick={handleSaveConfig}>
+                            <div className="settings-action-row">
+                                <Button type="button" onClick={handleSaveConfig}>
                                     {savingConfig ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                                    Save preferences
+                                    Save changes
                                 </Button>
-                            </SettingRow>
+                            </div>
                         </SectionCard>
                     )}
                 </div>
-
-                <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
-                    <div className="studio-panel p-5">
-                        <p className="eyebrow text-text-muted">Account snapshot</p>
-                        <div className="mt-5 grid gap-3">
-                            <SnapshotTile
-                                label="Workspace"
-                                value={storageModeLabel}
-                                detail={storageModeDetail}
-                            />
-                            <SnapshotTile
-                                label="Account"
-                                value={userEmail ?? "Anonymous session"}
-                                detail={userEmail ? "Connected for sync, billing, and remote settings." : "No account attached to this browser session."}
-                                tone={userEmail ? "success" : "default"}
-                            />
-                            <SnapshotTile
-                                label="Plan status"
-                                value={getPlanName(effectivePlanId)}
-                                detail={
-                                    subscription?.status
-                                        ? `Subscription state: ${subscription.status}.${renewalDate ? ` Renews ${renewalDate}.` : ""}`
-                                        : "No active paid subscription attached to this account."
-                                }
-                                tone={paidPlan ? "accent" : "default"}
-                            />
-                            <SnapshotTile
-                                label="Credits"
-                                value={creditSummaryValue}
-                                detail={creditSummaryDetail}
-                                tone={creditStatus && creditStatus.remaining > 25 ? "success" : "default"}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="studio-panel-soft p-5">
-                        <p className="eyebrow text-text-muted">Shortcuts</p>
-                        <div className="mt-4 flex flex-col gap-3">
-                            {!userEmail ? (
-                                <Link href="/auth?next=%2Fsettings%3Ftab%3Dgeneral" className="button-primary justify-center">
-                                    <HardDrive size={14} />
-                                    Enable account sync
-                                </Link>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={handleSignOut}
-                                    disabled={isSigningOut}
-                                    className="button-secondary justify-center disabled:opacity-60"
-                                >
-                                    {isSigningOut ? <Loader2 size={14} className="animate-spin" /> : <LogOut size={14} />}
-                                    Sign out
-                                </button>
-                            )}
-
-                            {(activeCategory === "general" || activeCategory === "ai") && (
-                                <Button type="button" onClick={handleSaveConfig}>
-                                    {savingConfig ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                                    Save preferences
-                                </Button>
-                            )}
-
-                            {activeCategory === "privacy" && (
-                                <button
-                                    type="button"
-                                    onClick={() => void handleExportData()}
-                                    disabled={exporting}
-                                    className="button-secondary justify-center disabled:opacity-60"
-                                >
-                                    {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-                                    Download export
-                                </button>
-                            )}
-
-                            {activeCategory === "billing" && (
-                                paidPlan ? (
-                                    <ManageBillingButton />
-                                ) : (
-                                    <Link href="/pricing" className="button-primary justify-center">
-                                        View pricing
-                                        <ArrowUpRight size={14} />
-                                    </Link>
-                                )
-                            )}
-
-                            {userEmail && (
-                                <button
-                                    type="button"
-                                    onClick={() => void refreshRemoteSettings()}
-                                    className="button-secondary justify-center"
-                                >
-                                    <Sparkles size={14} />
-                                    Refresh account data
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="studio-panel p-5">
-                        <p className="eyebrow text-text-muted">Studio note</p>
-                        <p className="mt-4 text-sm leading-7 text-text-secondary">
-                            Shared studio AI runs on the studio-managed OpenAI setup by default. BYOK can switch this browser to any supported provider and skips studio credit deductions. Input passed to AI is truncated to the studio privacy cap before requests are sent.
-                        </p>
-                    </div>
-                </aside>
             </div>
         </main>
     );

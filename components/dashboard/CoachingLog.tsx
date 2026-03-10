@@ -114,7 +114,7 @@ export default function CoachingLog({ roadmaps }: { roadmaps: Roadmap[] }) {
             </CardHeader>
             <CardContent>
             <div className="grid gap-4 lg:grid-cols-2">
-                <div className="studio-panel-soft space-y-4 p-5">
+                <div className="studio-micro-grid space-y-4 p-5">
                     <label className="block space-y-2">
                         <span className="text-xs uppercase tracking-[0.18em] text-text-secondary">Workspace</span>
                         <select
@@ -184,7 +184,7 @@ export default function CoachingLog({ roadmaps }: { roadmaps: Roadmap[] }) {
                     {message ? <p className="text-sm text-text-secondary">{message}</p> : null}
                 </div>
 
-                <div className="studio-panel-soft p-5">
+                <div className="studio-micro-grid p-5">
                     {review ? (
                         <div className="space-y-4">
                             <div>

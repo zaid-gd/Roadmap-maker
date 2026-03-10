@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import AuthButton from "@/components/auth/AuthButton";
 import { Logo } from "@/components/shared/Logo";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MARKETING_NAV_ITEMS, STUDIO_NAV_ITEMS } from "@/lib/navigation";
 
@@ -41,19 +42,21 @@ export default function Header() {
     return (
         <header
             className={cn(
-                "sticky top-0 z-50 transition-[background-color,border-color] duration-200",
-                scrolled ? "border-b border-border bg-page/92 backdrop-blur-sm" : "border-b border-transparent bg-page/88"
+                "sticky top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-200",
+                scrolled
+                    ? "border-b border-border bg-[color:color-mix(in_srgb,var(--color-page)_82%,transparent)] backdrop-blur-xl"
+                    : "border-b border-transparent bg-[color:color-mix(in_srgb,var(--color-page)_72%,transparent)]"
             )}
         >
             <div className="page-shell-wide flex h-16 items-center justify-between gap-4">
                 <Link href="/" className="flex min-w-0 items-center gap-3">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-[color:color-mix(in_srgb,var(--color-surface)_94%,var(--color-page))]">
                         <Logo />
                     </span>
-                    <span className="truncate text-sm font-medium tracking-[-0.02em] text-text">Studio</span>
+                    <span className="truncate text-sm font-medium tracking-[-0.03em] text-text">RoadMap Studio</span>
                 </Link>
 
-                <nav className="hidden items-center gap-8 lg:flex">
+                <nav className="hidden items-center gap-2 rounded-full border border-border bg-[color:color-mix(in_srgb,var(--color-surface)_88%,var(--color-page))] p-1 lg:flex">
                     {navItems.map((item) => {
                         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
                         return (
@@ -61,8 +64,10 @@ export default function Header() {
                                 key={item.href}
                                 href={item.href}
                                 className={cn(
-                                    "text-sm transition-colors",
-                                    active ? "text-text" : "text-text-muted hover:text-text"
+                                    "rounded-full px-4 py-2 text-sm transition-[background-color,color]",
+                                    active
+                                        ? "bg-[color:color-mix(in_srgb,var(--color-accent)_14%,var(--color-surface))] text-text"
+                                        : "text-text-muted hover:bg-[color:color-mix(in_srgb,var(--color-text)_4%,transparent)] hover:text-text"
                                 )}
                             >
                                 {item.label}
@@ -75,18 +80,20 @@ export default function Header() {
                     <AuthButton />
                 </div>
 
-                <button
+                <Button
                     type="button"
                     onClick={() => setMobileOpen((value) => !value)}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-surface text-text lg:hidden"
+                    variant="outline"
+                    size="icon"
+                    className="rounded-full lg:hidden"
                     aria-label={mobileOpen ? "Close menu" : "Open menu"}
                 >
                     {mobileOpen ? <X size={18} /> : <Menu size={18} />}
-                </button>
+                </Button>
             </div>
 
             {mobileOpen ? (
-                <div className="border-t border-border bg-page lg:hidden">
+                <div className="border-t border-border bg-[color:color-mix(in_srgb,var(--color-page)_92%,var(--color-surface))] lg:hidden">
                     <div className="page-shell-wide flex flex-col gap-2 py-4">
                         {navItems.map((item) => {
                             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -95,8 +102,10 @@ export default function Header() {
                                     key={item.href}
                                     href={item.href}
                                     className={cn(
-                                        "rounded-md px-3 py-2 text-sm transition-colors",
-                                        active ? "bg-surface-subtle text-text" : "text-text-muted hover:bg-surface-subtle hover:text-text"
+                                        "rounded-[14px] px-3 py-2 text-sm transition-[background-color,color]",
+                                        active
+                                            ? "bg-[color:color-mix(in_srgb,var(--color-accent)_14%,var(--color-surface))] text-text"
+                                            : "text-text-muted hover:bg-[color:color-mix(in_srgb,var(--color-text)_4%,transparent)] hover:text-text"
                                     )}
                                 >
                                     {item.label}

@@ -64,7 +64,7 @@ export default function AuthButton() {
 
     if (loading) {
         return (
-            <div className="inline-flex min-h-10 items-center gap-2 rounded-md border border-border bg-surface px-3 text-sm text-text-muted">
+            <div className="inline-flex min-h-10 items-center gap-2 rounded-full border border-border bg-[color:color-mix(in_srgb,var(--color-surface)_94%,var(--color-page))] px-3 text-sm text-text-muted">
                 <Loader2 size={14} className="animate-spin" />
                 Account
             </div>
@@ -76,7 +76,7 @@ export default function AuthButton() {
         return (
             <Link
                 href={`/auth${next}`}
-                className="button-primary min-h-10 px-4 text-sm"
+                className="button-primary min-h-10 rounded-full px-4 text-sm"
                 title="Your work stays in this browser until you sign in."
             >
                 <HardDrive size={14} />
@@ -96,7 +96,10 @@ export default function AuthButton() {
             type="button"
             onClick={() => void handleSignOut()}
             disabled={isPending}
-            className={cn("button-secondary min-h-10 px-4 text-sm disabled:opacity-60", isPending && "pointer-events-none")}
+            className={cn(
+                "button-secondary min-h-10 rounded-full px-4 text-sm disabled:opacity-60",
+                isPending && "pointer-events-none"
+            )}
             title={authState.email ?? "Signed in"}
         >
             {isPending ? <Loader2 size={14} className="animate-spin" /> : <LogOut size={14} />}

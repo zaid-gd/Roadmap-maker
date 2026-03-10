@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { getStorage } from "@/lib/storage";
 import { getActiveApiKey, getActiveModel, getUserConfig } from "@/lib/userConfig";
 import type { Roadmap } from "@/types";
@@ -184,58 +185,54 @@ function CreatePageContent() {
     return (
         <>
             <main className="page-shell-wide pb-20 pt-8 md:pt-10">
-                <section className="studio-panel grid gap-6 px-6 py-6 lg:px-8 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)]">
-                    <div className="max-w-4xl">
-                        <p className="eyebrow">Create workspace</p>
-                        <h1 className="mt-4 max-w-3xl text-3xl font-display leading-[1.02] text-text-primary md:text-[3.25rem]">
-                            Build a workspace from source material without wasting screen space.
-                        </h1>
-                        <p className="mt-4 max-w-3xl text-sm leading-8 text-text-secondary md:text-base">
-                            Paste markdown, notes, SOPs, or internal docs. The editor stays broad, the framing controls stay compact, and the structure is shaped around the material instead of oversized promo blocks.
-                        </p>
-                    </div>
-
-                    <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
-                        <div className="studio-kpi p-4">
-                            <p className="text-[11px] uppercase tracking-[0.22em] text-text-secondary">Source size</p>
-                            <p className="mt-2 text-2xl font-semibold text-text-primary">{wordCount}</p>
-                            <p className="mt-1 text-sm text-text-secondary">words in the drafting surface</p>
-                        </div>
-                        <div className="studio-kpi p-4">
-                            <p className="text-[11px] uppercase tracking-[0.22em] text-text-secondary">Mode</p>
-                            <p className="mt-2 text-2xl font-semibold capitalize text-text-primary">{mode}</p>
-                            <p className="mt-1 text-sm text-text-secondary">
-                                {mode === "intern" ? "Structured for coaching" : "Flexible workspace framing"}
-                            </p>
-                        </div>
-                        <div className="studio-kpi p-4">
-                            <p className="text-[11px] uppercase tracking-[0.22em] text-text-secondary">Storage</p>
-                            <p className="mt-2 text-2xl font-semibold text-text-primary">Local</p>
-                            <p className="mt-1 text-sm text-text-secondary">saved in this browser by default</p>
-                        </div>
-                    </div>
+                <section className="app-header-block">
+                    <p className="eyebrow">Create workspace</p>
+                    <h1 className="text-3xl font-display leading-tight text-text-primary md:text-5xl">
+                        Create a workspace from source material.
+                    </h1>
+                    <p className="max-w-3xl text-sm leading-7 text-text-secondary md:text-base">
+                        Paste or upload the source, choose the structure, and generate the workspace.
+                    </p>
                 </section>
 
-                <div className="mt-6 flex flex-col gap-6 xl:flex-row xl:items-start">
-                    <aside className="hidden w-[300px] shrink-0 space-y-4 xl:sticky xl:top-24 xl:block">
-                        <div className="studio-panel-muted p-5">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-secondary">What to add</p>
+                <div className="two-panel-shell pt-2">
+                    <aside className="two-panel-sidebar space-y-4 lg:sticky lg:top-24">
+                        <div className="surface-panel p-5">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-secondary">Source material</p>
                             <div className="mt-4 space-y-3 text-sm leading-7 text-text-secondary">
-                                <p>Start with the full source material. Titles and goals help framing, but the body text does the real work.</p>
-                                <p>Use “Structured” when you want a coaching-friendly output. Use “Standard” when the material is more exploratory.</p>
+                                <p>Start with the full source text. The content determines the final workspace structure.</p>
+                                <p>Use Structured mode for coaching-oriented work. Use Standard mode for general workspace generation.</p>
                             </div>
                         </div>
 
-                        <div className="studio-panel-muted p-5">
+                        <div className="surface-panel p-5">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-secondary">Current draft</p>
+                            <div className="mt-4 space-y-4">
+                                <div>
+                                    <p className="text-xs uppercase tracking-[0.18em] text-text-soft">Word count</p>
+                                    <p className="mt-2 text-2xl font-semibold text-text-primary">{wordCount}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs uppercase tracking-[0.18em] text-text-soft">Mode</p>
+                                    <p className="mt-2 text-base font-semibold capitalize text-text-primary">{mode}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs uppercase tracking-[0.18em] text-text-soft">Storage</p>
+                                    <p className="mt-2 text-base font-semibold text-text-primary">Local by default</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="surface-panel p-5">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-secondary">Before generating</p>
                             <div className="mt-4 space-y-3 text-sm leading-7 text-text-secondary">
-                                <p>Anonymous work stays local by default. If you enable sync later, the same workspace can be mirrored to your account.</p>
-                                <p>If generation fails, check your provider key in Settings and then retry from this page.</p>
+                                <p>Anonymous work stays local until you enable sync.</p>
+                                <p>If generation fails, verify your provider key in Settings and retry from this page.</p>
                             </div>
                         </div>
                     </aside>
 
-                    <section className="min-w-0 flex-1 space-y-4">
+                    <section className="min-w-0 space-y-4">
                         <Card>
                             <CardHeader className="gap-2">
                                 <CardTitle className="text-lg font-display">Workspace framing</CardTitle>
@@ -301,12 +298,12 @@ function CreatePageContent() {
                                 <CardDescription>Paste directly or drop a markdown file into the surface.</CardDescription>
                             </CardHeader>
 
-                            <textarea
+                            <Textarea
                                 id="workspace-content"
                                 value={content}
                                 onChange={(event) => setContent(event.target.value)}
                                 placeholder="Paste notes, outlines, internal documentation, operating instructions, or any structured source material."
-                                className="field-textarea mono-surface min-h-[420px] w-full rounded-none border-0 bg-transparent px-5 py-5 text-[15px] leading-7 shadow-none focus-visible:ring-0"
+                                className="mono-surface min-h-[420px] w-full rounded-none border-0 bg-transparent px-5 py-5 text-[15px] leading-7 shadow-none focus-visible:ring-0"
                             />
                         </Card>
 
@@ -317,14 +314,15 @@ function CreatePageContent() {
 
                         <Card>
                             <CardContent className="space-y-4 p-5">
-                                <button
+                                <Button
                                     type="button"
                                     onClick={() => setShowOptional((current) => !current)}
-                                    className="flex items-center gap-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
+                                    variant="ghost"
+                                    className="justify-start px-0 text-sm font-medium text-text-secondary hover:bg-transparent hover:text-text-primary"
                                 >
                                     {showOptional ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                     Optional details
-                                </button>
+                                </Button>
 
                                 {showOptional ? (
                                     <div className="mt-4 grid gap-4 md:grid-cols-3">
@@ -431,7 +429,7 @@ function CreatePageContent() {
                         ) : null}
 
                         {error ? (
-                            <div className="rounded-md border border-[var(--color-danger)]/25 bg-[var(--color-danger)]/5 px-4 py-3 text-sm text-[var(--color-danger)]">
+                            <div className="rounded-[18px] border border-[color:color-mix(in_srgb,var(--color-accent)_24%,var(--color-border))] bg-[color:color-mix(in_srgb,var(--color-accent)_10%,var(--color-surface))] px-4 py-3 text-sm text-text-primary">
                                 {error}
                             </div>
                         ) : null}

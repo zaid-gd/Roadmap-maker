@@ -94,26 +94,24 @@ export default function WorkspacesPage() {
 
     return (
         <main className="studio-page">
-            <section className="studio-hero grid gap-8 p-6 lg:p-8 2xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
-                <div className="max-w-3xl">
-                    <p className="eyebrow">Library</p>
-                    <div className="mt-4 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-                        <div className="max-w-2xl">
-                            <h1 className="text-4xl font-display leading-tight tracking-[-0.04em] text-text-primary md:text-6xl">
-                                Keep every active workspace readable.
-                            </h1>
-                            <p className="mt-4 text-base leading-8 text-text-secondary">
-                                Open, sort, and continue work from one place without adding unnecessary dashboard chrome.
-                            </p>
-                        </div>
-
-                        <Link href="/create" className="button-primary shrink-0">
-                            <Plus size={16} />
-                            New workspace
-                        </Link>
+            <header className="app-header-block">
+                <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+                    <div className="max-w-2xl">
+                        <p className="eyebrow">Library</p>
+                        <h1 className="mt-3 text-4xl font-display leading-none text-text-primary md:text-5xl">Workspaces</h1>
+                        <p className="mt-4 text-sm leading-7 text-text-secondary">
+                            Open, sort, and continue work from one place.
+                        </p>
                     </div>
-                </div>
 
+                    <Link href="/create" className="button-primary shrink-0">
+                        <Plus size={16} />
+                        New workspace
+                    </Link>
+                </div>
+            </header>
+
+            <section className="section-space-compact">
                 <StorageStatusCard
                     status={storageStatus}
                     actionHref={storageStatus.mode === "synced-account" ? "/settings?tab=privacy" : "/auth?next=%2Fworkspaces"}

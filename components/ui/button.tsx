@@ -4,18 +4,19 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-    "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+    "inline-flex items-center justify-center gap-2 rounded-[14px] text-sm font-medium transition-[background-color,border-color,color,box-shadow,transform] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-accent)_26%,transparent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-page)] active:scale-[0.985]",
     {
         variants: {
             variant: {
-                default: "bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]",
+                default:
+                    "border border-[color:color-mix(in_srgb,var(--color-accent)_42%,var(--color-border))] bg-[color:color-mix(in_srgb,var(--color-accent)_18%,var(--color-surface))] text-[var(--color-text)] hover:bg-[color:color-mix(in_srgb,var(--color-accent)_24%,var(--color-surface))]",
                 secondary:
-                    "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:bg-[var(--color-surface-subtle)]",
-                ghost: "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-subtle)] hover:text-[var(--color-text)]",
+                    "border border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-surface)_94%,var(--color-page))] text-[var(--color-text)] hover:border-[var(--color-border-strong)] hover:bg-[color:color-mix(in_srgb,var(--color-surface-subtle)_92%,var(--color-page))]",
+                ghost: "text-[var(--color-text-muted)] hover:bg-[color:color-mix(in_srgb,var(--color-text)_6%,transparent)] hover:text-[var(--color-text)]",
                 destructive:
-                    "bg-[var(--color-danger)] text-white hover:bg-[color-mix(in_srgb,var(--color-danger)_88%,black)]",
+                    "border border-[color:color-mix(in_srgb,var(--color-accent)_42%,var(--color-border))] bg-[color:color-mix(in_srgb,var(--color-accent)_18%,var(--color-surface))] text-[var(--color-text)] hover:bg-[color:color-mix(in_srgb,var(--color-accent)_24%,var(--color-surface))]",
                 outline:
-                    "border border-[var(--color-border)] bg-transparent text-[var(--color-text)] hover:bg-[var(--color-surface-subtle)]",
+                    "border border-[var(--color-border)] bg-transparent text-[var(--color-text)] hover:border-[var(--color-border-strong)] hover:bg-[color:color-mix(in_srgb,var(--color-surface-subtle)_72%,transparent)]",
             },
             size: {
                 default: "h-10 px-4 py-2",

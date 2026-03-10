@@ -19,17 +19,20 @@ export default async function GalleryPage({
         <main className="page-shell-wide pb-24 pt-20 md:pt-24">
             <GallerySchema items={items} />
 
-            <section className="section-space-compact border-b border-border">
-                <div className="max-w-3xl">
+            <header className="app-header-block">
+                <div>
                     <p className="eyebrow">Gallery</p>
-                    <h1 className="mt-4 max-w-2xl text-4xl font-display leading-[1.02] tracking-[-0.04em] text-text-primary md:text-6xl">
-                        Explore structured workspace templates and public starting points.
-                    </h1>
+                    <h1 className="mt-3 text-4xl font-display leading-none text-text-primary md:text-5xl">Gallery</h1>
+                    <p className="mt-4 max-w-2xl text-sm leading-7 text-text-secondary">
+                        Browse public workspaces and saved starting points.
+                    </p>
                 </div>
-            </section>
+            </header>
 
             <section className="section-space-compact">
-                <GalleryFilters />
+                <div className="filter-bar">
+                    <GalleryFilters />
+                </div>
                 <div className="mt-8">
                     <GalleryGrid items={items} />
                 </div>

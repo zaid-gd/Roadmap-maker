@@ -1,22 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
 import { Toaster } from "sonner";
-import { applyAccentTheme } from "@/lib/accent-theme";
-import { getUserConfig } from "@/lib/userConfig";
-
-function AccentThemeBootstrapper() {
-    useEffect(() => {
-        applyAccentTheme(getUserConfig().accentColor);
-    }, []);
-
-    return null;
-}
 
 export function Providers({ children }: { children: React.ReactNode }) {
     return (
         <>
-            <AccentThemeBootstrapper />
             {children}
             <Toaster
                 position="bottom-right"

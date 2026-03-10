@@ -8,10 +8,7 @@ import { APP_NAME, APP_TAGLINE, BRAND_OWNER } from "@/lib/constants";
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://roadmap.znsnexus.com";
 
 export const viewport: Viewport = {
-    themeColor: [
-        { media: "(prefers-color-scheme: light)", color: "#faf9f6" },
-        { media: "(prefers-color-scheme: dark)", color: "#0C0E14" },
-    ],
+    themeColor: "#0b0d10",
 };
 
 export const metadata: Metadata = {
@@ -59,11 +56,11 @@ export default async function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+        <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} dark`}>
             <body className="min-h-screen bg-page text-text">
                 <a
                     href="#main-content"
-                    className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:rounded focus:bg-[var(--color-accent)] focus:px-4 focus:py-2 focus:text-white"
+                    className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[9999] focus:rounded-md focus:border focus:border-[color:var(--color-accent)] focus:bg-[color:color-mix(in_srgb,var(--color-accent)_16%,var(--color-surface))] focus:px-4 focus:py-2 focus:text-[color:var(--color-text)]"
                 >
                     Skip to main content
                 </a>

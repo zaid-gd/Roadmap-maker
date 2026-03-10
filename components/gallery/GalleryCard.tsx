@@ -9,9 +9,9 @@ import type { PublicRoadmapCard } from "@/types";
 import { cn } from "@/lib/utils";
 
 const difficultyTone: Record<string, string> = {
-    beginner: "text-[var(--color-success)]",
-    intermediate: "text-[var(--color-warning)]",
-    advanced: "text-[var(--color-danger)]",
+    beginner: "text-[var(--color-text-soft)]",
+    intermediate: "text-[var(--color-text-soft)]",
+    advanced: "text-[var(--color-accent)]",
 };
 
 export default function GalleryCard({ item }: { item: PublicRoadmapCard }) {
@@ -81,7 +81,7 @@ export default function GalleryCard({ item }: { item: PublicRoadmapCard }) {
                 </Button>
             </CardFooter>
 
-            {message ? <p className="px-6 pb-6 text-sm text-[var(--color-warning)]">{message}</p> : null}
+            {message ? <p className="px-6 pb-6 text-sm text-text-secondary">{message}</p> : null}
         </Card>
     );
 }

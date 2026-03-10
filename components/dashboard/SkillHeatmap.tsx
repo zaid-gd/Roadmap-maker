@@ -37,7 +37,7 @@ export default function SkillHeatmap({ roadmaps }: { roadmaps: Roadmap[] }) {
                     {roadmaps.map((roadmap) => {
                         const rate = getRoadmapCompletionRate(roadmap);
                         return (
-                            <div key={roadmap.id} className="studio-panel-soft p-4">
+                            <div key={roadmap.id} className="studio-micro-grid p-4">
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
                                         <p className="text-sm font-semibold text-text-primary">{roadmap.title}</p>

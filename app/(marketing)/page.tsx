@@ -284,16 +284,16 @@ export default function HomePage() {
                 animate="show"
             >
                 <div className="max-w-4xl">
-                    <motion.p variants={revealChild} className="eyebrow text-gray-500">
+                    <motion.p variants={revealChild} className="eyebrow">
                         Workspace platform
                     </motion.p>
                     <motion.h1
                         variants={revealChild}
-                        className="mt-4 max-w-4xl text-5xl font-display leading-[0.97] tracking-[-0.05em] text-gray-900 md:text-7xl"
+                        className="mt-4 max-w-4xl text-5xl font-display leading-[0.94] tracking-[-0.07em] text-text-primary md:text-7xl"
                     >
                         Structure the work, then let the product stay out of the way.
                     </motion.h1>
-                    <motion.p variants={revealChild} className="mt-5 max-w-xl text-lg text-gray-600">
+                    <motion.p variants={revealChild} className="mt-5 max-w-2xl text-lg leading-8 text-text-secondary">
                         A clean operating surface for capturing, organizing, and continuing complex work.
                     </motion.p>
                     <motion.div variants={revealChild} className="mt-8 flex flex-col items-start gap-3 sm:flex-row">
@@ -308,14 +308,11 @@ export default function HomePage() {
             </motion.section>
 
             <section className="section-space-compact border-b border-border">
-                <div className="grid gap-5 md:grid-cols-4 md:gap-0">
+                <div className="mx-auto max-w-3xl divide-y divide-border">
                     {heroItems.map((item, index) => (
                         <div
                             key={item}
-                            className={cn(
-                                "text-sm font-medium text-gray-600 md:px-5",
-                                index > 0 && "md:border-l md:border-border",
-                            )}
+                            className={cn("px-0 py-4 text-sm font-medium text-text-secondary", index === 0 && "pt-0")}
                         >
                             {item}
                         </div>
@@ -323,32 +320,31 @@ export default function HomePage() {
                 </div>
             </section>
 
-            <section className="section-space space-y-24">
+            <section className="section-space">
+                <div className="mx-auto max-w-4xl space-y-24">
                 {featureSections.map((section, index) => (
                     <motion.div
                         key={section.title}
-                        className={cn(
-                            "grid items-center gap-10 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1fr)] lg:gap-14",
-                            index % 2 === 1 && "lg:grid-cols-[minmax(0,1fr)_minmax(0,0.82fr)]",
-                        )}
+                        className="space-y-8 border-b border-border pb-24 last:border-b-0 last:pb-0"
                         initial={{ opacity: 0, y: 32 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: "-80px" }}
                         transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
                     >
-                        <div className={cn(index % 2 === 1 && "lg:order-2")}>
+                        <div>
                             <p className="eyebrow">{section.eyebrow}</p>
-                            <h2 className="mt-4 max-w-xl text-3xl font-display leading-tight tracking-[-0.04em] text-text-primary md:text-5xl">
+                            <h2 className="mt-4 max-w-2xl text-3xl font-display leading-tight tracking-[-0.04em] text-text-primary md:text-5xl">
                                 {section.title}
                             </h2>
-                            <p className="mt-5 max-w-xl text-base leading-8 text-text-secondary">{section.body}</p>
+                            <p className="mt-5 max-w-2xl text-base leading-8 text-text-secondary">{section.body}</p>
                         </div>
 
-                        <div className={cn(index % 2 === 1 && "lg:order-1")}>
+                        <div>
                             <FeatureVisual type={section.visual} roadmaps={roadmaps} storageStatus={storageStatus} />
                         </div>
                     </motion.div>
                 ))}
+                </div>
             </section>
 
             <section className="section-space border-t border-border text-center">
