@@ -632,6 +632,7 @@ function SettingsContent() {
                                 status={storageStatus}
                                 actionHref={userEmail ? undefined : "/auth?next=%2Fsettings%3Ftab%3Dgeneral"}
                                 actionLabel="Enable account sync"
+                                variant="inset"
                             />
 
                             <SettingRow
@@ -643,13 +644,13 @@ function SettingsContent() {
                                 }
                             >
                                 {loading ? (
-                                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm text-text-secondary">
+                                    <div className="inline-flex items-center gap-2 text-sm text-text-secondary">
                                         <Loader2 size={14} className="animate-spin" />
                                         Loading account
                                     </div>
                                 ) : userEmail ? (
                                     <>
-                                        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
+                                        <div className="inline-flex items-center gap-2 text-sm text-text-primary">
                                             <UserRound size={14} />
                                             {userEmail}
                                         </div>
@@ -678,9 +679,7 @@ function SettingsContent() {
                                 title="Storage mode"
                                 description="Roadmaps always save locally first. When sync is enabled, the same work is mirrored to your account."
                             >
-                                <div className="inline-flex items-center rounded-full border border-border bg-surface px-4 py-2 text-sm text-text-primary">
-                                    {storageModeLabel}
-                                </div>
+                                <span className="text-sm font-medium text-text-primary">{storageModeLabel}</span>
                             </SettingRow>
 
                             <div className="settings-field">
@@ -711,16 +710,6 @@ function SettingsContent() {
                             <SettingRow
                                 title="Show progress notices"
                                 description="Keep lightweight completion hints and nudges visible in the local studio interface."
-                            >
-                                <Toggle
-                                    checked={config.showProgressNotice}
-                                    onChange={(next) => setConfig((current) => ({ ...current, showProgressNotice: next }))}
-                                />
-                            </SettingRow>
-
-                            <SettingRow
-                                title="Show progress notices"
-                                description="Keep lightweight completion hints and nudges visible in the studio interface."
                             >
                                 <Toggle
                                     checked={config.showProgressNotice}
@@ -939,11 +928,11 @@ function SettingsContent() {
                     {activeCategory === "ai" && (
                         <SectionCard
                             title="AI / API Key"
-                            description="Use shared studio AI credits by default or switch to your own provider key for this browser."
+                            description="Gemini is the default provider. Add your own key to skip studio credits, or switch to any other supported provider."
                         >
                             <SettingRow
                                 title="Use your own provider key"
-                                description="When enabled, requests use the selected provider and skip studio credit deductions."
+                                description="When enabled, requests use the selected provider and skip studio credit deductions. Add your Gemini API key below to get started."
                             >
                                 <Toggle
                                     checked={config.useCustomKey}
@@ -975,7 +964,14 @@ function SettingsContent() {
                                                             : "border-border bg-surface hover:border-border-strong"
                                                     }`}
                                                 >
-                                                    <div className="text-sm font-semibold text-text-primary">{option.label}</div>
+                                                    <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+                                                        <span>{option.label}</span>
+                                                        {option.value === "gemini" ? (
+                                                            <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                                                                Default
+                                                            </span>
+                                                        ) : null}
+                                                    </div>
                                                     <div className="mt-1 text-sm leading-6 text-text-secondary">{option.description}</div>
                                                 </button>
                                             ))}

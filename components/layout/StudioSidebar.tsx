@@ -18,10 +18,6 @@ export default function StudioSidebar() {
     return (
         <aside className="sticky top-24 hidden self-start xl:block">
             <div className="surface-panel flex min-h-[calc(100vh-7rem)] flex-col p-4">
-                <div className="px-3 py-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-soft">ZNS RoadMap Studio</p>
-                </div>
-
                 <nav className="space-y-1">
                     {PRIMARY_ITEMS.map((item) => {
                         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);

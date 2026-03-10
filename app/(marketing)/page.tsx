@@ -322,28 +322,32 @@ export default function HomePage() {
 
             <section className="section-space">
                 <div className="mx-auto max-w-4xl space-y-24">
-                {featureSections.map((section, index) => (
-                    <motion.div
-                        key={section.title}
-                        className="space-y-8 border-b border-border pb-24 last:border-b-0 last:pb-0"
-                        initial={{ opacity: 0, y: 32 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-80px" }}
-                        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-                    >
-                        <div>
-                            <p className="eyebrow">{section.eyebrow}</p>
-                            <h2 className="mt-4 max-w-2xl text-3xl font-display leading-tight tracking-[-0.04em] text-text-primary md:text-5xl">
-                                {section.title}
-                            </h2>
-                            <p className="mt-5 max-w-2xl text-base leading-8 text-text-secondary">{section.body}</p>
-                        </div>
+                    {featureSections.map((section, index) => {
+                        const reverse = index % 2 === 1;
 
-                        <div>
-                            <FeatureVisual type={section.visual} roadmaps={roadmaps} storageStatus={storageStatus} />
-                        </div>
-                    </motion.div>
-                ))}
+                        return (
+                            <motion.div
+                                key={section.title}
+                                className="border-b border-border py-24 last:border-b-0 last:pb-0 md:flex md:items-center md:gap-16"
+                                initial={{ opacity: 0, y: 32 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true, margin: "-80px" }}
+                                transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                            >
+                                <div className={cn("order-1 max-w-md", reverse ? "md:order-2" : "md:order-1")}>
+                                    <p className="eyebrow">{section.eyebrow}</p>
+                                    <h2 className="mt-4 text-3xl font-display leading-tight tracking-[-0.04em] text-text-primary md:text-5xl">
+                                        {section.title}
+                                    </h2>
+                                    <p className="mt-5 text-base leading-8 text-text-secondary">{section.body}</p>
+                                </div>
+
+                                <div className={cn("order-2 mt-10 min-w-0 flex-1 md:mt-0", reverse ? "md:order-1" : "md:order-2")}>
+                                    <FeatureVisual type={section.visual} roadmaps={roadmaps} storageStatus={storageStatus} />
+                                </div>
+                            </motion.div>
+                        );
+                    })}
                 </div>
             </section>
 

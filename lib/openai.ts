@@ -14,7 +14,7 @@ function getProviderEnvApiKey(provider: AIProvider) {
 }
 
 export function resolveAiRequestOptions(options?: AiRequestOptions) {
-    const provider = options?.provider ?? "openai";
+    const provider = options?.provider ?? "gemini";
     const model = options?.model?.trim() || DEFAULT_PROVIDER_MODELS[provider];
     const apiKey = options?.apiKey?.trim() || getProviderEnvApiKey(provider);
 

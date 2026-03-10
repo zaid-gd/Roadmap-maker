@@ -188,10 +188,11 @@ a:focus-visible {
     flex-direction: column;
     gap: 0.5rem;
     min-height: 132px;
-    padding: 1.25rem;
-    border-radius: 24px;
+    padding: 1rem 1.1rem 1.25rem;
+    border-radius: 0;
     border: 1px solid var(--color-border);
-    background: color-mix(in srgb, var(--color-surface-subtle) 96%, var(--color-page));
+    background: transparent;
+    box-shadow: none;
 }
 
 .settings-shell {

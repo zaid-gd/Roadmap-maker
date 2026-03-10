@@ -196,8 +196,8 @@ function CreatePageContent() {
                 </section>
 
                 <div className="two-panel-shell pt-2">
-                    <aside className="two-panel-sidebar space-y-4 lg:sticky lg:top-24">
-                        <div className="surface-panel p-5">
+                    <aside className="two-panel-sidebar divide-y divide-border border-y border-border lg:sticky lg:top-24">
+                        <div className="py-5">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-secondary">Source material</p>
                             <div className="mt-4 space-y-3 text-sm leading-7 text-text-secondary">
                                 <p>Start with the full source text. The content determines the final workspace structure.</p>
@@ -205,7 +205,7 @@ function CreatePageContent() {
                             </div>
                         </div>
 
-                        <div className="surface-panel p-5">
+                        <div className="py-5">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-secondary">Current draft</p>
                             <div className="mt-4 space-y-4">
                                 <div>
@@ -223,7 +223,7 @@ function CreatePageContent() {
                             </div>
                         </div>
 
-                        <div className="surface-panel p-5">
+                        <div className="py-5">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-secondary">Before generating</p>
                             <div className="mt-4 space-y-3 text-sm leading-7 text-text-secondary">
                                 <p>Anonymous work stays local until you enable sync.</p>
@@ -273,39 +273,39 @@ function CreatePageContent() {
                             </CardContent>
                         </Card>
 
-                        <Card
-                            className={cn(
-                                "transition-colors",
-                                isDragging ? "border-[var(--color-accent)]" : "border-border",
-                            )}
-                            onDragOver={(event) => {
-                                event.preventDefault();
-                                setIsDragging(true);
-                            }}
-                            onDragLeave={(event) => {
-                                event.preventDefault();
-                                setIsDragging(false);
-                            }}
-                            onDrop={(event) => {
-                                event.preventDefault();
-                                setIsDragging(false);
-                                const file = event.dataTransfer.files[0];
-                                if (file) processFile(file);
-                            }}
-                        >
-                            <CardHeader className="border-b border-border">
-                                <CardTitle className="text-lg font-display">Source material</CardTitle>
-                                <CardDescription>Paste directly or drop a markdown file into the surface.</CardDescription>
-                            </CardHeader>
+                        <section className="space-y-3">
+                            <div>
+                                <h2 className="text-lg font-display text-text-primary">Source material</h2>
+                                <p className="mt-2 text-sm leading-7 text-text-secondary">
+                                    Paste directly or drop a markdown file into the working surface.
+                                </p>
+                            </div>
 
                             <Textarea
                                 id="workspace-content"
                                 value={content}
                                 onChange={(event) => setContent(event.target.value)}
+                                onDragOver={(event) => {
+                                    event.preventDefault();
+                                    setIsDragging(true);
+                                }}
+                                onDragLeave={(event) => {
+                                    event.preventDefault();
+                                    setIsDragging(false);
+                                }}
+                                onDrop={(event) => {
+                                    event.preventDefault();
+                                    setIsDragging(false);
+                                    const file = event.dataTransfer.files[0];
+                                    if (file) processFile(file);
+                                }}
                                 placeholder="Paste notes, outlines, internal documentation, operating instructions, or any structured source material."
-                                className="mono-surface min-h-[420px] w-full rounded-none border-0 bg-transparent px-5 py-5 text-[15px] leading-7 shadow-none focus-visible:ring-0"
+                                className={cn(
+                                    "mono-surface min-h-[420px] w-full rounded-none bg-transparent px-5 py-5 text-[15px] leading-7 shadow-none focus-visible:ring-0",
+                                    isDragging ? "border-[var(--color-accent)]" : "border-border",
+                                )}
                             />
-                        </Card>
+                        </section>
 
                         <div className="flex items-center justify-between gap-4 text-xs text-text-muted">
                             <p>This stays local by default. Shared access is optional later.</p>

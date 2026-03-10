@@ -112,19 +112,26 @@ export async function listGallery(options?: {
     mode?: string;
     contentType?: string;
 }) {
-    const supabase = createServiceRoleClient();
-    const { data, error } = await supabase
-        .from("roadmaps")
-        .select("id, user_id, roadmap, title, summary, mode, content_type, is_public, fork_count, updated_at")
-        .eq("is_public", true)
-        .order("fork_count", { ascending: false })
-        .order("updated_at", { ascending: false })
-        .limit(50);
-
-    if (error) throw error;
-
-    const cards = (data ?? []).map((row) => toCard(row as RoadmapRow));
     const seeded = SEEDED_GALLERY_ROADMAPS.map(toSeedCard);
+    let cards: PublicRoadmapCard[] = [];
+
+    try {
+        const supabase = createServiceRoleClient();
+        const { data, error } = await supabase
+            .from("roadmaps")
+            .select("id, user_id, roadmap, title, summary, mode, content_type, is_public, fork_count, updated_at")
+            .eq("is_public", true)
+            .order("fork_count", { ascending: false })
+            .order("updated_at", { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
+
+        cards = (data ?? []).map((row) => toCard(row as RoadmapRow));
+    } catch {
+        cards = [];
+    }
+
     const query = options?.query?.trim().toLowerCase();
 
     return [...seeded, ...cards].filter((card) => {

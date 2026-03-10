@@ -25,7 +25,7 @@ function createProviderMap(defaultValue: string): ProviderMap {
 export const DEFAULT_CONFIG: UserConfig = {
     apiKeys: createProviderMap(""),
     modelByProvider: { ...DEFAULT_PROVIDER_MODELS },
-    provider: "openai",
+    provider: "gemini",
     useCustomKey: false,
     theme: "dark",
     accentColor: "#4F7CFF",
@@ -50,7 +50,7 @@ export function getUserConfig(): UserConfig {
             const storedKey = parsed.apiKeys?.[currentProvider];
             accumulator[currentProvider] = typeof storedKey === "string"
                 ? storedKey
-                : currentProvider === "openai"
+                : currentProvider === "gemini"
                     ? legacyApiKey
                     : DEFAULT_CONFIG.apiKeys[currentProvider];
             return accumulator;

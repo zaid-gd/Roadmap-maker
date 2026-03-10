@@ -42,15 +42,25 @@ interface StorageStatusCardProps {
     status: StorageStatus;
     actionHref?: string;
     actionLabel?: string;
+    variant?: "panel" | "inset";
 }
 
-export default function StorageStatusCard({ status, actionHref, actionLabel }: StorageStatusCardProps) {
+export default function StorageStatusCard({
+    status,
+    actionHref,
+    actionLabel,
+    variant = "panel",
+}: StorageStatusCardProps) {
     const meta = getStatusMeta(status);
     const Icon = meta.icon;
     const showAction = Boolean(actionHref && actionLabel && status.mode !== "synced-account");
+    const containerClass =
+        variant === "inset"
+            ? "rounded-[18px] border border-border bg-[color:color-mix(in_srgb,var(--color-surface-subtle)_94%,var(--color-page))] p-5"
+            : cn("surface-panel flex flex-col gap-5 p-5", meta.tone);
 
     return (
-        <div className={cn("surface-panel flex flex-col gap-5 p-5", meta.tone)}>
+        <div className={containerClass}>
             <div className="flex items-start justify-between gap-4">
                 <div className="space-y-3">
                     <div className={cn("inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em]", meta.badge)}>

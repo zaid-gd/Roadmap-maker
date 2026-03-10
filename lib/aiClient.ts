@@ -10,6 +10,6 @@ export async function generateStructuredContent(
     return generateStructuredJson(prompt, {
         apiKey: userKey,
         model: userModel,
-        provider: isAiProvider(userProvider) ? userProvider : "openai",
+        provider: isAiProvider(userProvider) ? userProvider : "gemini",
     });
 }
