@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "next typegen && node scripts/ensure-next-route-shims.mjs && tsc --noEmit"
+    "typecheck": "next typegen && node scripts/ensure-next-route-shims.mjs && tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -38,10 +41,16 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@vitest/ui": "^2.1.8",
+    "axe-core": "^4.11.1",
+    "chalk": "^5.6.2",
     "eslint": "^9.0.0",
     "eslint-config-next": "^15.1.0",
+    "fast-check": "^4.6.0",
+    "playwright": "^1.58.2",
     "postcss": "^8.5.0",
     "tailwindcss": "^4.0.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.8"
   }
 }

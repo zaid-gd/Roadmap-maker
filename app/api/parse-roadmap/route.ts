@@ -410,7 +410,7 @@ export async function POST(req: NextRequest) {
         }
 
         const sanitizedUserKey = typeof userApiKey === "string" ? userApiKey.trim() : "";
-        const sanitizedProvider = isAiProvider(userProvider) ? userProvider : "openai";
+        const sanitizedProvider = isAiProvider(userProvider) ? userProvider : "gemini";
         const sanitizedModel = typeof userModel === "string" && userModel.trim().length > 0 ? userModel.trim() : undefined;
         const useUserKey = Boolean(sanitizedUserKey);
 
