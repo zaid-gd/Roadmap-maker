@@ -16,7 +16,7 @@ export default async function GalleryPage({
     });
 
     return (
-        <main className="page-shell-wide pb-24 pt-20 md:pt-24">
+        <div className="page-shell-wide pb-24 pt-20 md:pt-24">
             <GallerySchema items={items} />
 
             <header className="app-header-block">
@@ -37,6 +37,6 @@ export default async function GalleryPage({
                     <GalleryGrid items={items} />
                 </div>
             </section>
-        </main>
+        </div>
     );
 }
