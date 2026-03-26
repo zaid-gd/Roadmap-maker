@@ -18,13 +18,14 @@ export default function StudioSidebar() {
     return (
         <aside className="sticky top-24 hidden self-start xl:block">
             <div className="surface-panel flex min-h-[calc(100vh-7rem)] flex-col p-4">
-                <nav className="space-y-1">
+                <nav aria-label="Studio navigation" className="space-y-1">
                     {PRIMARY_ITEMS.map((item) => {
                         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
+                                aria-current={active ? "page" : undefined}
                                 className={cn(
                                     "group flex items-center gap-3 rounded-[16px] border px-4 py-3 text-sm transition-all",
                                     active
