@@ -23,14 +23,14 @@ export default async function AuthPage({
 
     if (!isSupabaseConfigured()) {
         return (
-            <main className="flex min-h-[calc(100svh-72px)] items-center justify-center px-6 py-10">
+            <div className="flex min-h-[calc(100svh-72px)] items-center justify-center px-6 py-10">
                 <div className="w-full max-w-xl rounded-md border border-border bg-[var(--color-surface)] p-8">
                     <h1 className="text-3xl font-semibold tracking-[-0.03em] text-text-primary">Supabase is not configured</h1>
                     <p className="mt-4 text-sm leading-7 text-text-secondary">
                         Set `NEXT_PUBLIC_SUPABASE_URL` and either `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` before using account sync.
                     </p>
                 </div>
-            </main>
+            </div>
         );
     }
 
@@ -44,7 +44,7 @@ export default async function AuthPage({
     }
 
     return (
-        <main className="min-h-[calc(100svh-72px)] px-6 py-8 lg:px-10">
+        <div className="min-h-[calc(100svh-72px)] px-6 py-8 lg:px-10">
             <div className="mx-auto grid min-h-[calc(100svh-136px)] max-w-6xl gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
                 <section className="flex h-full flex-col justify-center">
                     <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-text-muted">Account access</p>
@@ -67,6 +67,6 @@ export default async function AuthPage({
                     <AuthForm nextPath={nextPath} initialError={params.error} />
                 </section>
             </div>
-        </main>
+        </div>
     );
 }

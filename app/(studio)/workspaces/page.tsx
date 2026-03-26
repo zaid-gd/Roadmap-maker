@@ -165,10 +165,19 @@ export default function WorkspacesPage() {
                 </div>
 
                 {mounted && filteredRoadmaps.length > 0 && (
-                    <p className="text-sm text-text-muted px-1">
-                        {filteredRoadmaps.length} {filteredRoadmaps.length === 1 ? "workspace" : "workspaces"}
-                        {filter !== "all" && <span className="text-text-soft"> ({filterOptions.find(f => f.key === filter)?.label.toLowerCase()})</span>}
-                    </p>
+                    <div className="flex items-center px-1">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-subtle px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-text-primary shadow-sm">
+                            <span className="flex h-5 items-center justify-center rounded-full bg-[var(--color-accent)] px-2 text-page shadow-sm">
+                                {filteredRoadmaps.length}
+                            </span>
+                            <span>{filteredRoadmaps.length === 1 ? "workspace" : "workspaces"}</span>
+                            {filter !== "all" && (
+                                <span className="ml-1 text-text-muted">
+                                    • {filterOptions.find(f => f.key === filter)?.label}
+                                </span>
+                            )}
+                        </div>
+                    </div>
                 )}
 
                 {mounted ? (

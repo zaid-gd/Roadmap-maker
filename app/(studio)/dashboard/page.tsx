@@ -17,7 +17,7 @@ export default async function DashboardPage() {
 
     if (!user) {
         return (
-            <main className="studio-page">
+            <div className="studio-page">
                 <section className="app-header-block">
                     <p className="eyebrow">Dashboard</p>
                     <h1 className="text-3xl font-display leading-tight text-text-primary md:text-5xl">
@@ -50,7 +50,7 @@ export default async function DashboardPage() {
                         </div>
                     ))}
                 </section>
-            </main>
+            </div>
         );
     }
 
@@ -84,7 +84,7 @@ export default async function DashboardPage() {
     ];
 
     return (
-        <main className="studio-page">
+        <div className="studio-page">
             <section className="app-header-block">
                 <p className="eyebrow">Dashboard</p>
                 <h1 className="text-3xl font-display leading-tight text-text-primary md:text-5xl">
@@ -112,6 +112,6 @@ export default async function DashboardPage() {
                 <CoachingLog roadmaps={roadmaps} />
                 <ModuleCompletionTable roadmaps={roadmaps} />
             </section>
-        </main>
+        </div>
     );
 }

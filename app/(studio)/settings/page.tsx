@@ -596,7 +596,7 @@ function SettingsContent() {
                 : "Local-only";
 
     return (
-        <main className="studio-page">
+        <div className="studio-page">
             {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
 
             <header className="app-header-block">
@@ -1093,6 +1093,6 @@ function SettingsContent() {
                     )}
                 </div>
             </div>
-        </main>
+        </div>
     );
 }

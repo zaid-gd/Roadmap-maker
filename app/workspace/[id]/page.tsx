@@ -20,7 +20,7 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
         return (
             <div className="min-h-full bg-[var(--color-page)]">
                 <Header />
-                <main className="page-shell flex min-h-[calc(100vh-4rem)] items-center justify-center pt-14">
+                <div className="page-shell flex min-h-[calc(100vh-4rem)] items-center justify-center pt-14">
                     <div className="max-w-md text-center">
                         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md border border-border bg-[var(--color-surface)] text-text-muted">
                             <Search size={20} />
@@ -35,7 +35,7 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
                             </Link>
                         </div>
                     </div>
-                </main>
+                </div>
             </div>
         );
     }

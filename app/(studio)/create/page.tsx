@@ -184,7 +184,7 @@ function CreatePageContent() {
 
     return (
         <>
-            <main className="page-shell-wide pb-20 pt-8 md:pt-10">
+            <div className="page-shell-wide pb-20 pt-8 md:pt-10">
                 <section className="app-header-block">
                     <p className="eyebrow">Create workspace</p>
                     <h1 className="text-3xl font-display leading-tight text-text-primary md:text-5xl">
@@ -435,7 +435,7 @@ function CreatePageContent() {
                         ) : null}
                     </section>
                 </div>
-            </main>
+            </div>
 
             {upgradeMessage ? <UpgradeModal message={upgradeMessage} onClose={() => setUpgradeMessage("")} /> : null}
         </>

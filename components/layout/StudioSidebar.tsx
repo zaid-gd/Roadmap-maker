@@ -27,18 +27,18 @@ export default function StudioSidebar() {
                                 href={item.href}
                                 aria-current={active ? "page" : undefined}
                                 className={cn(
-                                    "group flex items-center gap-3 rounded-[16px] border px-4 py-3 text-sm transition-all duration-200 ease-out",
+                                    "group flex items-center gap-3 rounded-[16px] border px-4 py-3 text-sm transition-all duration-300 ease-out",
                                     active
-                                        ? "border-border-strong bg-[color:color-mix(in_srgb,var(--color-surface)_98%,var(--color-page))] text-text shadow-sm"
-                                        : "border-transparent bg-transparent text-text-muted hover:border-border hover:bg-[color:color-mix(in_srgb,var(--color-text)_4%,transparent)] hover:text-text"
+                                        ? "border-[color:color-mix(in_srgb,var(--color-accent)_30%,var(--color-border))] bg-[color:color-mix(in_srgb,var(--color-accent)_8%,var(--color-surface))] text-text-primary shadow-sm"
+                                        : "border-transparent bg-transparent text-text-muted hover:border-border hover:bg-[color:color-mix(in_srgb,var(--color-surface)_80%,transparent)] hover:text-text-primary hover:shadow-sm"
                                 )}
                             >
                                 <div
                                     className={cn(
-                                        "rounded-xl border p-2 transition-all duration-200",
+                                        "rounded-xl border p-2 transition-all duration-300 ease-out",
                                         active
-                                            ? "border-border-strong bg-[color:color-mix(in_srgb,var(--color-accent)_12%,var(--color-surface-subtle))] text-[var(--color-accent)]"
-                                            : "border-border bg-surface-subtle text-text-muted group-hover:border-border-strong group-hover:bg-[color:color-mix(in_srgb,var(--color-text)_6%,transparent)]"
+                                            ? "border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-page shadow-[0_0_12px_color-mix(in_srgb,var(--color-accent)_60%,transparent)]"
+                                            : "border-border bg-surface-subtle text-text-muted group-hover:border-text-soft group-hover:bg-surface-muted group-hover:text-text-primary"
                                     )}
                                 >
                                     <item.icon size={16} />
@@ -59,18 +59,18 @@ export default function StudioSidebar() {
                         href="/settings"
                         aria-current={pathname === "/settings" ? "page" : undefined}
                         className={cn(
-                            "group flex items-center gap-3 rounded-[16px] border px-4 py-3 text-sm transition-all duration-200 ease-out",
+                            "group flex items-center gap-3 rounded-[16px] border px-4 py-3 text-sm transition-all duration-300 ease-out",
                             pathname === "/settings"
-                                ? "border-border-strong bg-[color:color-mix(in_srgb,var(--color-surface)_98%,var(--color-page))] text-text shadow-sm"
-                                : "border-transparent bg-transparent text-text-muted hover:border-border hover:bg-[color:color-mix(in_srgb,var(--color-text)_4%,transparent)] hover:text-text"
+                                ? "border-[color:color-mix(in_srgb,var(--color-accent)_30%,var(--color-border))] bg-[color:color-mix(in_srgb,var(--color-accent)_8%,var(--color-surface))] text-text-primary shadow-sm"
+                                : "border-transparent bg-transparent text-text-muted hover:border-border hover:bg-[color:color-mix(in_srgb,var(--color-surface)_80%,transparent)] hover:text-text-primary hover:shadow-sm"
                         )}
                     >
                         <div
                             className={cn(
-                                "rounded-xl border p-2 transition-all duration-200",
+                                "rounded-xl border p-2 transition-all duration-300 ease-out",
                                 pathname === "/settings"
-                                    ? "border-border-strong bg-[color:color-mix(in_srgb,var(--color-accent)_12%,var(--color-surface-subtle))] text-[var(--color-accent)]"
-                                    : "border-border bg-surface-subtle text-text-muted group-hover:border-border-strong group-hover:bg-[color:color-mix(in_srgb,var(--color-text)_6%,transparent)]"
+                                    ? "border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-page shadow-[0_0_12px_color-mix(in_srgb,var(--color-accent)_60%,transparent)]"
+                                    : "border-border bg-surface-subtle text-text-muted group-hover:border-text-soft group-hover:bg-surface-muted group-hover:text-text-primary"
                             )}
                         >
                             <Settings2 size={16} />
