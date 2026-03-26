@@ -414,6 +414,17 @@ export async function POST(req: NextRequest) {
         const sanitizedModel = typeof userModel === "string" && userModel.trim().length > 0 ? userModel.trim() : undefined;
         const useUserKey = Boolean(sanitizedUserKey);
 
+        if (!user && !useUserKey) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: "authentication_required",
+                    message: "Sign in to use shared studio AI, or add your own provider key.",
+                },
+                { status: 401 }
+            );
+        }
+
         if (testOnly) {
             try {
                 await testAiConnection(
