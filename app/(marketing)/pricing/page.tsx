@@ -151,7 +151,7 @@ export default function PricingPage() {
     const [interval, setInterval] = useState<BillingInterval>("monthly")
 
     return (
-        <div className="relative overflow-hidden pt-24 text-text-primary">
+        <main className="relative overflow-hidden pt-24 text-text-primary">
                 <FaqSchema faqs={FAQS} />
                 <div className="pointer-events-none absolute inset-0 hero-mesh-gradient opacity-60" />
                 <div className="pointer-events-none absolute inset-0 landing-grid-bg opacity-25" />
@@ -227,6 +227,6 @@ export default function PricingPage() {
                         Stripe Checkout handles card entry, SCA, and international card support. Your app only receives Stripe-managed session and subscription state.
                     </div>
                 </section>
-        </div>
+        </main>
     )
 }

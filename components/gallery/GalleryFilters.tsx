@@ -49,14 +49,11 @@ export default function GalleryFilters() {
         <div className="space-y-6 border-b border-border pb-5">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                 <div className="space-y-4">
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm" role="tablist">
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
                         {modeOptions.map((option) => (
                             <button
                                 key={option.label}
                                 type="button"
-                                role="tab"
-                                aria-selected={mode === option.value}
-                                aria-pressed={mode === option.value}
                                 onClick={() => updateParams({ mode: option.value })}
                                 className={cn(
                                     "border-b pb-1 transition-colors",
@@ -70,14 +67,11 @@ export default function GalleryFilters() {
                         ))}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" role="tablist">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
                         {typeOptions.map((option) => (
                             <button
                                 key={option.label}
                                 type="button"
-                                role="tab"
-                                aria-selected={contentType === option.value}
-                                aria-pressed={contentType === option.value}
                                 onClick={() => updateParams({ contentType: option.value })}
                                 className={cn(
                                     "transition-colors",
@@ -91,7 +85,7 @@ export default function GalleryFilters() {
                 </div>
 
                 <label className="flex min-h-11 w-full items-center gap-3 rounded-md border border-border bg-[var(--color-surface)] px-4 xl:max-w-sm">
-                    <Search size={16} className="text-text-muted" aria-hidden="true" />
+                    <Search size={16} className="text-text-muted" />
                     <input
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
@@ -100,7 +94,6 @@ export default function GalleryFilters() {
                         }}
                         onBlur={() => updateParams({ q: query })}
                         placeholder="Search gallery"
-                        aria-label="Search gallery"
                         className="w-full bg-transparent text-sm text-text-primary outline-none placeholder:text-text-muted"
                     />
                     {isPending ? <span className="text-xs text-text-muted">Updating</span> : null}
