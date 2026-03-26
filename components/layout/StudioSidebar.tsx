@@ -27,18 +27,18 @@ export default function StudioSidebar() {
                                 href={item.href}
                                 aria-current={active ? "page" : undefined}
                                 className={cn(
-                                    "group flex items-center gap-3 rounded-[16px] border px-4 py-3 text-sm transition-all",
+                                    "group flex items-center gap-3 rounded-[16px] border px-4 py-3 text-sm transition-all duration-200 ease-out",
                                     active
-                                        ? "border-border-strong bg-[color:color-mix(in_srgb,var(--color-surface)_98%,var(--color-page))] text-text"
+                                        ? "border-border-strong bg-[color:color-mix(in_srgb,var(--color-surface)_98%,var(--color-page))] text-text shadow-sm"
                                         : "border-transparent bg-transparent text-text-muted hover:border-border hover:bg-[color:color-mix(in_srgb,var(--color-text)_4%,transparent)] hover:text-text"
                                 )}
                             >
                                 <div
                                     className={cn(
-                                        "rounded-xl border p-2 transition-colors",
+                                        "rounded-xl border p-2 transition-all duration-200",
                                         active
-                                            ? "border-border-strong bg-[color:color-mix(in_srgb,var(--color-surface-subtle)_98%,var(--color-page))] text-[var(--color-text)]"
-                                            : "border-border bg-surface-subtle text-text-muted"
+                                            ? "border-border-strong bg-[color:color-mix(in_srgb,var(--color-accent)_12%,var(--color-surface-subtle))] text-[var(--color-accent)]"
+                                            : "border-border bg-surface-subtle text-text-muted group-hover:border-border-strong group-hover:bg-[color:color-mix(in_srgb,var(--color-text)_6%,transparent)]"
                                     )}
                                 >
                                     <item.icon size={16} />
@@ -57,19 +57,20 @@ export default function StudioSidebar() {
                     </div>
                     <Link
                         href="/settings"
+                        aria-current={pathname === "/settings" ? "page" : undefined}
                         className={cn(
-                            "group flex items-center gap-3 rounded-[16px] border px-4 py-3 text-sm transition-all",
+                            "group flex items-center gap-3 rounded-[16px] border px-4 py-3 text-sm transition-all duration-200 ease-out",
                             pathname === "/settings"
-                                ? "border-border-strong bg-[color:color-mix(in_srgb,var(--color-surface)_98%,var(--color-page))] text-text"
+                                ? "border-border-strong bg-[color:color-mix(in_srgb,var(--color-surface)_98%,var(--color-page))] text-text shadow-sm"
                                 : "border-transparent bg-transparent text-text-muted hover:border-border hover:bg-[color:color-mix(in_srgb,var(--color-text)_4%,transparent)] hover:text-text"
                         )}
                     >
                         <div
                             className={cn(
-                                "rounded-xl border p-2 transition-colors",
+                                "rounded-xl border p-2 transition-all duration-200",
                                 pathname === "/settings"
-                                    ? "border-border-strong bg-[color:color-mix(in_srgb,var(--color-surface-subtle)_98%,var(--color-page))] text-[var(--color-text)]"
-                                    : "border-border bg-surface-subtle text-text-muted"
+                                    ? "border-border-strong bg-[color:color-mix(in_srgb,var(--color-accent)_12%,var(--color-surface-subtle))] text-[var(--color-accent)]"
+                                    : "border-border bg-surface-subtle text-text-muted group-hover:border-border-strong group-hover:bg-[color:color-mix(in_srgb,var(--color-text)_6%,transparent)]"
                             )}
                         >
                             <Settings2 size={16} />
