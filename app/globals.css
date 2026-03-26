@@ -13,9 +13,9 @@
     --color-accent: #8aa2ff;
     --color-accent-strong: color-mix(in srgb, var(--color-accent) 80%, var(--color-text));
     --color-accent-soft: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
-    --color-success: var(--color-accent);
-    --color-warning: var(--color-accent);
-    --color-danger: var(--color-accent);
+    --color-success: #34d399;
+    --color-warning: #fbbf24;
+    --color-danger: #f87171;
 
     --font-sans: var(--font-geist-sans);
     --font-mono: var(--font-geist-mono);
