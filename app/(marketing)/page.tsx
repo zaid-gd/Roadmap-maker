@@ -273,7 +273,7 @@ export default function HomePage() {
     }, [storageStatus.mode]);
 
     return (
-        <div className="page-shell-wide pb-24 pt-0">
+        <main className="page-shell-wide pb-24 pt-0">
             <WebAppSchema />
             <HowToSchema />
 
@@ -367,6 +367,6 @@ export default function HomePage() {
                     </div>
                 </div>
             </section>
-        </div>
+        </main>
     );
 }

@@ -93,7 +93,7 @@ export default function WorkspacesPage() {
     ];
 
     return (
-        <div className="studio-page">
+        <main className="studio-page">
             <header className="app-header-block">
                 <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
                     <div className="max-w-2xl">
@@ -164,13 +164,6 @@ export default function WorkspacesPage() {
                     </div>
                 </div>
 
-                {mounted && filteredRoadmaps.length > 0 && (
-                    <p className="text-sm text-text-muted px-1">
-                        {filteredRoadmaps.length} {filteredRoadmaps.length === 1 ? "workspace" : "workspaces"}
-                        {filter !== "all" && <span className="text-text-soft"> ({filterOptions.find(f => f.key === filter)?.label.toLowerCase()})</span>}
-                    </p>
-                )}
-
                 {mounted ? (
                     filteredRoadmaps.length > 0 ? (
                         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -224,6 +217,6 @@ export default function WorkspacesPage() {
                     </div>
                 )}
             </section>
-        </div>
+        </main>
     );
 }
