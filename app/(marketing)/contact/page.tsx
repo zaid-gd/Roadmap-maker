@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
-import Link from "next/link";
+import { useState } from "react";
 import { ArrowUpRight, CheckCircle2, LifeBuoy, Loader2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +11,6 @@ export default function ContactPage() {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [message, setMessage] = useState("");
-    const formRef = useRef<HTMLFormElement>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,7 +41,7 @@ export default function ContactPage() {
         }
     };
 
-    const isValid = name.trim() && email.trim() && message.trim();
+    const isValid = Boolean(name.trim() && email.trim() && message.trim());
 
     return (
         <section className="relative overflow-hidden pb-14 pt-14 md:pb-20 md:pt-20">
@@ -88,7 +86,7 @@ export default function ContactPage() {
                                     </p>
                                 </div>
 
-                                <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
+                                <form onSubmit={handleSubmit} className="space-y-5">
                                     <div className="grid gap-5 md:grid-cols-2">
                                         <div className="space-y-2">
                                             <label htmlFor="contact-name" className="text-sm font-medium text-white/80">
@@ -177,7 +175,7 @@ export default function ContactPage() {
                                     </span>
                                 </a>
 
-                                <Link
+                                <a
                                     href="https://znsnexus.com"
                                     target="_blank"
                                     rel="noopener noreferrer"
@@ -190,7 +188,7 @@ export default function ContactPage() {
                                         <span className="block text-sm font-medium text-white">Partnership link</span>
                                         <span className="mt-1 block text-sm text-white/70">Visit znsnexus.com</span>
                                     </span>
-                                </Link>
+                                </a>
                             </div>
                         </div>
 
