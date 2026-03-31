@@ -1389,6 +1389,7 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                 roadmap={roadmap}
                 isOpen={shareModalOpen}
                 onClose={() => setShareModalOpen(false)}
+                onUpdateRoadmap={onUpdateRoadmap}
             />
             <SettingsModal
                 roadmap={roadmap}

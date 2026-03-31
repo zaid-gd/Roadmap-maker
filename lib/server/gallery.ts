@@ -107,6 +107,27 @@ function cloneRoadmapForFork(roadmap: Roadmap, ownerId: string, sourceId: string
     };
 }
 
+function toPersistedRow(roadmap: Roadmap, userId: string, isPublic: boolean) {
+    const updatedAt = roadmap.updatedAt ?? new Date().toISOString();
+    return {
+        id: roadmap.id,
+        user_id: userId,
+        roadmap: {
+            ...roadmap,
+            isPublic,
+            updatedAt,
+        },
+        title: roadmap.title,
+        summary: roadmap.summary ?? null,
+        mode: roadmap.mode,
+        content_type: roadmap.contentType ?? null,
+        is_public: isPublic,
+        fork_count: roadmap.forkCount ?? 0,
+        forked_from: roadmap.forkedFrom ?? null,
+        updated_at: updatedAt,
+    };
+}
+
 export async function listGallery(options?: {
     query?: string;
     mode?: string;
@@ -142,15 +163,38 @@ export async function listGallery(options?: {
     });
 }
 
-export async function setWorkspacePublic(workspaceId: string, isPublic: boolean) {
+export async function setWorkspacePublic(workspaceId: string, isPublic: boolean, roadmap?: Roadmap) {
     const { supabase, user } = await requireServerUser();
-    const { error } = await supabase
+
+    if (roadmap) {
+        const persisted = toPersistedRow(
+            {
+                ...roadmap,
+                id: workspaceId,
+                ownerId: roadmap.ownerId ?? user.id,
+                isPublic,
+            },
+            user.id,
+            isPublic,
+        );
+        const { error } = await supabase.from("roadmaps").upsert(persisted, { onConflict: "id" });
+        if (error) throw error;
+        return { success: true };
+    }
+
+    const { data, error } = await supabase
         .from("roadmaps")
         .update({ is_public: isPublic })
         .eq("id", workspaceId)
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .select("id")
+        .maybeSingle();
 
     if (error) throw error;
+    if (!data) {
+        throw new Error("Workspace must be synced before it can be published");
+    }
+
     return { success: true };
 }
 

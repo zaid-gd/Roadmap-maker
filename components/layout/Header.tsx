@@ -8,19 +8,12 @@ import AuthButton from "@/components/auth/AuthButton";
 import { Logo } from "@/components/shared/Logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { MARKETING_NAV_ITEMS, STUDIO_NAV_ITEMS } from "@/lib/navigation";
+import { getNavigationItems } from "@/lib/navigation";
 
 export default function Header() {
     const pathname = usePathname();
     const isHome = pathname === "/";
-    const isMarketing =
-        pathname === "/" ||
-        pathname.startsWith("/pricing") ||
-        pathname.startsWith("/gallery") ||
-        pathname.startsWith("/privacy") ||
-        pathname.startsWith("/terms") ||
-        pathname.startsWith("/contact");
-    const navItems = isMarketing ? MARKETING_NAV_ITEMS : STUDIO_NAV_ITEMS;
+    const navItems = getNavigationItems(pathname);
     const [scrolled, setScrolled] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
 

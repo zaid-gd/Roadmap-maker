@@ -56,7 +56,6 @@ export default function GalleryFilters() {
                                 type="button"
                                 role="tab"
                                 aria-selected={mode === option.value}
-                                aria-pressed={mode === option.value}
                                 onClick={() => updateParams({ mode: option.value })}
                                 className={cn(
                                     "border-b pb-1 transition-colors",
@@ -77,7 +76,6 @@ export default function GalleryFilters() {
                                 type="button"
                                 role="tab"
                                 aria-selected={contentType === option.value}
-                                aria-pressed={contentType === option.value}
                                 onClick={() => updateParams({ contentType: option.value })}
                                 className={cn(
                                     "transition-colors",

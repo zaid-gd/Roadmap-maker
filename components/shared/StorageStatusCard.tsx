@@ -53,7 +53,7 @@ export default function StorageStatusCard({
 }: StorageStatusCardProps) {
     const meta = getStatusMeta(status);
     const Icon = meta.icon;
-    const showAction = Boolean(actionHref && actionLabel && status.mode !== "synced-account");
+    const showAction = Boolean(actionHref && actionLabel);
     const containerClass =
         variant === "inset"
             ? "rounded-[18px] border border-border bg-[color:color-mix(in_srgb,var(--color-surface-subtle)_94%,var(--color-page))] p-5"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, CopyPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,8 @@ const difficultyTone: Record<string, string> = {
 
 export default function GalleryCard({ item }: { item: PublicRoadmapCard }) {
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();
     const [message, setMessage] = useState<string | null>(null);
 
@@ -31,7 +33,8 @@ export default function GalleryCard({ item }: { item: PublicRoadmapCard }) {
 
                 const payload = await response.json().catch(() => ({ success: false }));
                 if (!response.ok || !payload.success || !payload.roadmap?.id) {
-                    router.push("/auth?next=%2Fgallery");
+                    const nextPath = `${pathname}${searchParams.size > 0 ? `?${searchParams.toString()}` : ""}`;
+                    router.push(`/auth?next=${encodeURIComponent(nextPath)}`);
                     return;
                 }
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { HardDrive, Loader2, LogOut } from "lucide-react";
 import { getStorage } from "@/lib/storage";
 import { createClient as createSupabaseClient } from "@/utils/supabase/client";
@@ -15,6 +15,7 @@ type AuthState = {
 
 export default function AuthButton() {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const router = useRouter();
     const [authState, setAuthState] = useState<AuthState | null>(null);
     const [loading, setLoading] = useState(true);
@@ -72,7 +73,10 @@ export default function AuthButton() {
     }
 
     if (!authState) {
-        const next = pathname && pathname !== "/" ? `?next=${encodeURIComponent(pathname)}` : "";
+        const currentPath = pathname && pathname !== "/"
+            ? `${pathname}${searchParams.size > 0 ? `?${searchParams.toString()}` : ""}`
+            : "";
+        const next = currentPath ? `?next=${encodeURIComponent(currentPath)}` : "";
         return (
             <Link
                 href={`/auth${next}`}

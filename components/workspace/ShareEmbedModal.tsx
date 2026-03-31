@@ -1,24 +1,58 @@
 "use client";
 
-import { useState } from "react";
-import { Copy, Code, Download, ExternalLink, X, Settings2 } from "lucide-react";
-import type { Roadmap } from "@/types";
+import { useEffect, useMemo, useState } from "react";
+import { Code, Copy, Download, ExternalLink, Globe2, Loader2, Lock, X } from "lucide-react";
+import type { Roadmap, StorageStatus } from "@/types";
+import { getStorageStatus } from "@/lib/storage";
 
 interface ShareEmbedModalProps {
     roadmap: Roadmap;
     isOpen: boolean;
     onClose: () => void;
+    onUpdateRoadmap?: (updates: Partial<Roadmap>) => void;
 }
 
-export default function ShareEmbedModal({ roadmap, isOpen, onClose }: ShareEmbedModalProps) {
+const DEFAULT_STORAGE_STATUS: StorageStatus = {
+    mode: "local-only",
+    cloudAvailable: false,
+    email: null,
+};
+
+export default function ShareEmbedModal({ roadmap, isOpen, onClose, onUpdateRoadmap }: ShareEmbedModalProps) {
     const [activeTab, setActiveTab] = useState<"share" | "embed" | "export">("share");
     const [copiedLink, setCopiedLink] = useState(false);
     const [copiedEmbed, setCopiedEmbed] = useState(false);
+    const [storageStatus, setStorageStatus] = useState<StorageStatus>(DEFAULT_STORAGE_STATUS);
+    const [isPublishing, setIsPublishing] = useState(false);
+    const [publishMessage, setPublishMessage] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        let active = true;
+        void getStorageStatus().then((status) => {
+            if (active) {
+                setStorageStatus(status);
+            }
+        });
+
+        return () => {
+            active = false;
+        };
+    }, [isOpen]);
+    const shareUrl = useMemo(
+        () => (typeof window !== "undefined" ? `${window.location.origin}/share/${roadmap.id}` : ""),
+        [roadmap.id],
+    );
+    const embedUrl = useMemo(
+        () => (typeof window !== "undefined" ? `${window.location.origin}/embed/${roadmap.id}` : ""),
+        [roadmap.id],
+    );
+    const embedCode = `<iframe src="${embedUrl}" width="100%" height="800px" frameborder="0"></iframe>`;
+    const isSyncedAccount = storageStatus.mode === "synced-account";
+    const isShareable = Boolean(roadmap.isPublic);
 
     if (!isOpen) return null;
-
-    const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/share/${roadmap.id}` : "";
-    const embedCode = `<iframe src="${typeof window !== "undefined" ? window.location.origin : ""}/embed/${roadmap.id}" width="100%" height="800px" frameborder="0"></iframe>`;
 
     const handleCopy = (text: string, type: "link" | "embed") => {
         navigator.clipboard.writeText(text);
@@ -35,50 +69,87 @@ export default function ShareEmbedModal({ roadmap, isOpen, onClose }: ShareEmbed
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(roadmap, null, 2));
         const downloadAnchorNode = document.createElement("a");
         downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", `${roadmap.title.replace(/\s+/g, '_').toLowerCase()}_workspace.json`);
+        downloadAnchorNode.setAttribute("download", `${roadmap.title.replace(/\s+/g, "_").toLowerCase()}_workspace.json`);
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
     };
 
     const handleExportMD = () => {
-        const mdContent = `# ${roadmap.title}\n\n${roadmap.summary || ""}\n\n${roadmap.sections.map(s => `## ${s.title}\n${JSON.stringify(s.data, null, 2)}`).join('\n\n')}`;
+        const mdContent = `# ${roadmap.title}\n\n${roadmap.summary || ""}\n\n${roadmap.sections.map((section) => `## ${section.title}\n${JSON.stringify(section.data, null, 2)}`).join("\n\n")}`;
         const dataStr = "data:text/markdown;charset=utf-8," + encodeURIComponent(mdContent);
         const downloadAnchorNode = document.createElement("a");
         downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", `${roadmap.title.replace(/\s+/g, '_').toLowerCase()}_workspace.md`);
+        downloadAnchorNode.setAttribute("download", `${roadmap.title.replace(/\s+/g, "_").toLowerCase()}_workspace.md`);
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
     };
 
+    const handleVisibilityChange = async (nextVisibility: boolean) => {
+        if (!isSyncedAccount) {
+            setPublishMessage("Sign in and sync this workspace before publishing a share link.");
+            return;
+        }
+
+        setIsPublishing(true);
+        setPublishMessage(null);
+
+        try {
+            const response = await fetch("/api/gallery/set-public", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    workspaceId: roadmap.id,
+                    isPublic: nextVisibility,
+                    roadmap,
+                }),
+            });
+
+            const payload = await response.json().catch(() => ({ success: false }));
+            if (!response.ok || !payload.success) {
+                throw new Error(payload.error ?? "Failed to update sharing state");
+            }
+
+            onUpdateRoadmap?.({ isPublic: nextVisibility });
+            setPublishMessage(
+                nextVisibility
+                    ? "This workspace is now public. The share and embed links are live."
+                    : "This workspace is private again. Existing public links will stop working."
+            );
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to update sharing state";
+            setPublishMessage(message);
+        } finally {
+            setIsPublishing(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
-            
-            <div className="relative bg-obsidian-elevated border border-border-subtle rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-                {/* Header */}
-                <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+
+            <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-border-subtle bg-obsidian-elevated shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between border-b border-border px-6 py-4">
                     <h2 className="font-display text-xl text-white">Share & Embed</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors text-text-secondary hover:text-white">
+                    <button onClick={onClose} className="rounded-lg p-2 text-text-secondary transition-colors hover:bg-white/5 hover:text-white">
                         <X size={20} />
                     </button>
                 </div>
 
-                {/* Tabs */}
                 <div className="flex border-b border-border">
                     {[
                         { id: "share", label: "Shareable Link" },
                         { id: "embed", label: "Embed Code" },
-                        { id: "export", label: "Export" }
-                    ].map(tab => (
+                        { id: "export", label: "Export" },
+                    ].map((tab) => (
                         <button
                             key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
-                            className={`flex-1 px-4 py-3 text-sm font-bold uppercase tracking-widest transition-colors border-b-2 ${
-                                activeTab === tab.id 
-                                    ? "border-indigo-500 text-indigo-400 bg-indigo-500/5" 
-                                    : "border-transparent text-text-secondary hover:text-text-primary hover:bg-white/5"
+                            onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                            className={`flex-1 border-b-2 px-4 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${
+                                activeTab === tab.id
+                                    ? "border-indigo-500 bg-indigo-500/5 text-indigo-400"
+                                    : "border-transparent text-text-secondary hover:bg-white/5 hover:text-text-primary"
                             }`}
                         >
                             {tab.label}
@@ -86,105 +157,157 @@ export default function ShareEmbedModal({ roadmap, isOpen, onClose }: ShareEmbed
                     ))}
                 </div>
 
-                {/* Content */}
                 <div className="p-6">
-                    {activeTab === "share" && (
+                    {activeTab === "share" ? (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             <div>
-                                <h3 className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary mb-2">Read-only link</h3>
-                                <p className="text-sm text-text-secondary mb-4">
-                                    Share this unique URL. Visitors will see the full workspace, track their own progress locally, but cannot edit your original content.
-                                </p>
-                                <div className="flex items-center gap-2">
-                                    <div className="flex-1 bg-obsidian-surface border border-border-subtle rounded-lg px-4 py-3 font-mono text-sm text-white truncate overflow-x-auto">
-                                        {shareUrl}
+                                <h3 className="mb-2 font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary">Read-only link</h3>
+                                {isShareable ? (
+                                    <>
+                                        <p className="mb-4 text-sm text-text-secondary">
+                                            Share this unique URL. Visitors will see the full workspace, track their own progress locally, but cannot edit your original content.
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1 overflow-x-auto truncate rounded-lg border border-border-subtle bg-obsidian-surface px-4 py-3 font-mono text-sm text-white">
+                                                {shareUrl}
+                                            </div>
+                                            <button
+                                                onClick={() => handleCopy(shareUrl, "link")}
+                                                className="flex shrink-0 items-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 font-bold text-white transition-colors hover:bg-indigo-500"
+                                            >
+                                                <Copy size={16} />
+                                                {copiedLink ? "Copied!" : "Copy Link"}
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="rounded-xl border border-border-subtle bg-obsidian-surface px-4 py-4 text-sm text-text-secondary">
+                                        <div className="flex items-start gap-3">
+                                            {isSyncedAccount ? <Globe2 size={18} className="mt-0.5 text-indigo-300" /> : <Lock size={18} className="mt-0.5 text-amber-300" />}
+                                            <div className="space-y-3">
+                                                <p>
+                                                    {isSyncedAccount
+                                                        ? "This workspace is still private. Publish it once, then the share link and embed preview will become available."
+                                                        : "Share links are only available for synced account workspaces. Sign in first, then publish the workspace."}
+                                                </p>
+                                                {isSyncedAccount ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => void handleVisibilityChange(true)}
+                                                        disabled={isPublishing}
+                                                        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 font-bold text-white transition-colors hover:bg-indigo-500 disabled:opacity-60"
+                                                    >
+                                                        {isPublishing ? <Loader2 size={16} className="animate-spin" /> : <Globe2 size={16} />}
+                                                        Make public
+                                                    </button>
+                                                ) : null}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <button
-                                        onClick={() => handleCopy(shareUrl, "link")}
-                                        className="px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors flex items-center gap-2 font-bold flex-shrink-0"
-                                    >
-                                        <Copy size={16} />
-                                        {copiedLink ? "Copied!" : "Copy Link"}
-                                    </button>
-                                </div>
+                                )}
                             </div>
-                            
-                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex gap-3 text-amber-400/90 text-sm">
-                                <ExternalLink size={20} className="shrink-0 mt-0.5" />
-                                <div>
-                                    <strong className="block text-amber-400 font-bold mb-1">Testing the link</strong>
-                                    Try opening the link in an Incognito window to see exactly what your users will experience.
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
-                    {activeTab === "embed" && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <div>
-                                <h3 className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary mb-2">iframe HTML</h3>
-                                <p className="text-sm text-text-secondary mb-4">
-                                    Embed this workspace on your own website, Notion, or LMS (like Kajabi or Teachable).
-                                </p>
-                                <div className="flex items-start gap-2">
-                                    <div className="flex-1 bg-obsidian-surface border border-border-subtle rounded-lg p-4 font-mono text-xs text-indigo-200 overflow-x-auto whitespace-pre-wrap break-all">
-                                        {embedCode}
+                            {publishMessage ? (
+                                <div className="rounded-xl border border-border-subtle bg-obsidian-surface px-4 py-4 text-sm text-text-secondary">
+                                    {publishMessage}
+                                </div>
+                            ) : null}
+
+                            {isShareable ? (
+                                <div className="space-y-3">
+                                    {isSyncedAccount ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => void handleVisibilityChange(false)}
+                                            disabled={isPublishing}
+                                            className="inline-flex items-center gap-2 rounded-lg border border-border-subtle px-4 py-2 font-bold text-text-primary transition-colors hover:bg-white/5 disabled:opacity-60"
+                                        >
+                                            {isPublishing ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} />}
+                                            Make private
+                                        </button>
+                                    ) : null}
+
+                                    <div className="flex gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-400/90">
+                                        <ExternalLink size={20} className="mt-0.5 shrink-0" />
+                                        <div>
+                                            <strong className="mb-1 block font-bold text-amber-400">Testing the link</strong>
+                                            Try opening the link in an Incognito window to see exactly what your users will experience.
+                                        </div>
                                     </div>
-                                    <button
-                                        onClick={() => handleCopy(embedCode, "embed")}
-                                        className="px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors flex items-center gap-2 font-bold flex-shrink-0"
-                                    >
-                                        <Code size={16} />
-                                        {copiedEmbed ? "Copied!" : "Copy Code"}
-                                    </button>
                                 </div>
-                            </div>
-
-                            <div>
-                                <h3 className="font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary mb-3 flex justify-between items-center">
-                                    Live Preview
-                                    <span className="text-indigo-400 flex items-center gap-1 cursor-pointer hover:underline">
-                                        <Settings2 size={12} /> Branding Settings
-                                    </span>
-                                </h3>
-                                <div className="border border-border-subtle rounded-xl overflow-hidden h-64 bg-obsidian relative">
-                                    <iframe src={shareUrl.replace('/share/', '/embed/')} className="w-full h-full border-0 pointer-events-none" />
-                                </div>
-                            </div>
+                            ) : null}
                         </div>
-                    )}
+                    ) : null}
 
-                    {activeTab === "export" && (
+                    {activeTab === "embed" ? (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <p className="text-sm text-text-secondary mb-6">
+                            {isShareable ? (
+                                <>
+                                    <div>
+                                        <h3 className="mb-2 font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary">iframe HTML</h3>
+                                        <p className="mb-4 text-sm text-text-secondary">
+                                            Embed this workspace on your own website, Notion, or LMS (like Kajabi or Teachable).
+                                        </p>
+                                        <div className="flex items-start gap-2">
+                                            <div className="flex-1 overflow-x-auto whitespace-pre-wrap break-all rounded-lg border border-border-subtle bg-obsidian-surface p-4 font-mono text-xs text-indigo-200">
+                                                {embedCode}
+                                            </div>
+                                            <button
+                                                onClick={() => handleCopy(embedCode, "embed")}
+                                                className="flex shrink-0 items-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 font-bold text-white transition-colors hover:bg-indigo-500"
+                                            >
+                                                <Code size={16} />
+                                                {copiedEmbed ? "Copied!" : "Copy Code"}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h3 className="mb-3 font-sans-display text-xs uppercase tracking-[0.2em] text-text-secondary">Live Preview</h3>
+                                        <div className="relative h-64 overflow-hidden rounded-xl border border-border-subtle bg-obsidian">
+                                            <iframe src={embedUrl} className="h-full w-full border-0 pointer-events-none" />
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="rounded-xl border border-border-subtle bg-obsidian-surface px-4 py-4 text-sm text-text-secondary">
+                                    Publish the workspace first to generate a working embed snippet.
+                                </div>
+                            )}
+                        </div>
+                    ) : null}
+
+                    {activeTab === "export" ? (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <p className="mb-6 text-sm text-text-secondary">
                                 Download your workspace content to use elsewhere or backup.
                             </p>
-                            
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <button
                                     onClick={handleExportMD}
-                                    className="group relative flex flex-col items-center justify-center p-8 bg-obsidian-surface/30 border border-border-subtle hover:border-indigo-500/50 rounded-xl transition-all hover:bg-indigo-500/5 text-center overflow-hidden"
+                                    className="group relative flex flex-col items-center justify-center overflow-hidden rounded-xl border border-border-subtle bg-obsidian-surface/30 p-8 text-center transition-all hover:border-indigo-500/50 hover:bg-indigo-500/5"
                                 >
-                                    <div className="w-12 h-12 bg-indigo-500/10 text-indigo-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 transition-transform group-hover:scale-110">
                                         <Download size={24} />
                                     </div>
-                                    <span className="font-display text-lg text-white mb-1">Markdown (.md)</span>
+                                    <span className="mb-1 font-display text-lg text-white">Markdown (.md)</span>
                                     <span className="text-[12px] text-text-secondary">Clean text format for Notion, Obsidian, or GitHub</span>
                                 </button>
 
                                 <button
                                     onClick={handleExportJSON}
-                                    className="group relative flex flex-col items-center justify-center p-8 bg-obsidian-surface/30 border border-border-subtle hover:border-emerald-500/50 rounded-xl transition-all hover:bg-emerald-500/5 text-center overflow-hidden"
+                                    className="group relative flex flex-col items-center justify-center overflow-hidden rounded-xl border border-border-subtle bg-obsidian-surface/30 p-8 text-center transition-all hover:border-emerald-500/50 hover:bg-emerald-500/5"
                                 >
-                                    <div className="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 transition-transform group-hover:scale-110">
                                         <Code size={24} />
                                     </div>
-                                    <span className="font-display text-lg text-white mb-1">Raw Data (.json)</span>
+                                    <span className="mb-1 font-display text-lg text-white">Raw Data (.json)</span>
                                     <span className="text-[12px] text-text-secondary">Structured data for developers or backup</span>
                                 </button>
                             </div>
                         </div>
-                    )}
+                    ) : null}
                 </div>
             </div>
         </div>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setWorkspacePublic } from "@/lib/server/gallery";
+import type { Roadmap } from "@/types";
 
 export async function POST(req: NextRequest) {
     try {
@@ -8,7 +9,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: false, error: "workspaceId is required" }, { status: 400 });
         }
 
-        const result = await setWorkspacePublic(body.workspaceId, Boolean(body.isPublic));
+        const roadmap = body.roadmap && typeof body.roadmap === "object" ? (body.roadmap as Roadmap) : undefined;
+        const result = await setWorkspacePublic(body.workspaceId, Boolean(body.isPublic), roadmap);
         return NextResponse.json(result);
     } catch (error) {
         console.error("Gallery visibility error:", error);
