@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { Suspense, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { HardDrive, Loader2, LogOut } from "lucide-react";
@@ -14,6 +14,21 @@ type AuthState = {
 };
 
 export default function AuthButton() {
+    return (
+        <Suspense
+            fallback={
+                <div
+                    aria-hidden="true"
+                    className="inline-flex min-h-10 w-[7.5rem] rounded-full border border-transparent opacity-0"
+                />
+            }
+        >
+            <AuthButtonContent />
+        </Suspense>
+    );
+}
+
+function AuthButtonContent() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const router = useRouter();
