@@ -12,8 +12,8 @@ function getStatusMeta(status: StorageStatus) {
             eyebrow: "Synced account",
             title: status.email ? status.email : "Cloud sync enabled",
             description: "Work saves locally first, then syncs to your signed-in account.",
-            tone: "border-[var(--color-accent)]/20 bg-[var(--color-accent-soft)]/50",
-            badge: "text-[var(--color-accent)]",
+            tone: "",
+            badge: "text-text-primary",
         };
     }
 
@@ -23,7 +23,7 @@ function getStatusMeta(status: StorageStatus) {
             eyebrow: "Browser only",
             title: "Cloud sync unavailable",
             description: "This environment is running without sync configuration.",
-            tone: "border-border bg-surface-subtle",
+            tone: "",
             badge: "text-text-muted",
         };
     }
@@ -33,7 +33,7 @@ function getStatusMeta(status: StorageStatus) {
         eyebrow: "Local only",
         title: "Saved on this device",
         description: "You can work without an account and enable sync later.",
-        tone: "border-border bg-surface",
+        tone: "",
         badge: "text-text-muted",
     };
 }
@@ -56,8 +56,8 @@ export default function StorageStatusCard({
     const showAction = Boolean(actionHref && actionLabel);
     const containerClass =
         variant === "inset"
-            ? "rounded-[18px] border border-border bg-[color:color-mix(in_srgb,var(--color-surface-subtle)_94%,var(--color-page))] p-5"
-            : cn("surface-panel flex flex-col gap-5 p-5", meta.tone);
+            ? "border-y border-border py-5"
+            : cn("surface-panel flex flex-col gap-5 py-5", meta.tone);
 
     return (
         <div className={containerClass}>

@@ -12,14 +12,14 @@ type CreditStatusResponse = {
 
 function getBadgeClasses(status: CreditStatus) {
     if (status.remaining <= 5) {
-        return "border-[#e6c7c1] bg-[#fff6f4] text-danger";
+        return "border-[var(--color-border-strong)] bg-transparent text-text";
     }
 
     if (status.remaining <= Math.max(10, Math.floor(status.allowance * 0.2))) {
-        return "border-[#eadab1] bg-[#fff9eb] text-warning";
+        return "border-border bg-transparent text-text-muted";
     }
 
-    return "border-border bg-surface-subtle text-text-muted";
+    return "border-border bg-transparent text-text-muted";
 }
 
 export default function CreditBadge({ compact = false }: { compact?: boolean }) {
@@ -55,7 +55,7 @@ export default function CreditBadge({ compact = false }: { compact?: boolean }) 
 
     return (
         <div
-            className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium ${getBadgeClasses(status)}`}
+            className={`inline-flex items-center gap-2 border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] ${getBadgeClasses(status)}`}
             title={`${status.remaining} of ${status.allowance} credits remaining this cycle`}
         >
             <Coins size={compact ? 14 : 15} />

@@ -59,7 +59,7 @@ export default function ModuleCompletionTable({ roadmaps }: { roadmaps: Roadmap[
                                                 <div className="flex items-center gap-3">
                                                     <div className="h-2 w-24 overflow-hidden rounded-full bg-border/70">
                                                         <div
-                                                            className="h-full rounded-full bg-[linear-gradient(90deg,rgba(79,124,255,0.95),rgba(198,155,90,0.78))]"
+                                                            className="h-full rounded-full bg-[linear-gradient(90deg,rgba(22,20,17,0.92),rgba(22,20,17,0.4))]"
                                                             style={{ width: `${Math.max(6, rate)}%` }}
                                                         />
                                                     </div>

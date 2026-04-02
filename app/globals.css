@@ -1,33 +1,42 @@
 @import "tailwindcss";
 
 @theme {
-    --color-page: #0b0d10;
-    --color-surface: color-mix(in srgb, var(--color-page) 88%, var(--color-text));
-    --color-surface-subtle: color-mix(in srgb, var(--color-page) 92%, var(--color-text));
-    --color-surface-muted: color-mix(in srgb, var(--color-page) 84%, var(--color-text));
-    --color-border: color-mix(in srgb, var(--color-text) 12%, var(--color-page));
-    --color-border-strong: color-mix(in srgb, var(--color-text) 20%, var(--color-page));
-    --color-text: #f3f5f7;
-    --color-text-muted: color-mix(in srgb, var(--color-text) 72%, var(--color-page));
-    --color-text-soft: color-mix(in srgb, var(--color-text) 48%, var(--color-page));
-    --color-accent: #8aa2ff;
-    --color-accent-strong: color-mix(in srgb, var(--color-accent) 80%, var(--color-text));
-    --color-accent-soft: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
+    --color-page: #0a0a0a;
+    --color-surface: rgba(255, 255, 255, 0.03);
+    --color-surface-subtle: rgba(255, 255, 255, 0.05);
+    --color-surface-muted: rgba(255, 255, 255, 0.08);
+    --color-border: rgba(255, 255, 255, 0.1);
+    --color-border-strong: rgba(255, 255, 255, 0.2);
+    --color-text: #fafafa;
+    --color-text-muted: #a1a1aa;
+    --color-text-soft: #71717a;
+    --color-accent: #10b981;
+    --color-accent-strong: #34d399;
+    --color-accent-soft: rgba(16, 185, 129, 0.1);
     --color-success: #10b981;
     --color-warning: #f59e0b;
     --color-danger: #ef4444;
 
-    --font-sans: var(--font-geist-sans);
+    --font-sans:
+        "Inter",
+        var(--font-geist-sans),
+        "SF Pro Display",
+        "Helvetica Neue",
+        sans-serif;
     --font-mono: var(--font-geist-mono);
-    --font-display: var(--font-geist-sans);
+    --font-display:
+        "Inter",
+        var(--font-geist-sans),
+        "SF Pro Display",
+        sans-serif;
 
-    --radius-sm: 10px;
-    --radius-md: 16px;
-    --radius-lg: 24px;
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
 
     --shadow-none: 0 0 #0000;
-    --tracking-tight: -0.035em;
-    --tracking-display: -0.055em;
+    --tracking-tight: -0.02em;
+    --tracking-display: -0.045em;
 }
 
 :root {
@@ -49,13 +58,12 @@ body {
     margin: 0;
     min-height: 100vh;
     background:
-        radial-gradient(circle at top left, color-mix(in srgb, var(--color-accent) 8%, transparent) 0%, transparent 28%),
-        radial-gradient(circle at top right, color-mix(in srgb, var(--color-text) 4%, transparent) 0%, transparent 22%),
+        radial-gradient(ellipse at top center, rgba(255, 255, 255, 0.04) 0%, transparent 60%),
         var(--color-page);
     color: var(--color-text);
     font-family: var(--font-sans);
-    font-size: 15px;
-    line-height: 1.5;
+    font-size: 14px;
+    line-height: 1.6;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -90,7 +98,7 @@ h5,
 h6 {
     margin: 0;
     color: var(--color-text);
-    font-weight: 600;
+    font-weight: 500;
     letter-spacing: var(--tracking-tight);
     text-wrap: balance;
 }
@@ -106,12 +114,12 @@ p {
 }
 
 ::selection {
-    background: color-mix(in srgb, var(--color-accent) 22%, var(--color-page));
+    background: rgba(16, 185, 129, 0.2);
     color: var(--color-text);
 }
 
 :focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--color-accent) 88%, var(--color-text));
+    outline: 2px solid rgba(16, 185, 129, 0.5);
     outline-offset: 2px;
 }
 
@@ -133,7 +141,7 @@ a:focus-visible {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--color-text) 16%, var(--color-page));
+    background: color-mix(in srgb, var(--color-text) 18%, var(--color-page));
     border: 2px solid var(--color-page);
     border-radius: 999px;
 }
@@ -144,7 +152,7 @@ a:focus-visible {
 
 .page-shell {
     width: 100%;
-    max-width: 96rem;
+    max-width: 104rem;
     margin-inline: auto;
     padding-inline: 1rem;
 }
@@ -158,7 +166,7 @@ a:focus-visible {
 }
 
 .section-space {
-    padding-block: clamp(72px, 11vw, 132px);
+    padding-block: clamp(72px, 10vw, 132px);
 }
 
 .section-space-compact {
@@ -168,8 +176,8 @@ a:focus-visible {
 .app-header-block {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    max-width: 48rem;
+    gap: 0.9rem;
+    max-width: 56rem;
 }
 
 .app-stack {
@@ -180,17 +188,19 @@ a:focus-visible {
 
 .app-stat-grid {
     display: grid;
-    gap: 1rem;
+    gap: 0;
+    border-top: 1px solid var(--color-border);
 }
 
 .app-stat-card {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.65rem;
     min-height: 132px;
-    padding: 1rem 1.1rem 1.25rem;
+    padding: 1.1rem 0 1.35rem;
     border-radius: 0;
-    border: 1px solid var(--color-border);
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
     background: transparent;
     box-shadow: none;
 }
@@ -211,9 +221,10 @@ a:focus-visible {
     display: flex;
     align-items: center;
     min-height: 40px;
-    padding: 0.5rem 0.75rem;
-    border-radius: 14px;
-    border: 1px solid transparent;
+    padding: 0.5rem 0;
+    border-radius: 0;
+    border: 0;
+    border-bottom: 1px solid transparent;
     color: var(--color-text-muted);
     font-size: 0.95rem;
     font-weight: 500;
@@ -225,13 +236,13 @@ a:focus-visible {
 
 .settings-nav-link:hover {
     border-color: var(--color-border);
-    background: color-mix(in srgb, var(--color-surface-subtle) 94%, var(--color-page));
+    background: transparent;
     color: var(--color-text);
 }
 
 .settings-nav-link[data-active="true"] {
     border-color: var(--color-border-strong);
-    background: color-mix(in srgb, var(--color-surface) 96%, var(--color-page));
+    background: transparent;
     color: var(--color-text);
 }
 
@@ -273,10 +284,11 @@ a:focus-visible {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    padding: 1rem 1.25rem;
-    border-radius: 24px;
-    border: 1px solid var(--color-border);
-    background: color-mix(in srgb, var(--color-surface-subtle) 96%, var(--color-page));
+    padding: 1rem 0;
+    border-radius: 0;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    background: transparent;
 }
 
 @media (min-width: 768px) {
@@ -340,12 +352,12 @@ a:focus-visible {
 .studio-orbit-rail,
 .studio-data-tile,
 .studio-micro-grid {
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border);
-    background: color-mix(in srgb, var(--color-surface) 96%, var(--color-page));
-    box-shadow:
-        0 0 0 1px color-mix(in srgb, var(--color-text) 3%, transparent),
-        0 24px 64px color-mix(in srgb, var(--color-page) 72%, transparent);
+    border-radius: 0;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    background: transparent;
+    box-shadow: none;
 }
 
 .surface-panel-subtle,
@@ -354,19 +366,17 @@ a:focus-visible {
 .studio-kpi,
 .studio-data-tile,
 .studio-micro-grid {
-    background: color-mix(in srgb, var(--color-surface-subtle) 96%, var(--color-page));
+    background: transparent;
 }
 
 .studio-orbit-shell {
     position: relative;
     overflow: hidden;
-    border: 1px solid var(--color-border);
-    border-radius: 32px;
-    background:
-        linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 98%, var(--color-page)) 0%, color-mix(in srgb, var(--color-page) 70%, var(--color-surface)) 100%);
-    box-shadow:
-        inset 0 1px 0 color-mix(in srgb, var(--color-text) 7%, transparent),
-        0 32px 80px color-mix(in srgb, var(--color-page) 68%, transparent);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
 }
 
 .studio-orbit-shell::before {
@@ -374,10 +384,9 @@ a:focus-visible {
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(circle at top left, color-mix(in srgb, var(--color-accent) 12%, transparent) 0%, transparent 32%),
-        linear-gradient(120deg, transparent 0%, color-mix(in srgb, var(--color-text) 6%, transparent) 20%, transparent 38%);
+        linear-gradient(90deg, transparent 0%, rgba(22, 20, 17, 0.035) 50%, transparent 100%);
     pointer-events: none;
-    opacity: 0.9;
+    opacity: 1;
 }
 
 .studio-orbit-shell > * {
@@ -386,32 +395,32 @@ a:focus-visible {
 }
 
 .studio-data-tile-accent {
-    border-color: color-mix(in srgb, var(--color-accent) 34%, var(--color-border));
-    background:
-        radial-gradient(circle at top right, color-mix(in srgb, var(--color-accent) 16%, transparent) 0%, transparent 34%),
-        color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
+    border-color: var(--color-border-strong);
+    background: transparent;
 }
 
 .studio-data-tile-success,
 .studio-danger {
-    border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-border));
-    background: color-mix(in srgb, var(--color-accent) 9%, var(--color-surface));
+    border-color: var(--color-border-strong);
+    background: transparent;
 }
 
 .studio-page {
     min-height: 100%;
     display: grid;
     align-content: start;
-    gap: clamp(1.25rem, 2vw, 1.75rem);
+    gap: clamp(2rem, 3vw, 3rem);
     padding-top: clamp(8px, 1.2vw, 16px);
     padding-bottom: clamp(56px, 7vw, 88px);
 }
 
 .studio-hero,
 .studio-empty {
-    border-radius: 28px;
-    border: 1px solid var(--color-border);
-    background: color-mix(in srgb, var(--color-surface-subtle) 98%, var(--color-page));
+    border-radius: 0;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    background: transparent;
 }
 
 .studio-empty {
@@ -424,7 +433,7 @@ a:focus-visible {
 }
 
 .studio-table thead {
-    background: color-mix(in srgb, var(--color-surface-subtle) 88%, var(--color-page));
+    background: transparent;
 }
 
 .studio-table thead th {
@@ -439,10 +448,11 @@ a:focus-visible {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    border: 1px solid var(--color-border);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--color-surface-subtle) 88%, var(--color-page));
-    padding: 0.45rem 0.8rem;
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 0;
+    background: transparent;
+    padding: 0.45rem 0;
     color: var(--color-text);
     font-size: 12px;
     font-weight: 600;
@@ -455,9 +465,10 @@ a:focus-visible {
 .field-textarea,
 .field-select {
     width: 100%;
-    border: 1px solid var(--color-border);
-    border-radius: 18px;
-    background: color-mix(in srgb, var(--color-surface) 94%, var(--color-page));
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 0;
+    background: transparent;
     color: var(--color-text);
     transition:
         border-color 160ms ease,
@@ -473,7 +484,7 @@ a:focus-visible {
 
 .field-textarea {
     min-height: 320px;
-    padding: 18px;
+    padding: 18px 0;
     resize: vertical;
 }
 
@@ -488,8 +499,8 @@ a:focus-visible {
 .field-input:focus-visible,
 .field-textarea:focus-visible,
 .field-select:focus-visible {
-    border-color: color-mix(in srgb, var(--color-accent) 60%, var(--color-border));
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent);
+    border-color: var(--color-border-strong);
+    box-shadow: none;
     outline: none;
 }
 
@@ -511,11 +522,13 @@ a:focus-visible {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    min-height: 40px;
+    min-height: 42px;
     padding: 0 16px;
-    border-radius: 14px;
-    font-size: 14px;
-    font-weight: 500;
+    border-radius: 0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
     transition:
         background-color 160ms ease,
         border-color 160ms ease,
@@ -534,40 +547,42 @@ a:focus-visible {
 
 .button-primary,
 .btn-primary {
-    border: 1px solid color-mix(in srgb, var(--color-accent) 44%, var(--color-border));
-    background: color-mix(in srgb, var(--color-accent) 18%, var(--color-surface));
-    color: var(--color-text);
-    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text) 10%, transparent);
+    border: 1px solid var(--color-text);
+    background: var(--color-text);
+    color: var(--color-page);
+    box-shadow: none;
 }
 
 .button-primary:hover,
 .btn-primary:hover {
-    border-color: color-mix(in srgb, var(--color-accent) 62%, var(--color-border));
-    background: color-mix(in srgb, var(--color-accent) 24%, var(--color-surface));
+    border-color: var(--color-accent-strong);
+    background: var(--color-accent-strong);
 }
 
 .button-secondary,
 .btn-secondary {
-    background: color-mix(in srgb, var(--color-surface) 94%, var(--color-page));
+    background: transparent;
     border: 1px solid var(--color-border);
     color: var(--color-text);
 }
 
 .button-secondary:hover,
 .btn-secondary:hover {
-    background: color-mix(in srgb, var(--color-surface-subtle) 92%, var(--color-page));
+    background: var(--color-accent-soft);
     border-color: var(--color-border-strong);
 }
 
 .button-ghost {
     background: transparent;
-    border: 1px solid transparent;
+    border: 0;
+    border-bottom: 1px solid transparent;
     color: var(--color-text-muted);
 }
 
 .button-ghost:hover {
     color: var(--color-text);
-    background: color-mix(in srgb, var(--color-text) 6%, transparent);
+    background: transparent;
+    border-color: var(--color-border);
 }
 
 .field-label {
@@ -587,7 +602,7 @@ a:focus-visible {
 .bg-obsidian-surface,
 .bg-obsidian-elevated,
 .bg-obsidian-light {
-    background: var(--color-surface);
+    background: transparent;
 }
 
 .bg-brand-primary\/10,
@@ -599,7 +614,7 @@ a:focus-visible {
 .bg-red-500\/10,
 .bg-indigo-500\/10,
 .bg-blue-500\/10 {
-    background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+    background: rgba(22, 20, 17, 0.06);
 }
 
 .text-obsidian,
@@ -632,7 +647,7 @@ a:focus-visible {
 .border-brand-primary\/30,
 .border-indigo-500\/20,
 .border-blue-500\/20 {
-    border-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
+    border-color: var(--color-border-strong);
 }
 
 .interactive-row {
@@ -643,7 +658,7 @@ a:focus-visible {
 }
 
 .interactive-row:hover {
-    background: color-mix(in srgb, var(--color-text) 4%, transparent);
+    background: rgba(22, 20, 17, 0.03);
 }
 
 .stagger-enter {
@@ -727,14 +742,14 @@ a:focus-visible {
     .bg-gray-900,
     .bg-zinc-900,
     .bg-slate-900 {
-        background: color-mix(in srgb, var(--color-surface) 94%, var(--color-page)) !important;
+        background: transparent !important;
     }
 
     .hover\:bg-white\/5:hover,
     .hover\:bg-white\/10:hover,
     .hover\:bg-white\/90:hover,
     .hover\:bg-obsidian-hover:hover {
-        background: color-mix(in srgb, var(--color-surface-subtle) 92%, var(--color-page)) !important;
+        background: rgba(22, 20, 17, 0.04) !important;
     }
 
     .border-white\/10,
@@ -812,4 +827,23 @@ a:focus-visible {
     .studio-layout-shell {
         padding-inline: 2rem;
     }
+}
+
+/* -- Visual Density: Compact ------------------------------------------------- */
+html.density-compact .studio-page {
+    gap: clamp(1rem, 2vw, 1.5rem);
+    padding-top: clamp(4px, 0.6vw, 10px);
+    padding-bottom: clamp(32px, 4vw, 56px);
+}
+html.density-compact .app-header-block {
+    gap: 0.5rem;
+}
+html.density-compact .settings-field {
+    padding-block: 0.75rem;
+}
+html.density-compact .settings-action-row {
+    padding-top: 0.75rem;
+}
+html.density-compact .section-space {
+    padding-block: clamp(40px, 6vw, 80px);
 }

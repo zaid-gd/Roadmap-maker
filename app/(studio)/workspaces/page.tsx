@@ -6,7 +6,6 @@ import { ArrowUpDown, Plus, SlidersHorizontal } from "lucide-react";
 import StorageStatusCard from "@/components/shared/StorageStatusCard";
 import WorkspaceLibraryCard from "@/components/workspaces/WorkspaceLibraryCard";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { getStorage, getStorageStatus } from "@/lib/storage";
 import { getRoadmapStats } from "@/lib/workspace-stats";
 import type { Roadmap, StorageStatus } from "@/types";
@@ -119,8 +118,8 @@ export default function WorkspacesPage() {
                 />
             </section>
 
-            <section className="space-y-6 py-2">
-                <div className="studio-panel flex flex-col gap-5 p-5 md:flex-row md:items-center md:justify-between">
+            <section className="space-y-8 py-2">
+                <div className="filter-bar">
                     <div className="flex flex-wrap items-center gap-5">
                         <div className="flex items-center gap-3 text-sm text-text-muted">
                             <SlidersHorizontal size={15} />
@@ -165,11 +164,9 @@ export default function WorkspacesPage() {
                 </div>
 
                 {mounted && filteredRoadmaps.length > 0 && (
-                    <div className="flex items-center px-1">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-subtle px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-text-primary shadow-sm">
-                            <span className="flex h-5 items-center justify-center rounded-full bg-[var(--color-accent)] px-2 text-page shadow-sm">
-                                {filteredRoadmaps.length}
-                            </span>
+                    <div className="flex items-center border-b border-border pb-3">
+                        <div className="inline-flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-primary">
+                            <span>{filteredRoadmaps.length}</span>
                             <span>{filteredRoadmaps.length === 1 ? "workspace" : "workspaces"}</span>
                             {filter !== "all" && (
                                 <span className="ml-1 text-text-muted">
@@ -182,7 +179,7 @@ export default function WorkspacesPage() {
 
                 {mounted ? (
                     filteredRoadmaps.length > 0 ? (
-                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                        <div className="space-y-0">
                             {filteredRoadmaps.map((roadmap) => (
                                 <WorkspaceLibraryCard
                                     key={roadmap.id}
@@ -199,36 +196,34 @@ export default function WorkspacesPage() {
                             ))}
                         </div>
                     ) : (
-                        <Card className="mt-8">
-                            <CardContent className="studio-empty py-12">
-                                <h2 className="text-2xl font-display text-text-primary">
-                                    {roadmaps.length === 0 ? "No workspaces yet." : "Nothing matches the current view."}
-                                </h2>
-                                <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-text-secondary">
-                                    {roadmaps.length === 0
-                                        ? "Create the first workspace and it will appear here as a clean, sortable library."
-                                        : "Adjust the filters or sorting to bring another set of workspaces back into view."}
-                                </p>
-                                <div className="mt-6 flex justify-center gap-3">
-                                    <Button asChild>
-                                        <Link href="/create">
-                                            <Plus size={16} />
-                                            New workspace
-                                        </Link>
+                        <div className="studio-empty mt-8 py-12">
+                            <h2 className="text-2xl font-display text-text-primary">
+                                {roadmaps.length === 0 ? "No workspaces yet." : "Nothing matches the current view."}
+                            </h2>
+                            <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-text-secondary">
+                                {roadmaps.length === 0
+                                    ? "Create the first workspace and it will appear here as a clean, sortable library."
+                                    : "Adjust the filters or sorting to bring another set of workspaces back into view."}
+                            </p>
+                            <div className="mt-6 flex justify-center gap-3">
+                                <Button asChild>
+                                    <Link href="/create">
+                                        <Plus size={16} />
+                                        New workspace
+                                    </Link>
+                                </Button>
+                                {roadmaps.length > 0 ? (
+                                    <Button type="button" variant="secondary" onClick={() => setFilter("all")}>
+                                        Show all
                                     </Button>
-                                    {roadmaps.length > 0 ? (
-                                        <Button type="button" variant="secondary" onClick={() => setFilter("all")}>
-                                            Show all
-                                        </Button>
-                                    ) : null}
-                                </div>
-                            </CardContent>
-                        </Card>
+                                ) : null}
+                            </div>
+                        </div>
                     )
                 ) : (
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                    <div className="space-y-0 border-t border-border">
                         {[1, 2, 3, 4].map((item) => (
-                            <div key={item} className="surface-panel h-56 skeleton" />
+                            <div key={item} className="h-40 border-b border-border skeleton" />
                         ))}
                     </div>
                 )}

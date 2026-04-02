@@ -1,368 +1,307 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useRef } from "react";
 import Link from "next/link";
-import { motion, type Variants } from "motion/react";
-import { ArrowRight, HardDrive, SlidersHorizontal, UserRound } from "lucide-react";
-import HowToSchema from "@/components/seo/HowToSchema";
-import WebAppSchema from "@/components/seo/WebAppSchema";
-import { getStorage, getStorageStatus } from "@/lib/storage";
-import { getRelativeTimeLabel, getRoadmapDisplayTitle, getRoadmapStats } from "@/lib/workspace-stats";
-import type { Roadmap, StorageStatus } from "@/types";
-import { cn } from "@/lib/utils";
+import { motion, useScroll, useTransform, useInView } from "framer-motion";
+import type { Variants } from "framer-motion";
+import { ArrowRight, Code2, ListTodo, Search } from "lucide-react";
 
-const heroItems = [
-    "Local-first workspace",
-    "Account-ready sync",
-    "Structured visibility",
-    "Template-ready library",
-] as const;
+// --- Components ---
 
-const featureSections = [
-    {
-        eyebrow: "Capture",
-        title: "Start with live material, not a blank operating surface.",
-        body: "Bring plans, briefs, notes, and internal documentation into one structured workspace without forcing teams to rewrite how they already work.",
-        visual: "capture" as const,
-    },
-    {
-        eyebrow: "Navigate",
-        title: "Make active work legible the moment someone returns.",
-        body: "Progress, recency, and next actions stay visible in a calm list system that scales from a single workspace to a large internal library.",
-        visual: "library" as const,
-    },
-    {
-        eyebrow: "Control",
-        title: "Add continuity only when the workflow actually needs it.",
-        body: "Use the product privately by default, then introduce account-backed sync, settings, and controlled public access when the work is ready to travel.",
-        visual: "control" as const,
-    },
-];
-
-const revealParent: Variants = {
-    hidden: { opacity: 0 },
-    show: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.08,
+function HeroSection() {
+    // Staggered text animation
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            translateY: 0,
+            transition: {
+                staggerChildren: 0.15,
+                delayChildren: 0.2,
+            },
         },
-    },
-};
+    };
 
-const revealChild: Variants = {
-    hidden: { opacity: 0, y: 18 },
-    show: {
-        opacity: 1,
-        y: 0,
-        transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
-    },
-};
-
-function CaptureFragment() {
-    return (
-        <div className="surface-panel space-y-4 p-4">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-                <div>
-                    <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">Draft surface</p>
-                    <p className="mt-1 text-sm text-text-secondary">A single input layer for raw operating material.</p>
-                </div>
-                <span className="rounded-sm border border-border px-2 py-1 text-[11px] uppercase tracking-[0.12em] text-text-secondary">
-                    Private
-                </span>
-            </div>
-
-            <div className="mono-surface min-h-[230px] rounded-md border border-border px-4 py-4 text-sm leading-7 text-text-secondary">
-                <p># Team operating notes</p>
-                <p className="mt-3">Week 1: setup, account access, workspace conventions</p>
-                <p className="mt-3">Week 2: project ownership, review rhythm, handoff rules</p>
-                <p className="mt-3">Week 3: independent delivery, reporting, archive standards</p>
-            </div>
-
-            <div className="flex items-center justify-between text-sm">
-                <p className="text-text-muted">Import text, structure it, then continue inside the workspace.</p>
-                <div className="flex items-center gap-2">
-                    <span className="button-ghost !min-h-9">Upload</span>
-                    <span className="button-primary !min-h-9">Generate</span>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function LibraryFragment({ roadmaps }: { roadmaps: Roadmap[] }) {
-    const rows = roadmaps.slice(0, 3);
+    const itemVariants: Variants = {
+        hidden: { opacity: 0, y: 50 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } },
+    };
 
     return (
-        <div className="surface-panel overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                <div>
-                    <p className="text-sm font-medium text-text-primary">Workspace library</p>
-                    <p className="mt-1 text-xs text-text-muted">Thin signals. Clear recency. No visual clutter.</p>
-                </div>
-                <SlidersHorizontal size={15} className="text-text-muted" />
-            </div>
+        <section className="relative flex min-h-screen w-full items-center overflow-hidden border-b border-white/5 bg-zinc-950">
+            {/* Background Image */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+                src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1920&q=80&auto=format&fit=crop"
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 h-full w-full object-cover opacity-75"
+            />
 
-            <div className="divide-y divide-border">
-                {rows.length > 0
-                    ? rows.map((roadmap) => {
-                          const stats = getRoadmapStats(roadmap);
+            {/* Primary dark overlay – left-to-right fade so text stays readable */}
+            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/95 via-zinc-950/70 to-zinc-950/30" />
+            {/* Bottom fade */}
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
 
-                          return (
-                              <div
-                                  key={roadmap.id}
-                                  className="grid gap-3 px-4 py-4 md:grid-cols-[minmax(0,1.5fr)_120px_132px_24px] md:items-center"
-                              >
-                                  <div className="min-w-0">
-                                      <p className="truncate text-sm font-medium text-text-primary">
-                                          {getRoadmapDisplayTitle(roadmap)}
-                                      </p>
-                                      <p className="mt-1 text-xs text-text-muted">{stats.moduleCount} modules</p>
-                                  </div>
-                                  <div>
-                                      <div className="mb-2 flex items-center justify-between text-[11px] text-text-muted">
-                                          <span>{stats.percent}%</span>
-                                      </div>
-                                      <div className="h-1.5 rounded-full bg-[var(--color-surface-muted)]">
-                                          <div
-                                              className="h-full rounded-full bg-[var(--color-accent)]"
-                                              style={{ width: `${stats.percent}%` }}
-                                          />
-                                      </div>
-                                  </div>
-                                  <p className="text-xs text-text-muted">
-                                      {getRelativeTimeLabel(roadmap.updatedAt || roadmap.createdAt)}
-                                  </p>
-                                  <ArrowRight size={15} className="text-text-muted" />
-                              </div>
-                          );
-                      })
-                    : [1, 2, 3].map((item) => (
-                          <div
-                              key={item}
-                              className="grid gap-3 px-4 py-4 md:grid-cols-[minmax(0,1.5fr)_120px_132px_24px] md:items-center"
-                          >
-                              <div className="space-y-2">
-                                  <div className="h-3 w-40 rounded-full bg-[var(--color-surface-muted)]" />
-                                  <div className="h-3 w-20 rounded-full bg-[var(--color-surface-muted)]" />
-                              </div>
-                              <div className="h-1.5 rounded-full bg-[var(--color-surface-muted)]" />
-                              <div className="h-3 w-16 rounded-full bg-[var(--color-surface-muted)]" />
-                              <div className="h-3 w-3 rounded-full bg-[var(--color-surface-muted)]" />
-                          </div>
-                      ))}
-            </div>
-        </div>
-    );
-}
-
-function ControlFragment({ storageStatus }: { storageStatus: StorageStatus }) {
-    const synced = storageStatus.mode === "synced-account";
-
-    return (
-        <div className="grid gap-4 md:grid-cols-[220px_1fr]">
-            <div className="surface-panel p-4">
-                <div className="space-y-2">
-                    {["Overview", "Library", "Settings"].map((item, index) => (
-                        <div key={item} className="relative flex items-center gap-3 px-1 py-2 text-sm text-text-secondary">
-                            <span
-                                className={cn(
-                                    "h-5 w-px rounded-full",
-                                    index === 1 ? "bg-[var(--color-accent)]" : "bg-transparent",
-                                )}
-                            />
-                            <span className={index === 1 ? "text-text-primary" : undefined}>{item}</span>
-                        </div>
-                    ))}
-                </div>
-
-                <div className="mt-8 border-t border-border pt-4">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-text-muted">Credits</p>
-                    <p className="mt-1 text-sm text-text-primary">124 remaining</p>
-                </div>
-            </div>
-
-            <div className="surface-panel p-4">
-                <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-sm border border-border bg-surface-subtle">
-                        {synced ? (
-                            <UserRound size={16} className="text-[var(--color-accent)]" />
-                        ) : (
-                            <HardDrive size={16} className="text-text-muted" />
-                        )}
-                    </div>
-
-                    <div>
-                        <p className="text-[11px] uppercase tracking-[0.14em] text-text-muted">
-                            {synced ? "Synced account" : "Local by default"}
-                        </p>
-                        <h3 className="mt-2 text-lg font-medium text-text-primary">
-                            {synced ? storageStatus.email || "Account-backed access" : "Saved on this device"}
-                        </h3>
-                        <p className="mt-2 max-w-lg text-sm leading-6 text-text-secondary">
-                            {synced
-                                ? "Work remains lightweight locally and syncs once an account is present."
-                                : "Use the product privately in the browser, then enable account-backed continuity later."}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-sm border border-border p-3">
-                        <p className="text-[11px] uppercase tracking-[0.14em] text-text-muted">Storage state</p>
-                        <p className="mt-2 text-sm text-text-primary">Always explicit</p>
-                    </div>
-                    <div className="rounded-sm border border-border p-3">
-                        <p className="text-[11px] uppercase tracking-[0.14em] text-text-muted">Settings</p>
-                        <p className="mt-2 text-sm text-text-primary">One place for control</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function FeatureVisual({
-    type,
-    roadmaps,
-    storageStatus,
-}: {
-    type: "capture" | "library" | "control";
-    roadmaps: Roadmap[];
-    storageStatus: StorageStatus;
-}) {
-    if (type === "capture") return <CaptureFragment />;
-    if (type === "library") return <LibraryFragment roadmaps={roadmaps} />;
-    return <ControlFragment storageStatus={storageStatus} />;
-}
-
-export default function HomePage() {
-    const [roadmaps, setRoadmaps] = useState<Roadmap[]>([]);
-    const [storageStatus, setStorageStatus] = useState<StorageStatus>({
-        mode: "local-only",
-        cloudAvailable: false,
-        email: null,
-    });
-
-    useEffect(() => {
-        const storage = getStorage();
-        let active = true;
-
-        setRoadmaps(storage.getRoadmaps());
-
-        void getStorageStatus().then((status) => {
-            if (active) {
-                setStorageStatus(status);
-            }
-        });
-
-        if (storage.syncFromCloud) {
-            void storage.syncFromCloud().then((synced) => {
-                if (active) {
-                    setRoadmaps(synced);
-                }
-            });
-        }
-
-        return () => {
-            active = false;
-        };
-    }, []);
-
-    const primaryHref = useMemo(() => {
-        return storageStatus.mode === "synced-account" ? "/workspaces" : "/create";
-    }, [storageStatus.mode]);
-
-    return (
-        <div className="page-shell-wide pb-24 pt-0">
-            <WebAppSchema />
-            <HowToSchema />
-
-            <motion.section
-                className="border-b border-border pb-20 pt-12 md:pb-24 md:pt-16"
-                variants={revealParent}
-                initial="hidden"
-                animate="show"
+            {/* Static Film Grain Overlay – pure SVG, no external image */}
+            <svg
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 z-10 h-full w-full"
+                style={{ opacity: 0.05 }}
+                xmlns="http://www.w3.org/2000/svg"
             >
-                <div className="max-w-4xl">
-                    <motion.p variants={revealChild} className="eyebrow">
-                        Workspace platform
-                    </motion.p>
-                    <motion.h1
-                        variants={revealChild}
-                        className="mt-4 max-w-4xl text-5xl font-display leading-[0.94] tracking-[-0.07em] text-text-primary md:text-7xl"
+                <defs>
+                    <filter id="grain" x="0%" y="0%" width="100%" height="100%">
+                        <feTurbulence
+                            type="fractalNoise"
+                            baseFrequency="0.99"
+                            numOctaves="4"
+                            seed="2"
+                            stitchTiles="stitch"
+                            result="noise"
+                        />
+                        <feColorMatrix type="saturate" values="0" in="noise" result="greyNoise" />
+                        <feBlend in="SourceGraphic" in2="greyNoise" mode="overlay" />
+                    </filter>
+                </defs>
+                <rect width="100%" height="100%" filter="url(#grain)" />
+            </svg>
+
+            {/* Content */}
+            <motion.div
+                className="relative z-20 flex w-full max-w-7xl flex-col items-start px-8 py-32 md:px-16"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <motion.p
+                    variants={itemVariants}
+                    className="mb-5 text-[10px] font-bold uppercase tracking-[0.25em] text-emerald-500"
+                >
+                    Editorial Workspace System
+                </motion.p>
+
+                <h1 className="flex max-w-3xl flex-wrap justify-start font-display text-4xl font-bold leading-[0.92] tracking-tighter text-zinc-100 md:text-5xl lg:text-[5.25rem]">
+                    {"Give the work a calmer place to live.".split(" ").map((word, i) => (
+                        <motion.span
+                            key={i}
+                            variants={itemVariants}
+                            className="mr-[0.22em] inline-block"
+                        >
+                            {word}
+                        </motion.span>
+                    ))}
+                </h1>
+
+                <motion.p
+                    variants={itemVariants}
+                    className="mt-6 max-w-lg text-base text-zinc-400 leading-relaxed"
+                >
+                    Start privately, keep the system readable, and add shared continuity only when it improves the workflow.
+                </motion.p>
+
+                <motion.div variants={itemVariants} className="mt-8 flex flex-col items-start gap-3 sm:flex-row">
+                    <Link
+                        href="/workspaces"
+                        style={{ color: '#0a0a0a' }}
+                        className="group flex h-12 items-center justify-center gap-2 bg-zinc-100 px-7 text-xs font-bold uppercase tracking-widest transition-all hover:bg-white hover:scale-[1.02]"
                     >
-                        Structure the work, then let the product stay out of the way.
-                    </motion.h1>
-                    <motion.p variants={revealChild} className="mt-5 max-w-2xl text-lg leading-8 text-text-secondary">
-                        A clean operating surface for capturing, organizing, and continuing complex work.
+                        Open Studio
+                        <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                    </Link>
+                    <Link
+                        href="/gallery"
+                        className="group flex h-12 items-center justify-center border border-white/20 bg-transparent px-7 text-xs font-bold uppercase tracking-widest text-zinc-100 transition-all hover:border-white/40 hover:bg-white/5"
+                    >
+                        Browse Library
+                    </Link>
+                </motion.div>
+            </motion.div>
+        </section>
+    );
+}
+
+function SectionCapture() {
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, margin: "-20%" });
+
+    return (
+        <section ref={ref} className="border-b border-white/5">
+            <div className="mx-auto grid max-w-7xl grid-cols-1 lg:grid-cols-2">
+                {/* Left side: Sticky text */}
+                <div className="border-b border-white/5 lg:border-b-0 lg:border-r border-white/5 p-12 md:p-20 lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-center">
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={isInView ? { opacity: 1, y: 0 } : {}}
+                        transition={{ duration: 0.6 }}
+                        className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-zinc-500"
+                    >
+                        01. Capture
                     </motion.p>
-                    <motion.div variants={revealChild} className="mt-8 flex flex-col items-start gap-3 sm:flex-row">
-                        <Link href={primaryHref} className="button-primary">
-                            Open studio
-                        </Link>
-                        <Link href="/gallery" className="button-secondary">
-                            Browse library
-                        </Link>
+                    <motion.h2
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={isInView ? { opacity: 1, y: 0 } : {}}
+                        transition={{ duration: 0.6, delay: 0.1 }}
+                        className="font-display text-4xl font-bold tracking-tight text-zinc-100 md:text-5xl lg:text-6xl"
+                    >
+                        Bring raw source material into a working draft surface.
+                    </motion.h2>
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={isInView ? { opacity: 1, y: 0 } : {}}
+                        transition={{ duration: 0.6, delay: 0.2 }}
+                        className="mt-6 text-lg text-zinc-400"
+                    >
+                        Paste internal notes, roadmaps, onboarding guides, or process documentation and turn them into a structure that remains readable after the first session.
+                    </motion.p>
+                </div>
+
+                {/* Right side: Scrolling UI Mockup */}
+                <div className="flex items-center justify-center p-8 py-24 md:p-20 bg-zinc-950 min-h-screen">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={isInView ? { opacity: 1, scale: 1 } : {}}
+                        transition={{ duration: 0.8, delay: 0.3 }}
+                        className="w-full max-w-md border border-white/10 bg-black/40 backdrop-blur-md rounded-lg shadow-2xl overflow-hidden"
+                    >
+                        <div className="flex items-center justify-between border-b border-white/10 bg-white/5 px-4 py-3">
+                            <div className="flex gap-2">
+                                <span className="h-3 w-3 rounded-full bg-zinc-800" />
+                                <span className="h-3 w-3 rounded-full bg-zinc-800" />
+                                <span className="h-3 w-3 rounded-full bg-zinc-800" />
+                            </div>
+                            <span className="text-xs font-mono text-zinc-500">draft_notes.md</span>
+                        </div>
+                        <div className="p-6 font-mono text-sm leading-relaxed text-zinc-300">
+                            <span className="text-emerald-400"># Team Operating Notes</span>
+                            <br /><br />
+                            <span className="text-zinc-500">// Week 1</span><br />
+                            <span className="text-zinc-300">- Setup, access, workspace conventions</span><br />
+                            <span className="text-zinc-300">- Initial system tour</span><br />
+                            <br />
+                            <span className="text-zinc-500">// Week 2</span><br />
+                            <span className="text-zinc-300">- Ownership patterns</span><br />
+                            <span className="text-zinc-300">- Review rhythms and handoff rules</span><br />
+                            <br />
+                            <div className="mt-8 flex gap-3 opacity-80">
+                                <span className="h-2 w-full rounded-sm bg-zinc-800" />
+                                <span className="h-2 w-3/4 rounded-sm bg-zinc-800" />
+                            </div>
+                        </div>
+                        <div className="border-t border-white/10 bg-zinc-950 p-4 flex justify-end">
+                            <button className="flex items-center gap-2 rounded bg-emerald-600 px-4 py-2 text-xs font-bold uppercase tracking-widest text-zinc-100 hover:bg-emerald-500 transition-colors">
+                                <Code2 size={14} /> Generate Structure
+                            </button>
+                        </div>
                     </motion.div>
                 </div>
-            </motion.section>
+            </div>
+        </section>
+    );
+}
 
-            <section className="section-space-compact border-b border-border">
-                <div className="mx-auto max-w-3xl divide-y divide-border">
-                    {heroItems.map((item, index) => (
-                        <div
-                            key={item}
-                            className={cn("px-0 py-4 text-sm font-medium text-text-secondary", index === 0 && "pt-0")}
-                        >
-                            {item}
-                        </div>
-                    ))}
+function SectionNavigate() {
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, margin: "-20%" });
+
+    return (
+        <section ref={ref} className="border-b border-white/5 bg-zinc-950">
+            <div className="mx-auto grid max-w-7xl grid-cols-1 lg:grid-cols-2">
+                {/* Left side: Sticky text */}
+                <div className="border-b border-white/5 lg:border-b-0 lg:border-r border-white/5 p-12 md:p-20 lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-center">
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={isInView ? { opacity: 1, y: 0 } : {}}
+                        transition={{ duration: 0.6 }}
+                        className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-zinc-500"
+                    >
+                        02. Navigate
+                    </motion.p>
+                    <motion.h2
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={isInView ? { opacity: 1, y: 0 } : {}}
+                        transition={{ duration: 0.6, delay: 0.1 }}
+                        className="font-display text-4xl font-bold tracking-tight text-zinc-100 md:text-5xl lg:text-6xl"
+                    >
+                        Keep the library legible as the volume of work grows.
+                    </motion.h2>
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={isInView ? { opacity: 1, y: 0 } : {}}
+                        transition={{ duration: 0.6, delay: 0.2 }}
+                        className="mt-6 text-lg text-zinc-400"
+                    >
+                        Recency, completion, and next actions stay visible in one quiet list so people can resume work immediately instead of re-learning the interface.
+                    </motion.p>
                 </div>
-            </section>
 
-            <section className="section-space">
-                <div className="mx-auto max-w-4xl space-y-24">
-                    {featureSections.map((section, index) => {
-                        const reverse = index % 2 === 1;
-
-                        return (
-                            <motion.div
-                                key={section.title}
-                                className="border-b border-border py-24 last:border-b-0 last:pb-0 md:flex md:items-center md:gap-16"
-                                initial={{ opacity: 0, y: 32 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true, margin: "-80px" }}
-                                transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-                            >
-                                <div className={cn("order-1 max-w-md", reverse ? "md:order-2" : "md:order-1")}>
-                                    <p className="eyebrow">{section.eyebrow}</p>
-                                    <h2 className="mt-4 text-3xl font-display leading-tight tracking-[-0.04em] text-text-primary md:text-5xl">
-                                        {section.title}
-                                    </h2>
-                                    <p className="mt-5 text-base leading-8 text-text-secondary">{section.body}</p>
+                {/* Right side: Scrolling UI Mockup */}
+                <div className="flex items-center justify-center p-8 py-24 md:p-20 min-h-screen">
+                    <motion.div
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={isInView ? { opacity: 1, x: 0 } : {}}
+                        transition={{ duration: 0.8, delay: 0.3 }}
+                        className="w-full max-w-md flex flex-col gap-4"
+                    >
+                        {/* Mock List Items */}
+                        {[
+                            { title: "React Architecture Patterns", progress: 100, active: false },
+                            { title: "Team Onboarding Guide", progress: 65, active: true },
+                            { title: "Q3 Design System Sync", progress: 12, active: false },
+                        ].map((item, i) => (
+                            <div key={i} className={`border border-white/10 rounded-lg p-5 flex flex-col transition-all duration-300 ${item.active ? 'bg-white/10 scale-105 shadow-[0_0_30px_rgba(255,255,255,0.05)]' : 'bg-black/40 opacity-70'}`}>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h4 className="font-medium text-zinc-200">{item.title}</h4>
+                                        <p className="text-xs text-zinc-500 mt-1">Updated 2 days ago</p>
+                                    </div>
+                                    <span className="text-xs font-mono text-zinc-400">{item.progress}%</span>
                                 </div>
-
-                                <div className={cn("order-2 mt-10 min-w-0 flex-1 md:mt-0", reverse ? "md:order-1" : "md:order-2")}>
-                                    <FeatureVisual type={section.visual} roadmaps={roadmaps} storageStatus={storageStatus} />
+                                <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden border border-white/5">
+                                    <div
+                                        className={`h-full rounded-full transition-all duration-1000 ${item.progress === 100 ? 'bg-zinc-600' : 'bg-emerald-500'}`}
+                                        style={{ width: `${item.progress}%` }}
+                                    />
                                 </div>
-                            </motion.div>
-                        );
-                    })}
+                                {item.active && (
+                                    <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-xs text-emerald-400 font-medium">
+                                            <ListTodo size={14} /> Resume Module 3
+                                        </div>
+                                        <ArrowRight size={14} className="text-zinc-500" />
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </motion.div>
                 </div>
-            </section>
+            </div>
+        </section>
+    );
+}
 
-            <section className="section-space border-t border-border text-center">
-                <div className="mx-auto max-w-3xl">
-                    <p className="eyebrow justify-center">Ready to begin</p>
-                    <h2 className="mt-4 text-4xl font-display leading-tight tracking-[-0.05em] text-text-primary md:text-6xl">
-                        Give the work a clearer place to live.
-                    </h2>
-                    <p className="mx-auto mt-5 max-w-xl text-base leading-8 text-text-secondary">
-                        Start privately, keep the interface light, and introduce shared structure only when it helps.
+export default function MarketingPage() {
+    return (
+        <div className="min-h-screen bg-zinc-950 text-zinc-100 selection:bg-emerald-500/30">
+            <HeroSection />
+            <SectionCapture />
+            <SectionNavigate />
+
+            <section className="border-t border-white/5 bg-zinc-950 py-32 text-center">
+                <div className="mx-auto max-w-3xl px-6">
+                    <p className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-emerald-500">
+                        Begin with material, not UI
                     </p>
-                    <div className="mt-8 flex justify-center">
-                        <Link href="/create" className="button-primary">
-                            Open studio
+                    <h2 className="font-display text-4xl font-bold leading-tight tracking-tighter text-zinc-100 md:text-6xl">
+                        Ready to structure your work?
+                    </h2>
+                    <div className="mt-10 flex justify-center">
+                        <Link
+                            href="/create"
+                            className="group flex h-14 items-center justify-center gap-2 rounded-none bg-emerald-600 px-10 text-sm font-bold uppercase tracking-wider text-white transition-all hover:bg-emerald-500 hover:scale-[1.02]"
+                        >
+                            Start the Studio
+                            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                         </Link>
                     </div>
                 </div>

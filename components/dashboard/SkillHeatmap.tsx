@@ -3,10 +3,10 @@ import { getRoadmapCompletionRate } from "@/lib/analytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function getTone(rate: number) {
-    if (rate >= 0.85) return "bg-emerald-400/80";
-    if (rate >= 0.6) return "bg-indigo-400/80";
-    if (rate >= 0.35) return "bg-amber-400/75";
-    return "bg-red-400/70";
+    if (rate >= 0.85) return "bg-[rgba(22,20,17,0.9)]";
+    if (rate >= 0.6) return "bg-[rgba(22,20,17,0.72)]";
+    if (rate >= 0.35) return "bg-[rgba(22,20,17,0.48)]";
+    return "bg-[rgba(22,20,17,0.22)]";
 }
 
 export default function SkillHeatmap({ roadmaps }: { roadmaps: Roadmap[] }) {

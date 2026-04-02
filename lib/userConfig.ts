@@ -10,6 +10,8 @@ export interface UserConfig {
     theme: "dark";
     accentColor: string;
     showProgressNotice: boolean;
+    measurementStyle: "tasks" | "time" | "both";
+    visualDensity: "default" | "compact";
 }
 
 const STORAGE_KEY = "zns_user_config";
@@ -30,6 +32,8 @@ export const DEFAULT_CONFIG: UserConfig = {
     theme: "dark",
     accentColor: "#4F7CFF",
     showProgressNotice: true,
+    measurementStyle: "tasks",
+    visualDensity: "default",
 };
 
 export function getUserConfig(): UserConfig {
@@ -75,6 +79,12 @@ export function getUserConfig(): UserConfig {
             theme: "dark",
             accentColor: typeof parsed.accentColor === "string" ? parsed.accentColor : DEFAULT_CONFIG.accentColor,
             showProgressNotice: parsed.showProgressNotice ?? DEFAULT_CONFIG.showProgressNotice,
+            measurementStyle: (["tasks", "time", "both"] as const).includes(parsed.measurementStyle as any)
+                ? (parsed.measurementStyle as UserConfig["measurementStyle"])
+                : DEFAULT_CONFIG.measurementStyle,
+            visualDensity: (["default", "compact"] as const).includes(parsed.visualDensity as any)
+                ? (parsed.visualDensity as UserConfig["visualDensity"])
+                : DEFAULT_CONFIG.visualDensity,
         };
     } catch {
         return DEFAULT_CONFIG;

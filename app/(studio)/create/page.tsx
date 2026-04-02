@@ -1,25 +1,23 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, ChevronUp, FileUp, Loader2 } from "lucide-react";
+import { Suspense, useCallback, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ChevronDown, ChevronUp, FileUp, Loader2, Wand2, ArrowRight, ArrowLeft } from "lucide-react";
 import UpgradeModal from "@/components/payments/UpgradeModal";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { getStorage } from "@/lib/storage";
 import { getActiveApiKey, getActiveModel, getUserConfig } from "@/lib/userConfig";
 import type { Roadmap } from "@/types";
 import { cn } from "@/lib/utils";
 
-const LOADING_STEPS = [
-    "Reading your material",
-    "Finding the structure",
-    "Preparing the workspace",
-    "Finalizing the result",
-] as const;
+const LOADING_MESSAGES = [
+    "Reading your material...",
+    "Extracting key concepts...",
+    "Structuring modules...",
+    "Finalizing steps..."
+];
 
 export default function CreatePage() {
     return (
@@ -31,55 +29,23 @@ export default function CreatePage() {
 
 function CreatePageContent() {
     const router = useRouter();
-    const searchParams = useSearchParams();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const [creationStep, setCreationStep] = useState<"input" | "generating" | "review">("input");
+    
+    // Form state
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [mode, setMode] = useState<"general" | "intern">("general");
-    const [goal, setGoal] = useState("");
-    const [difficulty, setDifficulty] = useState<"beginner" | "intermediate" | "advanced" | null>(null);
-    const [estimatedDuration, setEstimatedDuration] = useState("");
-    const [showOptional, setShowOptional] = useState(false);
+    
+    // UI state
     const [isDragging, setIsDragging] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
     const [loadingStep, setLoadingStep] = useState(0);
-    const [progress, setProgress] = useState(0);
     const [error, setError] = useState("");
     const [upgradeMessage, setUpgradeMessage] = useState("");
-
-    useEffect(() => {
-        const queryTitle = searchParams.get("title");
-        const queryContent = searchParams.get("content");
-
-        if (queryTitle) setTitle(queryTitle);
-        if (queryContent) setContent(queryContent);
-    }, [searchParams]);
-
-    useEffect(() => {
-        if (!isLoading) return undefined;
-
-        const startedAt = Date.now();
-        const interval = window.setInterval(() => {
-            const elapsed = Date.now() - startedAt;
-
-            if (elapsed < 1800) setLoadingStep(0);
-            else if (elapsed < 3600) setLoadingStep(1);
-            else if (elapsed < 5600) setLoadingStep(2);
-            else setLoadingStep(3);
-
-            setProgress(Math.min(92, (elapsed / 9000) * 92));
-        }, 120);
-
-        return () => {
-            window.clearInterval(interval);
-        };
-    }, [isLoading]);
-
-    const wordCount = useMemo(() => {
-        const trimmed = content.trim();
-        return trimmed ? trimmed.split(/\s+/).length : 0;
-    }, [content]);
+    
+    // Draft State
+    const [draftRoadmap, setDraftRoadmap] = useState<Roadmap | null>(null);
 
     const hasContent = content.trim().length > 0;
 
@@ -89,25 +55,13 @@ function CreatePageContent() {
                 setError("Only .md, .txt, and .markdown files are supported.");
                 return;
             }
-
             setError("");
-
             const reader = new FileReader();
             reader.onload = (event) => {
                 const nextContent = (event.target?.result as string) || "";
                 setContent(nextContent);
-
-                if (!title.trim()) {
-                    const firstLine = nextContent
-                        .split("\n")
-                        .find((line) => line.trim().length > 0)
-                        ?.replace(/^#+\s*/, "")
-                        .trim();
-
-                    setTitle(firstLine || file.name.replace(/\.\w+$/, ""));
-                }
+                if (!title.trim()) setTitle(file.name.replace(/\.\w+$/, ""));
             };
-
             reader.readAsText(file);
         },
         [title],
@@ -120,9 +74,13 @@ function CreatePageContent() {
         }
 
         setError("");
-        setProgress(8);
+        setCreationStep("generating");
         setLoadingStep(0);
-        setIsLoading(true);
+        
+        // Simulating the stages visually
+        const interval = setInterval(() => {
+            setLoadingStep(prev => Math.min(prev + 1, 3));
+        }, 1200);
 
         try {
             const userConfig = getUserConfig();
@@ -136,308 +94,229 @@ function CreatePageContent() {
                     content: content.trim(),
                     mode,
                     title: title.trim() || undefined,
-                    goal: goal || undefined,
-                    difficulty: difficulty || undefined,
-                    estimatedDuration: estimatedDuration || undefined,
                     userApiKey: useCustomKey ? activeApiKey : undefined,
                     userModel: useCustomKey ? getActiveModel(userConfig) : undefined,
                     userProvider: useCustomKey ? userConfig.provider : undefined,
                 }),
             });
 
+            clearInterval(interval);
+
             if (!response.ok) {
                 const payload = await response.json().catch(() => ({ error: "Failed to generate workspace" }));
-
                 if (payload.error === "limit_reached") {
-                    setUpgradeMessage(payload.message ?? "You have reached your current plan limit.");
-                    setIsLoading(false);
+                    setUpgradeMessage(payload.message ?? "Plan limit reached.");
+                    setCreationStep("input");
                     return;
                 }
-
                 throw new Error(payload.message ?? payload.error ?? "Something went wrong");
             }
 
             const payload = await response.json();
             if (!payload.success || !payload.roadmap) {
-                throw new Error(payload.error ?? "The response was incomplete.");
+                throw new Error(payload.error ?? "Incomplete response.");
+            }
+
+            let loadedTitle = payload.roadmap.title;
+            if (!loadedTitle || loadedTitle === "Untitled Course") {
+               loadedTitle = title.trim() || "Untitled Workspace"; 
             }
 
             const roadmap: Roadmap = {
                 ...payload.roadmap,
+                title: loadedTitle,
                 id: crypto.randomUUID(),
                 rawContent: content.trim(),
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
             };
 
-            setProgress(100);
-            getStorage().saveRoadmap(roadmap);
-
-            window.setTimeout(() => {
-                router.push(`/workspace/${roadmap.id}`);
-            }, 220);
+            setDraftRoadmap(roadmap);
+            setCreationStep("review");
+            
         } catch (nextError) {
+            clearInterval(interval);
             setError(nextError instanceof Error ? nextError.message : "An unexpected error occurred");
-            setIsLoading(false);
+            setCreationStep("input");
         }
+    };
+
+    const handleCreateFinal = () => {
+        if (!draftRoadmap) return;
+        getStorage().saveRoadmap(draftRoadmap);
+        router.push(`/workspace/${draftRoadmap.id}`);
     };
 
     return (
         <>
-            <div className="page-shell-wide pb-20 pt-8 md:pt-10">
-                <section className="app-header-block">
-                    <p className="eyebrow">Create workspace</p>
-                    <h1 className="text-3xl font-display leading-tight text-text-primary md:text-5xl">
-                        Create a workspace from source material.
-                    </h1>
-                    <p className="max-w-3xl text-sm leading-7 text-text-secondary md:text-base">
-                        Paste or upload the source, choose the structure, and generate the workspace.
-                    </p>
-                </section>
+            <div className="page-shell-wide py-8">
+                {creationStep !== "review" && (
+                    <section className="app-header-block mb-8">
+                        <p className="eyebrow">Content Import</p>
+                        <h1 className="text-3xl font-display leading-tight text-text-primary md:text-5xl">
+                            Turn scattered notes into a roadmap.
+                        </h1>
+                        <p className="mt-4 max-w-2xl text-sm leading-7 text-text-secondary">
+                            Drop in your guides, PDFs (as text for now), or markdown. We'll extract the steps and modules.
+                        </p>
+                    </section>
+                )}
 
-                <div className="two-panel-shell pt-2">
-                    <aside className="two-panel-sidebar divide-y divide-border border-y border-border lg:sticky lg:top-24">
-                        <div className="py-5">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-secondary">Source material</p>
-                            <div className="mt-4 space-y-3 text-sm leading-7 text-text-secondary">
-                                <p>Start with the full source text. The content determines the final workspace structure.</p>
-                                <p>Use Structured mode for coaching-oriented work. Use Standard mode for general workspace generation.</p>
-                            </div>
-                        </div>
-
-                        <div className="py-5">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-secondary">Current draft</p>
-                            <div className="mt-4 space-y-4">
-                                <div>
-                                    <p className="text-xs uppercase tracking-[0.18em] text-text-soft">Word count</p>
-                                    <p className="mt-2 text-2xl font-semibold text-text-primary">{wordCount}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs uppercase tracking-[0.18em] text-text-soft">Mode</p>
-                                    <p className="mt-2 text-base font-semibold capitalize text-text-primary">{mode}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs uppercase tracking-[0.18em] text-text-soft">Storage</p>
-                                    <p className="mt-2 text-base font-semibold text-text-primary">Local by default</p>
+                {creationStep === "input" && (
+                    <div className="max-w-4xl max-w-full">
+                        <div className="mb-6 grid gap-6 md:grid-cols-2">
+                             <div>
+                                <label className="mb-2 block text-sm font-medium text-text-primary">Workspace Title</label>
+                                <Input
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    placeholder="e.g. Master Next.js 15"
+                                    className="bg-[var(--color-surface)]"
+                                />
+                             </div>
+                             <div>
+                                <p className="mb-2 block text-sm font-medium text-text-primary">Parsing Mode</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Button type="button" variant={mode === "general" ? "default" : "outline"} onClick={() => setMode("general")}>Standard</Button>
+                                    <Button type="button" variant={mode === "intern" ? "default" : "outline"} onClick={() => setMode("intern")}>Structured</Button>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="py-5">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-secondary">Before generating</p>
-                            <div className="mt-4 space-y-3 text-sm leading-7 text-text-secondary">
-                                <p>Anonymous work stays local until you enable sync.</p>
-                                <p>If generation fails, verify your provider key in Settings and retry from this page.</p>
-                            </div>
-                        </div>
-                    </aside>
-
-                    <section className="min-w-0 space-y-4">
-                        <Card>
-                            <CardHeader className="gap-2">
-                                <CardTitle className="text-lg font-display">Workspace framing</CardTitle>
-                                <CardDescription>Set the title and choose the structure before generating the workspace.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="grid gap-5 md:grid-cols-[minmax(0,1fr)_220px]">
-                                <div>
-                                    <label htmlFor="workspace-title" className="mb-2 block text-sm font-medium text-text-primary">
-                                        Working title
-                                    </label>
-                                    <Input
-                                        id="workspace-title"
-                                        value={title}
-                                        onChange={(event) => setTitle(event.target.value)}
-                                        placeholder="Optional..."
-                                    />
-                                </div>
-
-                                <div>
-                                    <p className="mb-2 block text-sm font-medium text-text-primary">Mode</p>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {[
-                                            { value: "general" as const, label: "Standard" },
-                                            { value: "intern" as const, label: "Structured" },
-                                        ].map((option) => (
-                                            <Button
-                                                key={option.value}
-                                                type="button"
-                                                variant={mode === option.value ? "default" : "outline"}
-                                                onClick={() => setMode(option.value)}
-                                                className={mode === option.value ? "text-white" : ""}
-                                            >
-                                                {option.label}
-                                            </Button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <section className="space-y-3">
-                            <div>
-                                <h2 className="text-lg font-display text-text-primary">Source material</h2>
-                                <p className="mt-2 text-sm leading-7 text-text-secondary">
-                                    Paste directly or drop a markdown file into the working surface.
-                                </p>
-                            </div>
-
+                        <div className="relative">
                             <Textarea
-                                id="workspace-content"
                                 value={content}
-                                onChange={(event) => setContent(event.target.value)}
-                                onDragOver={(event) => {
-                                    event.preventDefault();
-                                    setIsDragging(true);
-                                }}
-                                onDragLeave={(event) => {
-                                    event.preventDefault();
+                                onChange={(e) => setContent(e.target.value)}
+                                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                                onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+                                onDrop={(e) => {
+                                    e.preventDefault();
                                     setIsDragging(false);
+                                    if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
                                 }}
-                                onDrop={(event) => {
-                                    event.preventDefault();
-                                    setIsDragging(false);
-                                    const file = event.dataTransfer.files[0];
-                                    if (file) processFile(file);
-                                }}
-                                placeholder="Paste notes, outlines, internal documentation, operating instructions, or any structured source material."
+                                placeholder="Paste your raw notes, guides, or course curriculum here..."
                                 className={cn(
-                                    "mono-surface min-h-[420px] w-full rounded-none bg-transparent px-5 py-5 text-[15px] leading-7 shadow-none focus-visible:ring-0",
-                                    isDragging ? "border-[var(--color-accent)]" : "border-border",
+                                    "mono-surface min-h-[400px] w-full resize-y bg-white/5 p-6 text-[15px] leading-relaxed shadow-sm transition-all duration-300 border-2 border-dashed rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/50",
+                                    isDragging ? "border-emerald-500 bg-emerald-500/10 shadow-[0_0_30px_rgba(16,185,129,0.2)]" : "border-white/10 hover:border-emerald-500/50 hover:bg-emerald-500/5 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)]"
                                 )}
                             />
-                        </section>
-
-                        <div className="flex items-center justify-between gap-4 text-xs text-text-muted">
-                            <p>This stays local by default. Shared access is optional later.</p>
-                            <p>{wordCount} words</p>
+                            
+                            {!content && (
+                                <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-zinc-500 opacity-80 group/dropzone transition-all">
+                                    <div className="p-4 rounded-full bg-white/5 border border-white/10 mb-4 animate-bounce hover:bg-white/10 transition-colors shadow-lg">
+                                        <FileUp size={40} className="stroke-[1.5] text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                                    </div>
+                                    <p className="text-sm font-medium uppercase tracking-[0.15em] text-zinc-400">Drag & Drop Note/MD</p>
+                                </div>
+                            )}
                         </div>
 
-                        <Card>
-                            <CardContent className="space-y-4 p-5">
-                                <Button
-                                    type="button"
-                                    onClick={() => setShowOptional((current) => !current)}
-                                    variant="ghost"
-                                    className="justify-start px-0 text-sm font-medium text-text-secondary hover:bg-transparent hover:text-text-primary"
-                                >
-                                    {showOptional ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                    Optional details
-                                </Button>
-
-                                {showOptional ? (
-                                    <div className="mt-4 grid gap-4 md:grid-cols-3">
-                                        <div>
-                                            <label htmlFor="workspace-goal" className="mb-2 block text-sm font-medium text-text-primary">
-                                                Goal
-                                            </label>
-                                            <Input
-                                                id="workspace-goal"
-                                                value={goal}
-                                                onChange={(event) => setGoal(event.target.value)}
-                                                placeholder="What should this produce?"
-                                            />
-                                        </div>
-
-                                        <fieldset>
-                                            <legend className="mb-2 block text-sm font-medium text-text-primary">Difficulty</legend>
-                                            <div className="flex flex-wrap gap-2">
-                                                {(["beginner", "intermediate", "advanced"] as const).map((level) => (
-                                                    <Button
-                                                        key={level}
-                                                        type="button"
-                                                        onClick={() => setDifficulty(level)}
-                                                        variant={difficulty === level ? "default" : "outline"}
-                                                        size="sm"
-                                                        className="capitalize"
-                                                    >
-                                                        {level}
-                                                    </Button>
-                                                ))}
-                                            </div>
-                                        </fieldset>
-
-                                        <div>
-                                            <label htmlFor="workspace-duration" className="mb-2 block text-sm font-medium text-text-primary">
-                                                Duration
-                                            </label>
-                                            <Input
-                                                id="workspace-duration"
-                                                value={estimatedDuration}
-                                                onChange={(event) => setEstimatedDuration(event.target.value)}
-                                                placeholder="e.g. 4 weeks"
-                                            />
-                                        </div>
-                                    </div>
-                                ) : null}
-                            </CardContent>
-                        </Card>
-
-                        <Separator />
-
-                        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-                            <Button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                variant="secondary"
-                                disabled={isLoading}
-                            >
-                                <FileUp size={16} />
-                                Upload
-                            </Button>
-
-                            <Button
-                                type="button"
-                                onClick={handleGenerate}
-                                disabled={!hasContent || isLoading}
-                                className="min-w-[170px]"
-                                aria-busy={isLoading}
-                            >
-                                {isLoading ? <Loader2 size={16} className="animate-spin" /> : null}
-                                {isLoading ? "Generating" : "Generate"}
-                            </Button>
-                        </div>
-
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept=".md,.markdown,.txt"
-                            className="hidden"
-                            onChange={(event) => {
-                                const file = event.target.files?.[0];
-                                if (file) processFile(file);
-                            }}
-                        />
-
-                        {isLoading ? (
-                            <Card>
-                                <CardContent className="space-y-4 p-5">
-                                    <div className="flex items-center justify-between gap-4">
-                                        <div>
-                                            <p className="text-sm font-medium text-text-primary">{LOADING_STEPS[loadingStep]}</p>
-                                            <p className="mt-1 text-sm text-text-muted">The workspace is being prepared from your source material.</p>
-                                        </div>
-                                        <p className="text-sm font-medium text-text-secondary">{Math.round(progress)}%</p>
-                                    </div>
-                                    <div className="h-1.5 rounded-full bg-[var(--color-surface-muted)]">
-                                        <div
-                                            className="h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-300"
-                                            style={{ width: `${progress}%` }}
-                                        />
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ) : null}
-
-                        {error ? (
-                            <div className="rounded-[18px] border border-[color:color-mix(in_srgb,var(--color-accent)_24%,var(--color-border))] bg-[color:color-mix(in_srgb,var(--color-accent)_10%,var(--color-surface))] px-4 py-3 text-sm text-text-primary">
+                        {error && (
+                            <div className="mt-4 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--color-danger)]/5 p-4 text-sm text-[var(--color-danger)]">
                                 {error}
                             </div>
-                        ) : null}
-                    </section>
-                </div>
+                        )}
+
+                        <div className="mt-8 flex items-center justify-between">
+                            <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+                                <FileUp size={16} className="mr-2" /> Upload File
+                            </Button>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".md,.markdown,.txt"
+                                className="hidden"
+                                onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])}
+                            />
+                            
+                            <Button 
+                                type="button" 
+                                onClick={handleGenerate} 
+                                disabled={!hasContent}
+                                className="ps-6 pe-5 h-12"
+                            >
+                                Generate Roadmap <Wand2 size={16} className="ml-2" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {creationStep === "generating" && (
+                    <div className="flex flex-col items-center justify-center py-32 space-y-8 animate-in fade-in duration-500">
+                        <div className="relative">
+                            <div className="absolute inset-0 animate-ping opacity-20 rounded-full bg-emerald-500 blur-xl" />
+                            <Loader2 size={48} className="animate-spin text-emerald-400 relative z-10 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                        </div>
+                        <div className="text-center">
+                            <h2 className="text-2xl font-display text-zinc-100 tracking-tight">{LOADING_MESSAGES[loadingStep]}</h2>
+                            <p className="mt-2 text-zinc-400 text-sm">Please wait while the AI breaks down your content.</p>
+                        </div>
+                        
+                        <div className="max-w-md w-full pt-8 space-y-4">
+                            <div className="h-4 bg-[var(--color-surface)] rounded-md animate-pulse w-3/4" />
+                            <div className="h-4 bg-[var(--color-surface)] rounded-md animate-pulse" />
+                            <div className="h-4 bg-[var(--color-surface)] rounded-md animate-pulse w-5/6" />
+                        </div>
+                    </div>
+                )}
+
+                {creationStep === "review" && draftRoadmap && (
+                    <div className="h-[calc(100vh-8rem)] flex flex-col pt-2 animate-in slide-in-from-bottom-4 duration-500">
+                        <header className="flex items-center justify-between border-b border-border pb-4 mb-6">
+                            <div>
+                                <h1 className="text-2xl font-display text-text-primary truncate">{draftRoadmap.title}</h1>
+                                <p className="text-sm text-text-secondary">Review the generated structure before creating your workspace.</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Button variant="ghost" onClick={() => setCreationStep("input")}>
+                                    <ArrowLeft size={16} className="mr-2" /> Back
+                                </Button>
+                                <Button onClick={handleCreateFinal}>
+                                    Create Workspace <ArrowRight size={16} className="ml-2" />
+                                </Button>
+                            </div>
+                        </header>
+                        
+                        <div className="flex-1 min-h-0 grid lg:grid-cols-2 gap-8">
+                            <div className="flex flex-col h-full bg-[var(--color-surface)] border border-border rounded-xl shadow-sm overflow-hidden">
+                                <div className="px-5 py-3 border-b border-border bg-[var(--color-page)] flex justify-between items-center">
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">Source Text</span>
+                                </div>
+                                <div className="p-5 overflow-y-auto flex-1 mono-surface text-sm leading-relaxed text-text-secondary whitespace-pre-wrap">
+                                    {content}
+                                </div>
+                            </div>
+                            
+                            <div className="flex flex-col h-full bg-[var(--color-page)] border border-border rounded-xl shadow-sm overflow-hidden">
+                                <div className="px-5 py-3 border-b border-border bg-[var(--color-page)] flex justify-between items-center">
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-text-primary">Generated Modules</span>
+                                    <span className="text-xs text-text-muted">You can edit these later</span>
+                                </div>
+                                <div className="p-5 overflow-y-auto flex-1 space-y-6">
+                                    {draftRoadmap.sections.filter(s => s.type === "module").map((s, i) => {
+                                        const mod = s as import("@/types").ModuleSection;
+                                        return (
+                                        <div key={i} className="group border-l-2 border-border pl-4 ml-2 hover:border-text-primary transition-colors">
+                                            <h3 className="font-display text-lg text-text-primary mb-2">Module {i+1}: {mod.title || "Untitled"}</h3>
+                                            <div className="space-y-2">
+                                                {mod.data?.tasks && Array.isArray(mod.data.tasks) && mod.data.tasks.map((task, j) => (
+                                                    <div key={j} className="text-sm text-text-secondary flex items-start gap-2 bg-[var(--color-surface)] p-2 rounded border border-border/50 group-hover:border-border transition-colors">
+                                                        <span className="text-text-muted mt-[2px] text-[10px]">■</span>
+                                                        <span className="truncate">{task.title}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {upgradeMessage ? <UpgradeModal message={upgradeMessage} onClose={() => setUpgradeMessage("")} /> : null}
+            {upgradeMessage && <UpgradeModal message={upgradeMessage} onClose={() => setUpgradeMessage("")} />}
         </>
     );
 }

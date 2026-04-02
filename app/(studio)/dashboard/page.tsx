@@ -1,117 +1,133 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import AtRiskAlerts from "@/components/dashboard/AtRiskAlerts";
-import CoachingLog from "@/components/dashboard/CoachingLog";
-import ModuleCompletionTable from "@/components/dashboard/ModuleCompletionTable";
-import SkillHeatmap from "@/components/dashboard/SkillHeatmap";
-import VelocityChart from "@/components/dashboard/VelocityChart";
-import { getDashboardOverview, getDashboardVelocity } from "@/lib/server/dashboard";
-import { getServerAuthContext } from "@/lib/server/auth";
-import { listUserWorkspaces } from "@/lib/server/workspaces";
+import { ArrowRight, Flame, Target } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { getStorage } from "@/lib/storage";
+import { getRoadmapStats } from "@/lib/workspace-stats";
+import type { Roadmap } from "@/types";
 
-function formatPercent(value: number) {
-    return `${Math.round(value * 100)}%`;
-}
+export default function DashboardPage() {
+    const [roadmaps, setRoadmaps] = useState<Roadmap[]>([]);
+    const [mounted, setMounted] = useState(false);
 
-export default async function DashboardPage() {
-    const { user } = await getServerAuthContext();
+    useEffect(() => {
+        const storage = getStorage();
+        let active = true;
 
-    if (!user) {
-        return (
-            <div className="studio-page">
-                <section className="app-header-block">
-                    <p className="eyebrow">Dashboard</p>
-                    <h1 className="text-3xl font-display leading-tight text-text-primary md:text-5xl">
-                        Sign in to view synced analytics.
-                    </h1>
-                    <p className="max-w-2xl text-sm leading-7 text-text-secondary md:text-base">
-                        Dashboard data is generated from account-scoped workspace history. Local work is still available without an account, but analytics and coaching history need sync.
-                    </p>
-                    <div className="flex flex-wrap gap-3 pt-2">
-                        <Link href="/auth?next=%2Fdashboard" className="button-primary">
-                            Enable sync
-                        </Link>
-                        <Link href="/create" className="button-secondary">
-                            Create locally
-                        </Link>
-                    </div>
-                </section>
+        setMounted(true);
+        setRoadmaps(storage.getRoadmaps());
 
-                <section className="app-stat-grid">
-                    {[
-                        ["Storage", "Local-first", "Keep creating without an account."],
-                        ["Analytics", "Account-scoped", "Progress history appears after sync."],
-                        ["Coaching", "Session log", "Store notes and follow-up actions in one place."],
-                        ["Reviews", "90-day summaries", "Generate structured review output from live history."],
-                    ].map(([label, value, detail]) => (
-                        <div key={label} className="app-stat-card">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-soft">{label}</p>
-                            <p className="text-2xl font-semibold text-text-primary">{value}</p>
-                            <p className="text-sm leading-6 text-text-secondary">{detail}</p>
-                        </div>
-                    ))}
-                </section>
-            </div>
-        );
-    }
+        if (storage.syncFromCloud) {
+            void storage.syncFromCloud().then((synced) => {
+                if (active) {
+                    setRoadmaps(synced);
+                }
+            });
+        }
 
-    const [overview, velocity, roadmaps] = await Promise.all([
-        getDashboardOverview(),
-        getDashboardVelocity(),
-        listUserWorkspaces(),
-    ]);
+        return () => {
+            active = false;
+        };
+    }, []);
 
-    const statCards = [
-        {
-            label: "Intern roadmaps",
-            value: String(overview.totalInternsTracked),
-            detail: "Total synced workspaces included in this view.",
-        },
-        {
-            label: "Average completion",
-            value: formatPercent(overview.averageCompletion),
-            detail: "Overall completion across tracked workspaces.",
-        },
-        {
-            label: "Tasks this month",
-            value: String(overview.totalTasksCompletedThisMonth),
-            detail: "Completed tasks captured in the current period.",
-        },
-        {
-            label: "Most completed module",
-            value: overview.mostCompletedModule || "No module data",
-            detail: "Strongest completion signal across synced work.",
-        },
-    ];
+    const activeRoadmaps = useMemo(() => {
+        return roadmaps
+            .filter((r) => getRoadmapStats(r).progressState === "in-progress")
+            .sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime())
+            .slice(0, 3);
+    }, [roadmaps]);
+
+    // Simple streak mock logic 
+    const currentStreak = 4;
 
     return (
         <div className="studio-page">
-            <section className="app-header-block">
-                <p className="eyebrow">Dashboard</p>
-                <h1 className="text-3xl font-display leading-tight text-text-primary md:text-5xl">
-                    Monitor progress, review risk, and log coaching.
-                </h1>
-                <p className="max-w-3xl text-sm leading-7 text-text-secondary md:text-base">
-                    This dashboard is now a linear review surface: headline metrics first, detailed sections below.
-                </p>
-            </section>
-
-            <section className="app-stat-grid">
-                {statCards.map((card) => (
-                    <div key={card.label} className="app-stat-card">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-soft">{card.label}</p>
-                        <p className="text-2xl font-semibold text-text-primary">{card.value}</p>
-                        <p className="text-sm leading-6 text-text-secondary">{card.detail}</p>
+            <header className="app-header-block flex items-start justify-between gap-4">
+                <div>
+                    <p className="eyebrow text-emerald-500">Dashboard</p>
+                    <h1 className="mt-3 text-4xl font-display leading-none text-zinc-100 tracking-tight md:text-5xl">
+                        Today's Focus
+                    </h1>
+                    <p className="mt-4 text-sm leading-7 text-zinc-400 max-w-xl">
+                        Jump back into your active workspaces and keep your learning streak alive.
+                    </p>
+                </div>
+                {mounted && (
+                    <div className="hidden sm:flex flex-col items-center justify-center border border-white/10 bg-white/5 px-6 py-4 rounded-2xl shadow-[0_0_20px_rgba(255,255,255,0.03)] hover:shadow-[0_0_20px_rgba(249,115,22,0.15)] hover:bg-white/10 hover:border-orange-500/30 hover:scale-[1.02] transition-all duration-300">
+                        <Flame className="text-orange-500 mb-1 drop-shadow-[0_0_12px_rgba(249,115,22,0.8)]" size={28} fill="currentColor" />
+                        <span className="text-2xl font-display text-orange-400 leading-none tracking-tight">{currentStreak}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/80 mt-1.5">Day Streak</span>
                     </div>
-                ))}
-            </section>
+                )}
+            </header>
 
-            <section className="app-stack">
-                <VelocityChart points={velocity} />
-                <AtRiskAlerts roadmaps={roadmaps} />
-                <SkillHeatmap roadmaps={roadmaps} />
-                <CoachingLog roadmaps={roadmaps} />
-                <ModuleCompletionTable roadmaps={roadmaps} />
-            </section>
+            {mounted ? (
+                <>
+                    <section className="mt-8">
+                        <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
+                             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-500">Active Workspaces</h2>
+                             {activeRoadmaps.length > 0 && <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">{activeRoadmaps.length} Roadmap{activeRoadmaps.length > 1 ? 's' : ''}</span>}
+                        </div>
+                        {activeRoadmaps.length > 0 ? (
+                            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                                {activeRoadmaps.map((roadmap) => {
+                                    const stats = getRoadmapStats(roadmap);
+                                    return (
+                                        <div key={roadmap.id} className="group border border-white/10 bg-white/5 p-6 rounded-2xl hover:border-emerald-500/50 hover:bg-emerald-500/5 hover:shadow-[0_0_25px_rgba(16,185,129,0.1)] transition-all duration-300 ease-in-out hover:scale-[1.02] flex flex-col min-h-[180px]">
+                                            <div className="flex justify-between items-start mb-4 gap-2">
+                                                <h3 className="font-display leading-tight text-lg text-zinc-100 line-clamp-2 group-hover:text-emerald-300 transition-colors">{roadmap.title || "Untitled Workspace"}</h3>
+                                            </div>
+                                            
+                                            <div className="space-y-3 mt-auto">
+                                                <div className="flex items-center justify-between text-xs text-zinc-400">
+                                                    <span className="font-medium text-emerald-400">{stats.percent}% complete</span>
+                                                    <span>{stats.completedTasks} / {stats.totalTasks}</span>
+                                                </div>
+                                                <div className="h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                                                    <div 
+                                                        className="h-full bg-gradient-to-r from-emerald-500 to-emerald-300 transition-all duration-700 ease-out shadow-[0_0_10px_rgba(16,185,129,0.8)]" 
+                                                        style={{ width: `${stats.percent}%` }}
+                                                    />
+                                                </div>
+                                                <div className="pt-4 flex justify-between items-center w-full">
+                                                    <span className="text-xs text-zinc-500 flex items-center gap-1.5 font-medium uppercase tracking-wider">
+                                                        <Target size={12} className="text-emerald-500"/> Resume Module
+                                                    </span>
+                                                    <Button asChild variant="ghost" size="sm" className="h-8 px-2 -mr-2 text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10">
+                                                        <Link href={`/workspace/${roadmap.id}`}>
+                                                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                                        </Link>
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        ) : (
+                            <div className="border border-white/10 border-dashed bg-white/5 p-12 text-center rounded-2xl flex flex-col items-center">
+                                <span className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-zinc-600 mb-4 drop-shadow-sm">
+                                   <Target size={20} />
+                                </span>
+                                <p className="text-zinc-400 text-sm mb-4">You have no active workspaces right now.</p>
+                                <Button asChild className="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold uppercase tracking-wider text-xs px-6 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                                    <Link href="/create">Create new workspace</Link>
+                                </Button>
+                            </div>
+                        )}
+                    </section>
+                </>
+            ) : (
+                <div className="mt-8 space-y-6 animate-pulse">
+                    <div className="h-6 w-32 bg-[var(--color-surface-muted)] rounded" />
+                    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                        <div className="h-40 bg-[var(--color-surface-muted)] rounded-xl" />
+                        <div className="h-40 bg-[var(--color-surface-muted)] rounded-xl" />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

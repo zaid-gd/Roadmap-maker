@@ -9,6 +9,7 @@ export const STUDIO_NAV_ITEMS = [
     { href: "/create", label: "Create" },
     { href: "/workspaces", label: "Workspaces" },
     { href: "/dashboard", label: "Dashboard" },
+    { href: "/analytics", label: "Analytics" },
     { href: "/settings", label: "Settings" },
 ] as const;
 

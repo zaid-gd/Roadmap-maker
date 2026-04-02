@@ -65,3 +65,8 @@ export function applyAccentTheme(accentColor: string) {
     document.documentElement.style.setProperty("--color-accent-strong", theme.accentStrong);
     document.documentElement.style.setProperty("--color-accent-soft", theme.accentSoft);
 }
+
+export function applyVisualDensity(density: "default" | "compact") {
+    if (typeof document === "undefined") return;
+    document.documentElement.classList.toggle("density-compact", density === "compact");
+}

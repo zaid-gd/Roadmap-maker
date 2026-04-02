@@ -8,6 +8,7 @@ import { useAchievements, BadgeType, BADGES_CONFIG } from "@/hooks/useAchievemen
 import { useTimeTracker } from "@/hooks/useTimeTracker";
 import ProgressRing from "@/components/shared/ProgressRing";
 import SectionRenderer from "@/components/workspace/SectionRenderer";
+import WorkspaceSplitView from "@/components/workspace/WorkspaceSplitView";
 import ShareEmbedModal from "@/components/workspace/ShareEmbedModal";
 import SettingsModal from "@/components/workspace/SettingsModal";
 import SrsReviewModal from "@/components/workspace/SrsReviewModal";
@@ -1224,6 +1225,66 @@ export default function WorkspaceShell({ roadmap, onUpdateSection, onUpdateRoadm
                                         </div>
                                     </div>
                                 )}
+                            </div>
+                        ) : activeSection?.type === "module" || activeSection?.type === "milestones" ? (
+                            <div className="flex-1 w-full relative z-10 min-h-full">
+                                    <WorkspaceSplitView
+                                        roadmap={roadmap}
+                                        activeModuleId={activeSection.id}
+                                        onUpdateSubtask={(moduleId, taskId, subtaskId) => {
+                                            onUpdateSection?.(moduleId, (s) => {
+                                                const ms = s as ModuleSectionType;
+                                                return {
+                                                    ...ms,
+                                                    data: {
+                                                        ...ms.data,
+                                                        tasks: (ms.data.tasks || []).map((t: any) =>
+                                                            t.id === taskId
+                                                                ? {
+                                                                    ...t,
+                                                                    subtasks: (t.subtasks || []).map((st: any) =>
+                                                                        st.id === subtaskId ? { ...st, completed: !st.completed } : st
+                                                                    ),
+                                                                }
+                                                                : t
+                                                        ),
+                                                    },
+                                                };
+                                            });
+                                        }}
+                                        onUpdateTask={(moduleId, taskId) => {
+                                            onUpdateSection?.(moduleId, (s) => {
+                                                const ms = s as ModuleSectionType;
+                                                return {
+                                                    ...ms,
+                                                    data: {
+                                                        ...ms.data,
+                                                        tasks: (ms.data.tasks || []).map((t: any) =>
+                                                            t.id === taskId ? { ...t, completed: !t.completed } : t
+                                                        ),
+                                                    },
+                                                };
+                                            });
+                                        }}
+                                        onUpdateModule={(moduleId) => {
+                                            onUpdateSection?.(moduleId, (s) => {
+                                                const ms = s as ModuleSectionType;
+                                                const isCompleted = !ms.data.completed;
+                                                return {
+                                                    ...ms,
+                                                    data: {
+                                                        ...ms.data,
+                                                        completed: isCompleted,
+                                                        tasks: isCompleted ? (ms.data.tasks || []).map((t: any) => ({
+                                                            ...t,
+                                                            completed: true,
+                                                            subtasks: (t.subtasks || []).map((st: any) => ({ ...st, completed: true }))
+                                                        })) : ms.data.tasks
+                                                    },
+                                                };
+                                            });
+                                        }}
+                                    />
                             </div>
                         ) : activeSection ? (
                             <div className="p-6 sm:p-8 lg:p-12 max-w-5xl mx-auto relative z-10 min-h-full">

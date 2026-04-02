@@ -76,27 +76,23 @@ function PlanCard({
 
     return (
         <Card
-            className={`relative flex h-full flex-col overflow-hidden rounded-[30px] border p-7 ${
-                isPopular
-                    ? "border-indigo-400/40 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_44%),linear-gradient(180deg,_rgba(26,29,39,0.98),_rgba(15,17,23,0.98))] shadow-[0_0_0_1px_rgba(129,140,248,0.18),0_24px_60px_rgba(28,39,122,0.3)]"
-                    : "border-white/10 bg-[linear-gradient(180deg,rgba(26,29,39,0.98),rgba(15,17,23,0.98))]"
+            className={`relative flex h-full flex-col overflow-hidden px-0 py-7 ${
+                isPopular ? "border-[var(--color-border-strong)]" : ""
             }`}
         >
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
             <CardHeader className="mb-8 p-0">
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <p className="text-sm uppercase tracking-[0.3em] text-white/70">{plan.name}</p>
-                        <CardTitle className="mt-3 text-4xl font-display text-white">
+                        <p className="text-sm uppercase tracking-[0.3em] text-text-secondary">{plan.name}</p>
+                        <CardTitle className="mt-3 text-4xl font-display text-text-primary">
                             {priceDisplay.primary}
-                            <span className="ml-2 text-base font-body text-white/80">{priceDisplay.secondary}</span>
+                            <span className="ml-2 text-base font-sans text-text-secondary">{priceDisplay.secondary}</span>
                         </CardTitle>
-                        <p className="mt-2 text-sm text-white/70">{priceDisplay.tertiary}</p>
+                        <p className="mt-2 text-sm text-text-secondary">{priceDisplay.tertiary}</p>
                     </div>
 
                     {isPopular && (
-                        <span className="rounded-full border border-indigo-300/40 bg-indigo-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/80 shadow-[0_0_24px_rgba(99,102,241,0.25)]">
+                        <span className="border border-border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-text-secondary">
                             Most Popular
                         </span>
                     )}
@@ -106,14 +102,14 @@ function PlanCard({
             <CardContent className="flex flex-1 flex-col p-0">
                 <div className="mb-8 space-y-3">
                     {plan.features.map((feature) => (
-                        <div key={feature} className="flex items-start gap-3 text-sm text-white">
-                            <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-400" />
+                        <div key={feature} className="flex items-start gap-3 text-sm text-text-primary">
+                            <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-text-primary" />
                             <span>{feature}</span>
                         </div>
                     ))}
                     {plan.notIncluded.map((feature) => (
-                        <div key={feature} className="flex items-start gap-3 text-sm text-white/70">
-                            <X size={18} className="mt-0.5 shrink-0 text-white/30" />
+                        <div key={feature} className="flex items-start gap-3 text-sm text-text-secondary">
+                            <X size={18} className="mt-0.5 shrink-0 text-text-soft" />
                             <span>{feature}</span>
                         </div>
                     ))}
@@ -126,7 +122,7 @@ function PlanCard({
                         asChild
                         variant="outline"
                         size="lg"
-                        className="w-full border-white/40 text-white hover:bg-white/10 hover:text-white"
+                        className="w-full"
                     >
                         <Link href="/create">
                             Get Started Free
@@ -153,16 +149,14 @@ export default function PricingPage() {
     return (
         <div className="relative overflow-hidden pt-24 text-text-primary">
                 <FaqSchema faqs={FAQS} />
-                <div className="pointer-events-none absolute inset-0 hero-mesh-gradient opacity-60" />
-                <div className="pointer-events-none absolute inset-0 landing-grid-bg opacity-25" />
 
                 <section className="relative mx-auto max-w-7xl px-6 pb-10 pt-14 lg:px-12">
                     <div className="mx-auto max-w-3xl text-center">
-                        <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-text-secondary">
-                            <Sparkles size={14} className="text-indigo-300" />
+                        <div className="mb-5 inline-flex items-center gap-2 border border-border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-text-secondary">
+                            <Sparkles size={14} className="text-text-primary" />
                             Billing for creators, teams, and agencies
                         </div>
-                        <h1 className="text-5xl font-display leading-none text-white sm:text-6xl">
+                        <h1 className="text-5xl font-display leading-none text-text-primary sm:text-6xl">
                             Simple, Transparent Pricing
                         </h1>
                         <p className="mx-auto mt-5 max-w-2xl text-base text-text-secondary">
@@ -171,7 +165,7 @@ export default function PricingPage() {
                     </div>
 
                     <div className="mt-10 flex justify-center">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.25)]">
+                        <div className="inline-flex items-center gap-2 border border-border p-1.5">
                             {(["monthly", "annual"] as BillingInterval[]).map((value) => (
                                 <Button
                                     key={value}
@@ -179,12 +173,12 @@ export default function PricingPage() {
                                     variant={interval === value ? "default" : "ghost"}
                                     size="sm"
                                     onClick={() => setInterval(value)}
-                                    className={interval === value ? "rounded-full bg-indigo-500 text-white hover:bg-indigo-600" : "rounded-full text-white/70 hover:bg-white/10 hover:text-white"}
+                                    className={interval === value ? "" : "text-text-secondary"}
                                 >
                                     {value === "annual" ? "Annual" : "Monthly"}
                                 </Button>
                             ))}
-                            <span className="min-w-[138px] rounded-full border border-emerald-400/20 bg-emerald-500/15 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em] whitespace-nowrap text-emerald-300">
+                            <span className="min-w-[138px] border border-border px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em] whitespace-nowrap text-text-secondary">
                                 Save 2 months
                             </span>
                         </div>
@@ -201,11 +195,11 @@ export default function PricingPage() {
 
                 <section className="relative mx-auto max-w-6xl px-6 pb-20 lg:px-12">
                     <div className="mb-8 flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
-                            <HelpCircle size={18} className="text-indigo-300" />
+                        <div className="flex h-11 w-11 items-center justify-center border border-border">
+                            <HelpCircle size={18} className="text-text-primary" />
                         </div>
                         <div>
-                            <h2 className="text-3xl font-display text-white">Frequently Asked Questions</h2>
+                            <h2 className="text-3xl font-display text-text-primary">Frequently Asked Questions</h2>
                             <p className="text-sm text-text-secondary">Everything operational, billing, and downgrade related in one place.</p>
                         </div>
                     </div>
@@ -214,16 +208,16 @@ export default function PricingPage() {
                         {FAQS.map((item) => (
                             <article
                                 key={item.question}
-                                className="rounded-[24px] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm"
+                                className="border-y border-border p-6"
                             >
-                                <h3 className="mb-3 text-lg font-semibold text-white">{item.question}</h3>
+                                <h3 className="mb-3 text-lg font-semibold text-text-primary">{item.question}</h3>
                                 <p className="text-sm leading-7 text-text-secondary">{item.answer}</p>
                             </article>
                         ))}
                     </div>
 
-                    <div className="mt-8 flex items-center gap-3 rounded-[24px] border border-white/10 bg-[linear-gradient(135deg,rgba(99,102,241,0.14),rgba(34,211,238,0.06))] p-5 text-sm text-text-secondary">
-                        <ShieldCheck size={18} className="shrink-0 text-emerald-300" />
+                    <div className="mt-8 flex items-center gap-3 border-y border-border p-5 text-sm text-text-secondary">
+                        <ShieldCheck size={18} className="shrink-0 text-text-primary" />
                         Stripe Checkout handles card entry, SCA, and international card support. Your app only receives Stripe-managed session and subscription state.
                     </div>
                 </section>

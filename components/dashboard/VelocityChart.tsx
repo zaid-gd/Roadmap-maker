@@ -47,7 +47,7 @@ export default function VelocityChart({ points }: { points: VelocityPoint[] }) {
                                 <div key={point.date} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-3">
                                     <div className="flex h-full w-full items-end">
                                         <div
-                                            className="w-full rounded-t-[18px] border border-indigo-300/20 bg-[linear-gradient(180deg,rgba(79,124,255,0.95),rgba(198,155,90,0.7))] shadow-[0_12px_30px_rgba(79,124,255,0.18)]"
+                                            className="w-full border border-border bg-[linear-gradient(180deg,rgba(22,20,17,0.86),rgba(22,20,17,0.32))]"
                                             style={{ height }}
                                             title={`${point.completedTasks} completed on ${point.date}`}
                                         />

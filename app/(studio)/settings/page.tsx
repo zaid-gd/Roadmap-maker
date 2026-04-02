@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { applyAccentTheme } from "@/lib/accent-theme";
+import { applyAccentTheme, applyVisualDensity } from "@/lib/accent-theme";
 import { AI_PROVIDER_OPTIONS, getAiProviderLabel, PROVIDER_KEY_LABELS, PROVIDER_KEY_PLACEHOLDERS, PROVIDER_MODEL_PRESETS } from "@/lib/ai-config";
 import { getEffectivePlanId, getPlanName, isPaidPlan, type SubscriptionRecord } from "@/lib/billing";
 import {
@@ -235,6 +235,10 @@ function SettingsContent() {
     useEffect(() => {
         applyAccentTheme(config.accentColor);
     }, [config.accentColor]);
+
+    useEffect(() => {
+        applyVisualDensity(config.visualDensity);
+    }, [config.visualDensity]);
 
     useEffect(() => {
         if (privacySettings) {
@@ -715,6 +719,50 @@ function SettingsContent() {
                                     checked={config.showProgressNotice}
                                     onChange={(next) => setConfig((current) => ({ ...current, showProgressNotice: next }))}
                                 />
+                            </SettingRow>
+
+                            <SettingRow
+                                title="Measurement style"
+                                description="Choose how progress is displayed across modules and the analytics page."
+                            >
+                                <div className="flex gap-2 flex-wrap">
+                                    {(["tasks", "time", "both"] as const).map((opt) => (
+                                        <button
+                                            key={opt}
+                                            type="button"
+                                            onClick={() => setConfig((c) => ({ ...c, measurementStyle: opt }))}
+                                            className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all capitalize ${
+                                                config.measurementStyle === opt
+                                                    ? "bg-[var(--color-accent)] border-[var(--color-accent)] text-white"
+                                                    : "border-border text-text-secondary hover:border-text-soft hover:text-text-primary"
+                                            }`}
+                                        >
+                                            {opt === "tasks" ? "Tasks completed" : opt === "time" ? "Time spent" : "Both"}
+                                        </button>
+                                    ))}
+                                </div>
+                            </SettingRow>
+
+                            <SettingRow
+                                title="Visual density"
+                                description="Compact mode reduces spacing in lists and cards to show more content at once."
+                            >
+                                <div className="flex gap-2 flex-wrap">
+                                    {(["default", "compact"] as const).map((opt) => (
+                                        <button
+                                            key={opt}
+                                            type="button"
+                                            onClick={() => setConfig((c) => ({ ...c, visualDensity: opt }))}
+                                            className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all capitalize ${
+                                                config.visualDensity === opt
+                                                    ? "bg-[var(--color-accent)] border-[var(--color-accent)] text-white"
+                                                    : "border-border text-text-secondary hover:border-text-soft hover:text-text-primary"
+                                            }`}
+                                        >
+                                            {opt === "default" ? "Default" : "Compact"}
+                                        </button>
+                                    ))}
+                                </div>
                             </SettingRow>
 
                             <div className="settings-action-row">
